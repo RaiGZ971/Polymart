@@ -6,7 +6,7 @@ import os
 
 load_dotenv()
 
-def get_hashed_password(pwd):
+def create_hashed_password(pwd):
     pwd_salt = pwd + os.getenv("PWD_SALT")
     hashed = hashlib.sha256(pwd_salt.encode())
     
