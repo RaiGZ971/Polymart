@@ -28,8 +28,8 @@ export const initialFormData = {
   bio: "", 
   // Phase Five
   cor: null,
-  studentIdFront: null,
-  studentIdBack: null,
+  studentIDPictureFront: null,
+  studentIDPictureBack: null,
 };
 
 export const fieldConfig = {
@@ -219,7 +219,7 @@ export const phaseConfig = {
   5: {
     label: "Student Verification",
     title: "",
-    fields: ['cor', 'studentIDPictureFront', 'studentIDPictureBack']
+    fields: ['cor', 'studentIdFront', 'studentIdBack']
   }
 };
 

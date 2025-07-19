@@ -60,7 +60,7 @@ export default function SignUp() {
     canGoBack,
     canGoForward,
     getNextButtonText
-  } = useSignUpNavigation(emailVerificationStep, handleSubmit);
+  } = useSignUpNavigation(emailVerificationStep, handleSubmit, formData, fieldConfig, phaseConfig);
 
   // Use the file upload hook
   const { handleFileChange, removeFile, getFilePreviewURL } = useFileUpload(formData, setFormData);
@@ -115,8 +115,13 @@ export default function SignUp() {
       );
     }
 
+  let phaseTitle = phase.title;
+    if (currentStep === 5 && step5SubStep === 3) {
+      phaseTitle = "You're in!"; // Or whatever title you want
+    }
+
     return (
-      <PhaseContainer label={phase.label} title={phase.title}>
+      <PhaseContainer label={phase.label} title={phaseTitle}>
         <div className="flex flex-col space-y-6">
           {/* Phase 2 - Personal Details */}
           {currentStep === 2 && (

@@ -60,6 +60,17 @@ export default function Phase5Layout({
           </div>
         </div>
       )}
+
+      {step5SubStep === 3 && (
+        <>
+        <div className="text-left pl-4 space-y-2">
+          <div className="font-bold">Thank you for uploading your COR and Student ID! </div>
+          <p>Our team will verify your account within 3–5 working days. You’ll need a verified account to perform transactions and upload listings, but you can still browse the app while waiting.</p>
+        </div>
+
+        <div className="text-left pl-4">Hold on while we set things up for you... <i>You’ll be redirected shortly.</i></div>
+        </>
+      )}
     </>
   );
 }
