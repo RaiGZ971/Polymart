@@ -1,37 +1,39 @@
 from datetime import datetime
 from pydantic import BaseModel
 
+from decimal import Decimal
+
 class message(BaseModel):
-    room_id: str
-    message_id: str
+    room_id: str                        #partition-key
+    message_id: str          
     sender_id: str
     receiver_id: str
     content: str
-    created_at: str
+    created_at: str                     #sort-key
     updated_at: str
     read_status: bool = False
 
 class notification(BaseModel):
     notifiaction_id: str
-    user_id: str
+    user_id: str                        #partition-key
     notification_type: str
     content: str
     related_id: str
     seen: bool = False
-    timestamp: str
+    timestamp: str                      #sort-key
 
 class review(BaseModel):
+    reviewee_id: str                    #partition-key
     review_id: str
     reviewer_id: str
-    reviewee_id: str
     reviewer_type: str
     product_id: str | None = None
     order_id: str | None = None
-    rating: float
+    rating: Decimal
     description: str
     images: list[str] | None = None
-    created_at: datetime
-    updated_at: datetime
+    created_at: str                     #sort-key
+    updated_at: str
     reported: bool = False
 
 class raw_review(BaseModel):
@@ -47,21 +49,21 @@ class raw_review(BaseModel):
     reported: bool = False
 
 class update_review(BaseModel):
-    rating: float | None = None
+    rating: Decimal | None = None
     description: str | None = None
     images: list[str] | None = None
     reported: bool | None = None
 
 
 class report(BaseModel):
-    report_id: str
+    report_id: str                      #partition-key
     reporter_id: str
     reported_entity_type: str
     reported_entity_id: str
     reason: str
     description: str
     status: str
-    created_at:str
+    created_at:str                      #sort-key
 
 
 
