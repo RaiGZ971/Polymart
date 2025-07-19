@@ -1,4 +1,4 @@
-import Logo from '../assets/PolymartLogo.png';
+import Logo from '../../assets/PolymartLogo.png';
 
 export default function NavigationBar({ 
     variant = 'landing', 
