@@ -69,7 +69,7 @@ export default function NavigationBar({
                 return (
                      <button 
                         className='bg-[#950000] text-white px-8 py-2 rounded-[30px] shadow-sm hover:bg-[#730C0C] ml-8'
-                        onClick={onSignUpClick || (() => window.location.href = '/signup')}
+                        onClick={onSignUpClick || (() => window.location.href = '/signin')}
                     >
                         Sign In
                     </button>

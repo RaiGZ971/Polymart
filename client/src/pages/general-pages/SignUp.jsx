@@ -10,19 +10,19 @@ import {
   Phase3Layout,
   Phase4Layout,
   Phase5Layout
-} from "../components";
+} from "../../components";
 
 import { 
   fieldConfig,
   phaseConfig,
-} from "../data";
+} from "../../data";
 
-import { useSignUpNavigation } from "../hooks/useSignUpNavigation";
-import { useEmailVerification } from "../hooks/useEmailVerification";
-import { useEmailVerificationRenderer } from "../hooks/useEmailVerificationRenderer";
-import { useFieldRenderer } from "../hooks/useFieldRenderer";
-import { useFileUpload } from "../hooks/useFileUpload";
-import { useFormData } from "../hooks/useFormData";
+import { useSignUpNavigation } from "../../hooks/useSignUpNavigation";
+import { useEmailVerification } from "../../hooks/useEmailVerification";
+import { useEmailVerificationRenderer } from "../../hooks/useEmailVerificationRenderer";
+import { useFieldRenderer } from "../../hooks/useFieldRenderer";
+import { useFileUpload } from "../../hooks/useFileUpload";
+import { useFormData } from "../../hooks/useFormData";
 
 export default function SignUp() {
   // Use the form data management hook
