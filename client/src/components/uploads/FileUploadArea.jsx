@@ -20,10 +20,28 @@ export function FileUploadArea({
         <span className="italic text-gray-400 text-base">{subtitle}</span>
       </div>
       
-      <Add 
-        onClick={() => document.getElementById(inputId).click()}
-        text={file ? `File selected: ${file.name}` : buttonText}
-      />
+      {!file ? (
+        // Show upload area when no file is selected
+        <>
+          <Add 
+            onClick={() => document.getElementById(inputId).click()}
+            text={buttonText}
+          />
+          
+          <div className="flex flex-row justify-between text-sm text-gray-500 italic mt-4">
+            <p className="mb-2">Files should be in {allowedFormats} format.</p>
+            <p>Maximum file size per image: {maxSize}</p>
+          </div>
+        </>
+      ) : (
+        // Show file preview when file is selected
+        <div className="flex-1 flex flex-col justify-center">
+          <FilePreview 
+            file={file}
+            onRemove={onRemove}
+          />
+        </div>
+      )}
       
       <input
         id={inputId}
@@ -32,16 +50,6 @@ export function FileUploadArea({
         onChange={onFileChange}
         className="hidden"
       />
-      
-      <FilePreview 
-        file={file}
-        onRemove={onRemove}
-      />
-      
-      <div className="flex flex-row justify-between text-sm text-gray-500 italic mt-4">
-        <p className="mb-2">Files should be in {allowedFormats} format.</p>
-        <p>Maximum file size per image: {maxSize}</p>
-      </div>
     </div>
   );
 }

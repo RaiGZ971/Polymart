@@ -18,3 +18,10 @@ export {
 export { FileUploadArea } from './uploads/FileUploadArea';
 export { ProfilePictureUpload } from './uploads/ProfilePictureUpload';
 export { default as PhaseIndicator } from './layout/PhaseIndicator';
+export { default as NavigationButtons } from './navigation/NavigationButtons';
+export {
+  Phase2Layout,
+  Phase3Layout,
+  Phase4Layout,
+  Phase5Layout
+} from './phases'
