@@ -1,4 +1,4 @@
-import { NavigationBar, Footer } from '../components';
+import { NavigationBar, Footer } from '../../components';
 import { Brain, Palette, Pencil, Laptop, Shirt, Cherry, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState, useRef } from 'react';
 
@@ -8,7 +8,7 @@ import {
   location, 
   chat, 
   verified 
-} from '../assets';
+} from '../../assets';
 
 export default function LandingPage() {
     const header = "Sa Polymart, lahat ng Isko may pwesto!";

@@ -1,5 +1,5 @@
-import { NavigationBar, Footer, Textfield } from "../components";
-import stall from "../assets/stall.png";
+import { NavigationBar, Footer, Textfield } from "../../components";
+import stall from "../../assets/stall.png"; // Changed from "../assets/stall.png"
 
 export default function SignIn() {
     return (
