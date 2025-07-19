@@ -9,12 +9,21 @@ export default {
        fontFamily: {
         'montserrat': ['Montserrat', 'sans-serif'],
         'sans': ['Montserrat', 'ui-sans-serif', 'system-ui'],
+        'poppins': ['Poppins', 'sans-serif'],
+
       },
       boxShadow: {
         glow: '0 0 12px 4px rgba(0, 0, 0, 0.10)',
       },
+
+      colors: {
+        'primary-red': '#AC0000',
+        'hover-red': '#950000',
+        'secondary-red': '#730C0C',
+        'error-red': '#DC4E4E',
     },
   },
   plugins: [],
-}
+  }
+};
 

@@ -1,12 +1,14 @@
-import stall from '../assets/stall.png';
-import LandingNavigationBar from '../components/LandingNavigationBar';
-import Star from '../assets/featurestar.png';
-import {Brain, Palette, Pencil, Laptop, Shirt, Cherry, ChevronDown, ChevronUp} from 'lucide-react';
-import Location from '../assets/location.png';
-import Chat from '../assets/chat-bubble.png';
-import Verified from '../assets/verified.png';
-import { useState } from 'react';
-import Footer from '../components/Footer';
+import { NavigationBar, Footer } from '../components';
+import { Brain, Palette, Pencil, Laptop, Shirt, Cherry, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useRef } from 'react';
+
+import { 
+  stall, 
+  featureStar, 
+  location, 
+  chat, 
+  verified 
+} from '../assets';
 
 export default function LandingPage() {
     const header = "Sa Polymart, lahat ng Isko may pwesto!";
@@ -14,17 +16,17 @@ export default function LandingPage() {
     const goals = [
         {
             title: "A Student-Friendly Marketplace for PUPian-Owned Hustles",
-            icon: Star
+            icon: featureStar // instead of Star
         },
         {
             title: "Campus-Centric Meet-Ups for Convenience & Safety",
-            icon: Star
+            icon: featureStar // instead of Star
         },
         {
             title: "Exclusive to PUPians Only",
-            icon: Star
+            icon: featureStar // instead of Star
         }
-    ]
+    ];
 
     const productInformation = [
         { title: "Academics Essentials",
@@ -66,17 +68,17 @@ export default function LandingPage() {
 
    const features = [
   {
-    icon: Location,
+    icon: location, // instead of Location
     label: "Set a meet up",
     description: "Coordinate safe and convenient meet-ups within PUP using location pins and suggested common spots — no deliveries needed.",
   },
   {
-    icon: Chat,
+    icon: chat, // instead of Chat
     label: "Chat System",
     description: "Message buyers or sellers directly to ask questions, finalize details, and stay updated — all within the platform.",
   },
   {
-    icon: Verified,
+    icon: verified, // instead of Verified
     label: "Verified Users",
     description: "Only PUP-verified students can create listings or transact, ensuring a trusted and secure campus-exclusive marketplace.",
   },
@@ -108,45 +110,7 @@ export default function LandingPage() {
             answer: "ANSWER"
         },
     ]
-
-   function ProductCategory({ title, description, Icon }) {
-    return (
-        <div className="border-2 border-[#950000] rounded-[20px] p-6 text-left max-w-md mx-auto hover:scale-105 transition-transform duration-300">
-        <div className="flex items-center gap-2 -mt-10 bg-white px-3 w-fit ml-4">
-            <Icon className="text-[#950000] w-5 h-5" />
-            <h3 className="text-[#950000] font-bold text-lg">{title}</h3>
-        </div>
-        <p className="mt-4 text-sm text-gray-700">{description}</p>
-        </div>
-    );
-    }
-
-function FAQItem({ question, answer }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className="py-4">
-      <button
-        className="flex justify-between items-center w-full text-left"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <span className="text-lg text-white">★  {question}</span>
-        {isOpen ? (
-          <ChevronUp className="text-white w-5 h-5" />
-        ) : (
-          <ChevronDown className="text-white w-5 h-5" />
-        )}
-      </button>
-
-      {isOpen && (
-        <div className="mt-2 text-white text-base text-left italic">
-          {answer}
-        </div>
-      )}
-    </div>
-  );
-}
-    
+   
   return (
     <>
     {/* Main Container */}
@@ -154,7 +118,7 @@ function FAQItem({ question, answer }) {
     
     {/* Navigation Bar */}
     <div className="w-full p-10 px-0 mx-0">
-        <LandingNavigationBar />
+        <NavigationBar variant="landing"/>
     </div>
 
     {/* Content Area */}
@@ -282,9 +246,51 @@ function FAQItem({ question, answer }) {
         {/* End of FAQS */}
 
         {/* Footer */}
-        <Footer />
+        <Footer className="w-full" />
     </div>
     </div>
     </>
+  );
+}
+
+{/* ProductCategory Component */}
+function ProductCategory({ title, description, Icon }) {
+    return (
+        <div className="border-2 border-[#950000] rounded-[20px] p-6 text-left max-w-md mx-auto hover:scale-105 transition-transform duration-300">
+        <div className="flex items-center gap-2 -mt-10 bg-white px-3 w-fit ml-4">
+            <Icon className="text-[#950000] w-5 h-5" />
+            <h3 className="text-[#950000] font-bold text-lg">{title}</h3>
+        </div>
+        <p className="mt-4 text-sm text-gray-700">{description}</p>
+        </div>
+    );
+    }
+
+{/* FAQItem Component */}
+function FAQItem({ question, answer }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="py-4 border-b border-white/20">
+      <button
+        className="flex justify-between items-center w-full text-left transition-colors duration-200 hover:text-[#FFE387]"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className="text-lg text-white">★  {question}</span>
+        <ChevronDown 
+          className={`text-white w-5 h-5 transition-transform duration-300 ${
+            isOpen ? 'rotate-180' : 'rotate-0'
+          }`}
+        />
+      </button>
+
+      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+        isOpen ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0'
+      }`}>
+        <div className="text-white text-base text-left italic pb-2">
+          {answer}
+        </div>
+      </div>
+    </div>
   );
 }
