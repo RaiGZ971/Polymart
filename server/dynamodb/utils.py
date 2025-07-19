@@ -1,20 +1,37 @@
-from fastapi import WebSocket
+from datetime import datetime, UTC
+from dynamodb import models
+import uuid
 
-#Chatting System
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: list[WebSocket] = []
+def get_room(sender_id, receiver_id) -> str:
+    return "".join(sorted([sender_id, receiver_id]))
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
+def get_current_date() -> str:
+    return str(datetime.now(UTC))
 
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+def process_review_form(form) -> models.review:
+    currentDate = get_current_date()
 
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
+    updatedForm = {
+        **form.model_dump(),
+        "created_at": currentDate,
+        "updated_at": currentDate
+    }
 
-    async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            await connection.send_text(message)
+    return models.review(**updatedForm)
+
+def process_message_form( room_id: str, message: str, sender_id: str, receiver_id: str) -> models.message:
+    messageID = str(uuid.uuid4())
+    currentDate = get_current_date()
+
+    formattedResponse = {
+        "room_id": room_id,
+        "message_id": messageID,
+        "sender_id": sender_id,
+        "receiver_id": receiver_id,
+        "content": message,
+        "created_at": currentDate,
+        "updated_at": currentDate,
+        "read_status": False
+    }
+
+    return models.message(**formattedResponse)
