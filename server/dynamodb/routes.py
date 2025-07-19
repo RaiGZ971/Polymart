@@ -75,7 +75,7 @@ html = """
         // Fetch past messages
         async function fetchMessages() {
             try {
-                const response = await fetch(`/dynamodb/message/${sender_id}/${receiver_id}`);
+                const response = await fetch(`/dynamodb/messages/${sender_id}/${receiver_id}`);
                 const data = await response.json();
 
                 // Sort by created_at
@@ -98,7 +98,9 @@ html = """
 # Create client
 dynamodb = boto3.resource("dynamodb")
 tableMessage = dynamodb.Table("hackybara-message") #type:ignore
-tableActivityFeed = dynamodb.Table("hackybara-activity-feed") #type:ignore
+tableReport = dynamodb.Table("hackybara-report") #type:ignore
+tableReview = dynamodb.Table("hackybara-review") #type:ignore
+tableNotification = dynamodb.Table("hackybara-notification") #type:ignore
 
 #CHATTING SYSTEM
 @router.websocket("/message/{room_id}/{sender_id}/{receiver_id}")
@@ -109,7 +111,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, sender_id: str,
             data = await websocket.receive_text()
             processedForm = (await manager.send_personal_message(data, room_id, sender_id, receiver_id, websocket)).model_dump()
 
-            # Post message in dynamodb 
+            # Post message in dynamodb hackybara-message
             try:
                 tableMessage.put_item(
                     Item=processedForm
@@ -126,8 +128,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, sender_id: str,
     except WebSocketDisconnect:
         manager.disconnect(websocket, room_id)
 
-@router.get("/message/{sender_id}/{receiver_id}")
-async def get_message(sender_id: str, receiver_id: str):
+@router.get("/messages/{sender_id}/{receiver_id}")
+async def get_messages(sender_id: str, receiver_id: str):
     room_id = utils.get_room(sender_id, receiver_id)
 
     # Read history messages in dynamodb hackybara-message
@@ -141,11 +143,30 @@ async def get_message(sender_id: str, receiver_id: str):
         return messages
     
     except ClientError as e:
-        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch in hackybara-message: {e.response["Error"]["Message"]}")
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch messages in hackybara-message: {e.response["Error"]["Message"]}")
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to review: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to review messages: {str(e)}")
+    
+@router.get("/message/{room_id}/{message_id}", response_model=models.message)
+async def get_message(room_id: str, message_id: str):
+    try:
+        query = tableMessage.query(
+            KeyConditionExpression=Key("room_id").eq(room_id),
+            FilterExpression=Attr("message_id").eq(message_id)
+        )
+
+        message = query.get("Items", [])[0]
+        print(f"test:")
+        return message
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch message in hackybara-message: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to review message: {str(e)}")
     
 @router.get("/chat/{sender_id}/{receiver_id}", response_class=HTMLResponse)
 async def serve_chat_html(sender_id: str, receiver_id: str):
@@ -168,6 +189,7 @@ async def update_message(room_id: str, message_id: str, content: str):
 
         response = tableMessage.update_item(
             Key={"room_id": room_id, "created_at": message["created_at"]},
+            ConditionExpression=Attr("message_id").eq(message_id),
             UpdateExpression="set content=:content, updated_at=:updated_at",
             ExpressionAttributeValues={":content": content, ":updated_at": currentDate},
             ReturnValues="ALL_NEW"
@@ -233,56 +255,152 @@ async def delete_full_message(room_id: str, message_id: str):
 
 
 #REVIEW SYSTEM
+@router.get("/product-review/{reviewee_id}/{review_id}", response_model=models.review)
+async def get_review(reviewee_id: str, review_id: str):
+    try:
+        query = tableReview.query(
+            KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
+            FilterExpression=Attr("review_id").eq(review_id)
+        )
+
+        review = query.get("Items", [])[0]
+
+        return review
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch review in hackybara-activity-feed: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to review: {str(e)}")
+
+@router.get("/product-review/{reviewee_id}/{product_id}")
+async def get_product_review(reviewee_id: str, product_id: str):
+    try:
+        query = tableReview.query(
+            KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
+            FilterExpression=Attr("product_id").eq(product_id)
+        )
+
+        productReview = query.get("Items", [])
+
+        return productReview
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch product review in hackybara-activity-feed: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to review product: {str(e)}")
+    
+@router.get("/seller-review/{reviewee_id}")
+async def get_seller_review(reviewee_id: str):
+    try:
+        query = tableReview.query(
+            KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
+            FilterExpression=Attr("product_id").not_exists()
+        )
+
+        sellerReview = query.get("Items", [])
+
+        return sellerReview
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed fetch seller review in hackybara-activity-feed: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to review seller: {str(e)}")
+
 @router.post("/review", response_model=models.review)
 async def post_review(form: models.raw_review):
     try:
         processedForm = utils.process_review_form(form)
 
-
+        # Post review in dynamodb hackybara-activity-feed
+        tableReview.put_item(
+             Item=processedForm.model_dump(exclude_none=True)
+        )
 
         return processedForm
+    except ClientError as e:
+            raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed Post in hackybara-activity-feed(review): {e.response["Error"]["Message"]}")
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to review: {str(e)}")
     
-@router.put("/review/{review_id}", response_model=models.review)
-async def update_review(review_id: str, form: models.update_review):
+@router.put("/review/{reviewee_id}/{review_id}", response_model=models.review)
+async def update_review(reviewee_id: str, review_id: str, form: models.update_review):
     try:
-        #update matched review id in dynamodb review
+        query = tableReview.query(
+            KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
+            FilterExpression=Attr("review_id").eq(review_id)
+        )
+        
+        review = query.get("Items", [])[0]
 
-        #get updated review
-        before_review = {
-            "review_id": "string",
-            "reviewer_id": "string",
-            "reviewee_id": "string",
-            "reviewer_type": "string",
-            "product_id": "string",
-            "order_id": "string",
-            "rating": 0,
-            "description": "string",
-            "images": [
-                "string"
-            ],
-            "created_at": "2025-07-16T17:46:28.307Z",
-            "updated_at": "2025-07-16T17:46:28.307Z",
-            "reported": False
-        }
+        # Review the submited form
+        expressionValues = {}
+        updateParts = []
 
-        updated_review = {
-            **before_review,
-            **form.model_dump(exclude_unset=True)
-        }
+        updateParts.append("review_id=:review_id")
+        expressionValues[":review_id"] = review_id
 
-        return (models.review(**updated_review))
+        if form.rating is not None:
+            updateParts.append("rating=:rating")
+            expressionValues[":rating"] = form.rating
+        if form.description is not None:
+            updateParts.append("description=:description")
+            expressionValues[":description"] = form.description
+        if form.images is not None:
+            updateParts.append("images=:images")            
+            expressionValues[":images"] = form.images
+        if form.reported is not None:
+            updateParts.append("reported=:reported")            
+            expressionValues[":reported"] = form.reported
+
+        updateExpression = "SET " + ", ".join(updateParts) if updateParts else None
+
+        # Update matched review id in dynamodb review
+        response = tableReview.update_item(
+            Key={"reviewee_id": reviewee_id, "created_at": review["created_at"]},
+            UpdateExpression=updateExpression,
+            ExpressionAttributeValues=expressionValues,
+            ReturnValues="ALL_NEW"
+        )
+
+        return models.review(**response["Attributes"])
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to update in hackybara-activity-feed: {e.response["Error"]["Message"]}")
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update review: {str(e)}")
 
+@router.delete("/review/{reviewee_id}/{review_id}", response_model=models.review)
+async def delete_review(reviewee_id: str, review_id: str):
+    try:
+        query = tableReview.query(
+            KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
+            FilterExpression=Attr("review_id").eq(review_id)
+        )
+    
+        review = query.get("Items", [])[0]
+        
+        tableReview.delete_item(
+            Key={"reviewee_id": reviewee_id, "created_at": review["created_at"]},
+            ConditionExpression=Attr("review_id").eq(review_id)
+        )
 
-
+        return review
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete in hackybara-activity-feed: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete review: {str(e)}")
+    
 #REPORT SYSTEM
 
 #NOTIFICATION SYSTEM
-
