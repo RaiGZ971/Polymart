@@ -33,3 +33,7 @@ export { default as SmallButton } from './form-elements/SmallButton';
 export { default as ChatContainer } from './chat/ChatContainer';
 export { default as ChatPreview } from './chat/ChatPreview';
 export { default as ChatApp } from './chat/ChatApp';
+export { default as ImageUploader } from './form-elements/ImageUploader';
+export { default as ToggleButton } from './form-elements/ToggleButton';
+export { default as Checkbox } from './form-elements/Checkbox';
+export { default as CalendarPicker } from './form-elements/CalendarPicker';

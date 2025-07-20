@@ -1,12 +1,4 @@
-export default function PhaseIndicator({ currentStep }) {
-  const steps = [
-    'Email Verification',
-    'Personal Details', 
-    'Student Details',
-    'Account Setup',
-    'Student Verification',
-  ];
-
+export default function PhaseIndicator({ currentStep, steps }) {
   return (
     <div className="flex items-center justify-center mb-6">
       {steps.map((label, index) => {
