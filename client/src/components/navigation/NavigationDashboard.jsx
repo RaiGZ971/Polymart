@@ -1,0 +1,143 @@
+import { Home, Plus, Archive, LogOut, HeadphonesIcon, HelpCircle, MapPinned, CircleUserRound, Bell, MessageCircle } from "lucide-react";
+import Logo from '../../assets/PolymartLogo.png';
+import { useState } from 'react';
+import ChatApp from '../chat/ChatApp';
+
+export default function NavigationDashboard() {
+    const firstName = "Jianna";
+    const [showChat, setShowChat] = useState(false);
+    
+    const iconMap = {
+        home: Home,
+        plus: Plus,
+        box: Archive,
+        logout: LogOut,
+        headphones: HeadphonesIcon,
+        help: HelpCircle,
+        user: CircleUserRound,
+        map: MapPinned,
+        bell: Bell,
+        message: MessageCircle,
+    };
+
+    const leftNavItems = [
+        { name: 'Customer Service', path: '/', icon: 'headphones' },
+        { name: 'Help', path: '/', icon: 'help' },
+    ];
+
+    const rightNavItems = [
+        { name: 'Home', path: '/dashboard', icon: 'home' },
+        { name: 'Create a Listing', path: '/', icon: 'plus' },
+        { name: 'Manage Listing', path: '/', icon: 'box' },
+        { name: 'Sign Out', path: '/', icon: 'logout' },
+    ];
+
+    const bottomNavItems = [
+        { name: firstName, path: '/', icon: 'user', hasText: true },
+        { name: 'Orders & Meet Ups', path: '/', icon: 'map', hasText: true },
+        { name: 'Notifications', path: '/', icon: 'bell', hasText: false },
+        { name: 'Messages', path: '/', icon: 'message', hasText: false, action: 'chat' },
+    ];
+
+    const handleItemClick = (item) => {
+        if (item.action === 'chat') {
+            setShowChat(true);
+        }
+        // Add other actions here if needed
+    };
+
+    const handleCloseChat = () => {
+        setShowChat(false);
+    };
+    
+    return (
+        <div>
+            {/* Red Navigation Bar */}
+            <div className="bg-secondary-red">
+                <div className="text-white text-xs py-2 px-12 flex justify-between">
+                    {/* Left side - Customer Service and Help */}
+                    <div className="flex items-center">
+                        {leftNavItems.map((item, index) => {
+                            const IconComponent = iconMap[item.icon];
+                            return (
+                                <div key={index} className="flex items-center">
+                                    <a 
+                                        href={item.path}
+                                        className="hover:underline hover:text-gray-200 transition-colors duration-200 inline-flex items-center gap-1"
+                                    >
+                                        {IconComponent && <IconComponent size={14} />}
+                                        {item.name}
+                                    </a>
+                                    {index < leftNavItems.length - 1 && <span className="mx-3">|</span>}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Right side - Home, Create, Manage, Sign Out */}
+                    <div className="flex items-center">
+                        {rightNavItems.map((item, index) => {
+                            const IconComponent = iconMap[item.icon];
+                            return (
+                                <div key={index} className="flex items-center">
+                                    <a 
+                                        href={item.path}
+                                        className="hover:underline hover:text-gray-200 transition-colors duration-200 inline-flex items-center gap-1"
+                                    >
+                                        {IconComponent && <IconComponent size={14} />}
+                                        {item.name}
+                                    </a>
+                                    {index < rightNavItems.length - 1 && <span className="mx-3">|</span>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+            
+            {/* Logo + Navigation Section */}
+            <div className="pl-24 pr-24 pt-8 w-full justify-between flex items-center text-sm">             
+                <div>
+                    <img 
+                        src={Logo} 
+                        alt="Polymart Logo" 
+                        className="min-w-[148px] max-w-[148px] min-h-[50px] max-h-[50px] mx-4" 
+                    />
+                </div>
+                <div className="flex items-center gap-4">
+                    {bottomNavItems.map((item, index) => {
+                        const IconComponent = iconMap[item.icon];
+                        return (
+                            <div 
+                                key={index} 
+                                className={`cursor-pointer hover:text-hover-red transition-colors duration-200 group ${
+                                    item.hasText ? 'flex items-center gap-2' : ''
+                                }`}
+                                onClick={() => handleItemClick(item)}
+                            >
+                                <IconComponent size={28} className="text-gray-800 group-hover:text-hover-red transition-colors duration-200" />
+                                {item.hasText && item.name}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Chat Slide-in Overlay */}
+            <div className={`fixed inset-0 z-50 transition-opacity duration-300 ${showChat ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+                {/* Background overlay */}
+                <div 
+                    className="absolute inset-0 bg-black bg-opacity-30"
+                    onClick={handleCloseChat}
+                />
+                
+                {/* Chat panel sliding from right */}
+                <div className={`absolute right-0 top-0 h-full w-[30%] bg-white shadow-2xl transition-all duration-500 ease-in-out rounded-tl-2xl rounded-bl-2xl ${
+                    showChat ? 'translate-x-0' : 'translate-x-full'
+                }`}>
+                    <ChatApp onClose={handleCloseChat} />
+                </div>
+            </div>
+        </div>
+    );
+}

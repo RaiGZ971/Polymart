@@ -15,8 +15,7 @@ export default function Phase3Layout({ renderField }) {
       </div>
       
       <div className="w-full flex flex-row gap-4">
-        <div className="w-1/2">{renderField('yearLevel')}</div>
-        <div className="w-1/2">{renderField('expectedGraduation')}</div>
+        <div className="w-full">{renderField('yearLevel')}</div>
       </div>
     </>
   );

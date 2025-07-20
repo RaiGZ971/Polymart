@@ -24,4 +24,12 @@ export {
   Phase3Layout,
   Phase4Layout,
   Phase5Layout
-} from './phases'
+} from './phases';
+export { default as NavigationDashboard } from './navigation/NavigationDashboard';
+export { default as SearchBar } from './form-elements/SearchBar';
+export { default as CategoryFilter } from './form-elements/CategoryFilter';
+export { default as DropdownFilter } from './form-elements/DropdownFilter';
+export { default as SmallButton } from './form-elements/SmallButton';
+export { default as ChatContainer } from './chat/ChatContainer';
+export { default as ChatPreview } from './chat/ChatPreview';
+export { default as ChatApp } from './chat/ChatApp';

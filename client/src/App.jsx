@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import './App.css'
-import { LandingPage, SignUp, SignIn } from './pages'
+import LandingPage from './pages/general-pages/LandingPage'
+import SignUp from './pages/general-pages/SignUp'
+import SignIn from './pages/general-pages/SignIn'
+import GeneralDashboard from './pages/general-pages/GeneralDashboard'
+import TestPage from './pages/general-pages/TestPage'
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <Router>
       <div className="App">
@@ -14,6 +16,8 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/signin" element={<SignIn />} />
+          <Route path="/dashboard" element={<GeneralDashboard />} />
+          <Route path="/testpage" element={<TestPage />} />
         </Routes>
       </div>
     </Router>
