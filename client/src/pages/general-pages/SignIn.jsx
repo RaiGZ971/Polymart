@@ -16,7 +16,7 @@ export default function SignIn() {
             {/* Right Container */}
             <div className='max-w-[420px] flex flex-col items-center'>
                 <div className="border-2 border-primary-red rounded-[30px] p-10 shadow-lg w-full space-y-3">
-                    <div className="space-y-0 mb-4">
+                    <div className="space-y-0 mb-8">
                         <h1 className="text-3xl font-bold text-primary-red">Kamusta, Iskolar?</h1>
                         <p className="text-sm">Sa PolyMart lahat ng Isko, may pwesto!</p>
                     </div>
