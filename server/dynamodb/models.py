@@ -1,4 +1,3 @@
-from datetime import datetime
 from pydantic import BaseModel
 
 from decimal import Decimal
@@ -49,7 +48,7 @@ class raw_review(BaseModel):
     reviewer_type: str
     product_id: str | None = None
     order_id: str | None = None
-    rating: float
+    rating: Decimal
     description: str
     images: list[str] | None = None
     reported: bool = False
