@@ -96,7 +96,6 @@ html = """
 """
 
 # Create client
-s3Client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
 tableMessage = dynamodb.Table("hackybara-message") #type:ignore
 tableReport = dynamodb.Table("hackybara-report") #type:ignore
