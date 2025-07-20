@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import './App.css'
-import { LandingPage, SignUp, SignIn } from './pages'
 import NotificationTest from "./pages/general-pages/NotificationTest";
 import LandingPage from './pages/general-pages/LandingPage'
 import SignUp from './pages/general-pages/SignUp'
