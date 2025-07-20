@@ -51,8 +51,8 @@ export function useChat() {
             { text: "Hindi po ako bogus buyer, magkano po yung ano sa ano?", sender: "other" }
         ],
         3: [
-            { text: "Bakit po kayo nagcancel?", sender: "other" },
-            { text: "Sorry po, nahablot po wallet ko hahaha", sender: "user" },
+            { text: "Bakit po kayo nagcancel?", sender: "user" },
+            { text: "Sorry po, nahablot po wallet ko hahaha", sender: "other" },
         ],
         4: [
             { text: "Thanks for the quick delivery!", sender: "other" },
@@ -78,7 +78,11 @@ export function useChat() {
     // Get latest message for each chat
     const getLatestMessage = (chatId) => {
         const messages = allChatMessages[chatId] || [];
-        return messages.length > 0 ? messages[messages.length - 1].text : "No messages yet";
+        if (messages.length === 0) return "No messages yet";
+        
+        const lastMessage = messages[messages.length - 1];
+        const prefix = lastMessage.sender === "user" ? "You: " : "";
+        return prefix + lastMessage.text;
     };
 
     // Add latest message to each chat
