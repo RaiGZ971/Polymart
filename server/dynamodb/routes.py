@@ -96,6 +96,7 @@ html = """
 """
 
 # Create client
+s3Client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
 tableMessage = dynamodb.Table("hackybara-message") #type:ignore
 tableReport = dynamodb.Table("hackybara-report") #type:ignore
@@ -132,8 +133,27 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, sender_id: str,
 async def get_messages(sender_id: str, receiver_id: str):
     room_id = utils.get_room(sender_id, receiver_id)
 
-    # Read history messages in dynamodb hackybara-message
     try:
+        query = tableMessage.query(
+            KeyConditionExpression=Key("room_id").eq(room_id),
+            FilterExpression=Attr("receiver_id").eq(sender_id) & Attr("read_status").eq(False)
+        )
+
+        unreadMessages = query.get("Items", [])
+
+        keys = [{"room_id": room_id, "created_at": unreadMessage["created_at"]} for unreadMessage in unreadMessages]
+        messageIDs = [unreadMessage["message_id"] for unreadMessage in unreadMessages]
+
+
+        for key, messageID in zip(keys, messageIDs):
+            tableMessage.update_item(
+                Key=key,
+                ConditionExpression=Attr("message_id").eq(messageIDs[messageID]),
+                UpdateExpression="set read_status=:read_status",
+                ExpressionAttributeValues={":read_status": True}
+            )
+
+        # Read history messages in dynamodb hackybara-message
         query = tableMessage.query(
             KeyConditionExpression=Key("room_id").eq(room_id),
             ScanIndexForward=True
@@ -255,7 +275,7 @@ async def delete_full_message(room_id: str, message_id: str):
 
 
 #REVIEW SYSTEM
-@router.get("/product-review/{reviewee_id}/{review_id}", response_model=models.review)
+@router.get("/review/{reviewee_id}/{review_id}", response_model=models.review)
 async def get_review(reviewee_id: str, review_id: str):
     try:
         query = tableReview.query(
@@ -268,7 +288,7 @@ async def get_review(reviewee_id: str, review_id: str):
         return review
     
     except ClientError as e:
-        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch review in hackybara-activity-feed: {e.response["Error"]["Message"]}")
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch review in hackybara-review: {e.response["Error"]["Message"]}")
     except HTTPException:
         raise
     except Exception as e:
@@ -287,7 +307,7 @@ async def get_product_review(reviewee_id: str, product_id: str):
         return productReview
     
     except ClientError as e:
-        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch product review in hackybara-activity-feed: {e.response["Error"]["Message"]}")
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch product review in hackybara-review: {e.response["Error"]["Message"]}")
     except HTTPException:
         raise
     except Exception as e:
@@ -305,7 +325,7 @@ async def get_seller_review(reviewee_id: str):
 
         return sellerReview
     except ClientError as e:
-        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed fetch seller review in hackybara-activity-feed: {e.response["Error"]["Message"]}")
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed fetch seller review in hackybara-review: {e.response["Error"]["Message"]}")
     except HTTPException:
         raise
     except Exception as e:
@@ -323,11 +343,11 @@ async def post_review(form: models.raw_review):
 
         return processedForm
     except ClientError as e:
-            raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed Post in hackybara-activity-feed(review): {e.response["Error"]["Message"]}")
+            raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed Post in hackybara-review: {e.response["Error"]["Message"]}")
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to review: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to post review: {str(e)}")
     
 @router.put("/review/{reviewee_id}/{review_id}", response_model=models.review)
 async def update_review(reviewee_id: str, review_id: str, form: models.update_review):
@@ -369,9 +389,9 @@ async def update_review(reviewee_id: str, review_id: str, form: models.update_re
             ReturnValues="ALL_NEW"
         )
 
-        return models.review(**response["Attributes"])
+        return response["Attributes"]
     except ClientError as e:
-        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to update in hackybara-activity-feed: {e.response["Error"]["Message"]}")
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to update in hackybara-review: {e.response["Error"]["Message"]}")
     except HTTPException:
         raise
     except Exception as e:
@@ -395,12 +415,263 @@ async def delete_review(reviewee_id: str, review_id: str):
         return review
     
     except ClientError as e:
-        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete in hackybara-activity-feed: {e.response["Error"]["Message"]}")
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete in hackybara-review: {e.response["Error"]["Message"]}")
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete review: {str(e)}")
     
 #REPORT SYSTEM
+@router.get("/report/{report_id}", response_model=models.report)
+async def get_report(report_id: str):
+    try:
+        query = tableReport.query(
+            KeyConditionExpression=Key("report_id").eq(report_id)
+        )
+
+        report = query.get("Items", [])[0]
+
+        return report
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch report in hackybara-report: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to review report: {str(e)}")
+    
+@router.get("/reports")
+async def get_all_report():
+    try:
+        items = []
+        response = tableReport.scan()
+        items.extend(response.get("Items", []))
+
+        while "LastEvaluatedKey" in response:
+            response = tableReport.scan(
+                ExclusiveStartKey=response["LastEvaluatedKey"]
+            )
+            items.extend(response.get("Items", []))
+
+        return items
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch all report in hackybara-report: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to review all report: {str(e)}")
+    
+@router.post("/report", response_model=models.report)
+async def post_report(form: models.raw_report):
+    try:
+        processedForm = utils.process_report_form(form)
+
+        tableReport.put_item(
+            Item=processedForm.model_dump()
+        )
+
+        return processedForm
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to post report in hackyabara-report: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to post report: {str(e)}")
+    
+@router.put("/report/{report_id}", response_model=models.report)
+async def update_report(report_id: str, status: str):
+    try:
+        query = tableReport.query(
+            KeyConditionExpression=Key("report_id").eq(report_id)
+        )
+
+        report = query.get("Items", [])[0]
+
+        response = tableReport.update_item(
+            Key={"report_id": report_id, "created_at": report["created_at"]},
+            UpdateExpression="set status=:status",
+            ExpressionAttributeValues={":status": status},
+            ReturnValues="ALL_NEW"
+        )
+
+        return response
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to update report in hackybara-report: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update report: {str(e)}")
+    
+@router.delete("/report/{report_id}", response_model=models.report)
+async def delete_report(report_id: str):
+    try:
+        query = tableReport.query(
+            KeyConditionExpression=Key("report_id").eq(report_id)
+        )
+
+        report = query.get("Items", [])[0]
+
+        tableReport.delete_item(
+            Key={"report_id": report_id, "created_at": report["created_at"]}
+        )
+
+        return report
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["RespnseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete report in hackybara-report: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete report: {str(e)}")
 
 #NOTIFICATION SYSTEM
+@router.get("/notification/{user_id}/{notification_id}", response_model=models.notification)
+async def get_notification(user_id: str, notification_id: str):
+    try:
+        query = tableNotification.query(
+            KeyConditionExpression=Key("user_id").eq(user_id),
+            FilterExpression=Attr("notification_id").eq(notification_id)
+        )
+
+        notification = query.get("Items", [])[0]
+
+        return notification
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch notification in hackybara-notification: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch notification: {str(e)}")
+    
+@router.get("notifications/{user_id}")
+async def get_all_user_notification(user_id: str):
+    try:
+        query = tableNotification.query(
+            KeyConditionExpression=Key("user_id").eq(user_id),
+            ScanIndexForward=True
+        )
+
+        notifications = query.get("Items", [])
+
+        return notifications
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch all user notification in hackybara-notification: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch all user notification: {str(e)}")
+
+@router.post("/notification", response_model=models.notification)
+async def post_notification(form: models.raw_notification):
+    try:
+        processedForm = utils.process_notification_form(form)
+
+        tableNotification.put_item(
+            Item=processedForm.model_dump()
+        )
+
+        return processedForm
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to post notification in hackybara-notification: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"failed to post notification: {str(e)}")
+    
+@router.put("/notification-seen-update/{user_id}")
+async def notification_seen_update(user_id: str):
+    try:
+        items = []
+
+        query = tableNotification.query(
+            KeyConditionExpression=Key("user_id").eq(user_id),
+            FilterExpression=Attr("seen").eq(False)
+        )
+
+        notifications = query.get("Items", [])
+
+        keys = [
+            {"user_id": notification["user_id"], "timestamp": notification["timestamp"]} for notification in notifications
+        ]
+
+        for key in keys:
+            response = tableNotification.update_item(
+                Key=key,
+                UpdateExpression="set seen=:seen",
+                ExpressionAttributeValues={":seen": True},
+                ReturnValues="ALL_NEW"
+            )
+
+            items.append(response["Attributes"])
+
+        return items
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to update seen notification in hackybara-notification: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update seen notification: {str(e)}")
+    
+@router.delete("/notification/{user_id}/{notification_id}", response_model=models.notification)
+async def delete_notification(user_id: str, notification_id: str):
+    try:
+        query = tableNotification.query(
+            KeyConditionExpression=Key("user_id").eq(user_id),
+            FilterExpression=Attr("notification_id").eq(notification_id)
+        )
+
+        notification = query.get("Items", [])[0]
+
+        tableNotification.delete_item(
+            Key={"user_id": user_id, "timestamp": notification["timestamp"]},
+            ConditionExpression=Attr("notification_id").eq(notification_id)
+        )
+
+        return notification
+
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete notification in hackybara-notification: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete notifictaion: {str(e)}")
+
+@router.delete("notifications/{user_id}")
+async def delete_all_read_notification(user_id: str):
+    try:
+        query = tableNotification.query(
+            KeyConditionExpression=Key("user_id").eq(user_id),
+            FilterExpression=Attr("seen").eq(True)
+        )
+
+        notifications = query.get("Items", [])
+
+        keys = [
+            {"user_id": notification["user_id"], "timestamp": notification["timestamp"]} for notification in notifications
+        ]
+
+        with tableNotification.batch_writer() as batch:
+            for key in keys:
+                batch.delete_item(
+                    Key=key
+                )
+
+        return notifications
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ProcessMetadata"]["HTTPStatusCode"], detail=f"Failed to delete all read notification in hackybara-notification: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete all read notification: {str(e)}")
+
+
+
+    
