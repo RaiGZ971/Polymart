@@ -15,7 +15,7 @@ s3Client = boto3.client("s3")
 @router.post("/review/{reviewee_id}")
 async def upload_review_images(reviewee_id: str, images: list[UploadFile] = File(...)):
     try:
-        processedImages = [utils.get_image_url("reviews", reviewee_id, image) for image in images]
+        processedImages = [utils.create_image_url("reviews", reviewee_id, image) for image in images]
 
         for image, file in zip(processedImages, images):
             s3Client.upload_fileobj(
@@ -37,7 +37,7 @@ async def upload_review_images(reviewee_id: str, images: list[UploadFile] = File
 @router.post("/message/{room_id}")
 async def upload_message_image(room_id: str, image: UploadFile = File(...)):
     try:
-        processedImage = utils.get_image_url("messages", room_id, image)
+        processedImage = utils.create_image_url("messages", room_id, image)
 
         s3Client.upload_fileobj(
             image.file,
