@@ -5,7 +5,7 @@ from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 import os
 
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+load_dotenv()
 
 router = APIRouter()
 
@@ -20,7 +20,7 @@ async def upload_review_images(reviewee_id: str, images: list[UploadFile] = File
         for image, file in zip(processedImages, images):
             s3Client.upload_fileobj(
                 file.file,
-                os.getenv("S3_POLYMART_PRIVATE"),
+                os.getenv("S3_PUBLIC_BUCKET"),
                 image,
                 ExtraArgs={"ContentType": file.content_type}
             )
@@ -41,7 +41,7 @@ async def upload_message_image(room_id: str, image: UploadFile = File(...)):
 
         s3Client.upload_fileobj(
             image.file,
-            os.getenv("S3_POLYMART_PRIVATE"),
+            os.getenv("S3_PRIVATE_BUCKET"),
             processedImage,
             ExtraArgs={"ContentType": image.content_type}
         )
