@@ -1,23 +1,12 @@
 import { NavigationDashboard, SearchBar, CategoryFilter, DropdownFilter, SmallButton } from '../../components';
 import { Cat, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
-import { sortByPriceOptions, sortProducts } from '../../data';
+import { sortByPriceOptions, sortProducts, productCategories} from '../../data';
 
 export default function GeneralDashboard() {
     const [activeCategory, setActiveCategory] = useState('all');
     const [sortBy, setSortBy] = useState('newest');
     const [products, setProducts] = useState([]); // Your products array
-
-    const categories = [
-        { name: 'All Categories', value: 'all' },
-        { name: 'Academic Essentials', value: 'academic' },
-        { name: 'Creative Works', value: 'creative' },
-        { name: 'Services', value: 'services' },
-        { name: 'Tech & Gadgets', value: 'technology' },
-        { name: 'Fashion', value: 'fashion' },
-        { name: 'Anik-Anik', value: 'anik' },
-        { name: 'Other', value: 'other' }
-    ];
 
     const handleCategoryClick = (categoryValue) => {
         setActiveCategory(categoryValue);

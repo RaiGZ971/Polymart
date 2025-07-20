@@ -52,7 +52,7 @@ export default function NavigationDashboard() {
 
     const rightNavItems = [
         { name: 'Home', path: '/dashboard', icon: 'home' },
-        { name: 'Create a Listing', path: '/', icon: 'plus' },
+        { name: 'Create New Listing', path: '/', icon: 'plus' },
         { name: 'Manage Listing', path: '/', icon: 'box' },
         { name: 'Sign Out', path: '/', icon: 'logout' },
     ];
