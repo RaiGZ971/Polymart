@@ -147,7 +147,7 @@ async def get_messages(sender_id: str, receiver_id: str):
         for key, messageID in zip(keys, messageIDs):
             tableMessage.update_item(
                 Key=key,
-                ConditionExpression=Attr("message_id").eq(messageIDs[messageID]),
+                ConditionExpression=Attr("message_id").eq(messageID),
                 UpdateExpression="set read_status=:read_status",
                 ExpressionAttributeValues={":read_status": True}
             )
