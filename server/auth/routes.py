@@ -1,19 +1,106 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import JSONResponse
-from auth import utils, schemas
-from supabase_client.schemas import User
-from supabase_client.database import create_user_profile, get_user_by_student_number
+from auth import utils
+from auth.email_verification import (
+    create_email_verification_request, 
+    send_verification_email, 
+    verify_email_token_backend,
+    create_email_verification_response
+)
+from supabase_client.database import create_user_profile, get_user_by_student_number, create_user_verification_documents
 from core.utils import create_standardized_response
 from typing import Optional
-import json
+from pydantic import BaseModel, EmailStr
 
 router = APIRouter()
+
+# Pydantic models for request validation
+class EmailVerificationRequest(BaseModel):
+    email: EmailStr
+
+class EmailVerificationConfirm(BaseModel):
+    email: EmailStr
+    token: str
+
+# =============================================
+# EMAIL VERIFICATION ENDPOINTS (STEP 1)
+# =============================================
+
+@router.post("/verify-email/send")
+async def send_email_verification(request: EmailVerificationRequest):
+    """
+    Step 1: Send verification token to email address.
+    This is the first step in the 5-step signup flow.
+    """
+    try:
+        email = request.email.lower().strip()
+        
+        # Create verification request in database
+        verification_data = await create_email_verification_request(email)
+        if not verification_data:
+            raise HTTPException(
+                status_code=500, 
+                detail="Failed to create verification request"
+            )
+        
+        # Send verification email
+        email_sent = await send_verification_email(email, verification_data["token"])
+        if not email_sent:
+            raise HTTPException(
+                status_code=500, 
+                detail="Failed to send verification email"
+            )
+        
+        # Return success response (don't expose the token)
+        response_data = create_email_verification_response(
+            success=True,
+            message="Verification code sent successfully",
+            email=email,
+            token_sent=True
+        )
+        
+        return JSONResponse(content=response_data, status_code=200)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.post("/verify-email/confirm")
+async def confirm_email_verification(request: EmailVerificationConfirm):
+    """
+    Step 1 Completion: Verify the email token entered by user.
+    On success, user can proceed to Step 2 (full registration).
+    """
+    try:
+        email = request.email.lower().strip()
+        token = request.token.strip()
+        
+        # Verify token using PostgreSQL function
+        verification_result = await verify_email_token_backend(email, token)
+        
+        if verification_result.get("status") == "success":
+            return JSONResponse(content=verification_result, status_code=200)
+        else:
+            return JSONResponse(content=verification_result, status_code=400)
+            
+    except Exception as e:
+        response_data = create_email_verification_response(
+            success=False,
+            message=f"Verification failed: {str(e)}",
+            email=request.email
+        )
+        return JSONResponse(content=response_data, status_code=500)
+
+# =============================================
+# USER REGISTRATION ENDPOINTS (STEP 2-5)
+# =============================================
 
 @router.post("/signup")
 async def signup(
     username: str = Form(...),
     first_name: str = Form(...),
-    middle_name: str = Form(...),
+    middle_name: Optional[str] = Form(None),
     last_name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
@@ -24,14 +111,10 @@ async def signup(
     university_branch: str = Form(...),
     college: str = Form(...),
     student_number: str = Form(...),
-    bio: Optional[str] = Form(None),
-    student_id_front: UploadFile = File(...),
-    student_id_back: UploadFile = File(...),
-    cor_file: UploadFile = File(...),
-    profile_photo: UploadFile = File(...)
+    bio: Optional[str] = Form(None)
 ):
     """
-    Sign up route that creates a new user with verification documents
+    Sign up route that creates a new user. Verification documents should be uploaded separately using /s3/user-documents/submit-verification.
     """
     try:
         # Hash the password
@@ -40,15 +123,9 @@ async def signup(
         # Convert None values to empty strings for optional fields
         pronouns = pronouns or ""
         bio = bio or ""
+        middle_name = middle_name or ""
         
-        # Upload all user documents
-        document_urls = await utils.upload_all_user_documents(
-            username, student_id_front, student_id_back, cor_file, profile_photo
-        )
-        
-        print("All files uploaded successfully, creating user profile...")
-        
-        # Prepare user profile data
+        # Prepare user profile data (without verification documents or profile photo)
         user_profile_data = utils.prepare_user_profile_data(
             username=username,
             first_name=first_name,
@@ -62,22 +139,30 @@ async def signup(
             university_branch=university_branch,
             college=college,
             student_number=student_number,
-            document_urls=document_urls,
             pronouns=pronouns,
-            bio=bio
+            bio=bio,
+            profile_photo_url=None
         )
+        
+        print("Creating user profile...")
         
         # Create user profile
         user_result = await create_user_profile(user_profile_data)
         if not user_result:
             raise HTTPException(status_code=400, detail="Failed to create user profile")
-        
+
         user_id = user_result["user_id"]
         
         # Create and return success response
         response_data = utils.create_signup_response(
             user_id, username, email, first_name, last_name
         )
+        
+        # Add verification status to response
+        if "data" not in response_data:
+            response_data["data"] = {}
+        response_data["data"]["verification_submitted"] = False
+        response_data["data"]["requires_verification"] = True
         
         return JSONResponse(content=response_data, status_code=201)
         

@@ -29,3 +29,12 @@ class SignUpForm(BaseModel):
     student_number: str
     bio: Optional[str] = None
 
+class VerificationStatus(BaseModel):
+    has_verification: bool
+    status: Optional[str] = None
+    documents_submitted: bool
+    verification_id: Optional[int] = None
+    reviewed_at: Optional[str] = None
+    verified_at: Optional[str] = None
+    rejection_reason: Optional[str] = None
+

@@ -1,48 +1,16 @@
 from supabase import create_client, Client
 import os
-from dotenv import load_dotenv
 from typing import Optional, Dict, Any
+from .auth_client import get_authenticated_supabase_client, get_unauthenticated_supabase_client
 
-# Load .env from the correct path
-env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
-load_dotenv(env_path)
-
-url: str = os.getenv("SUPABASE_URL")
-key: str = os.getenv("SUPABASE_KEY")
-
-from supabase import create_client, Client
-import os
-
-from supabase import create_client, Client
-import os
-from dotenv import load_dotenv
-from typing import Optional, Dict, Any
-
-# Load .env from the correct path
-env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
-load_dotenv(env_path)
-
-def get_supabase_client() -> Client:
-    try:
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_ANON_KEY") 
-        
-        if not url or not key:
-            print(f"Missing Supabase credentials: URL={url}, KEY={'present' if key else 'missing'}")
-            return None
-            
-        # Simple client creation with supabase 2.0.0
-        return create_client(url, key)
-    except Exception as e:
-        print(f"Error creating Supabase client: {e}")
-        return None
 
 async def create_user_profile(user_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """
     Create a new user profile in the database
     """
     try:
-        supabase = get_supabase_client()
+        # Use unauthenticated client for signup
+        supabase = get_unauthenticated_supabase_client()
         if not supabase:
             print("Failed to get Supabase client")
             return None
@@ -59,26 +27,83 @@ async def create_user_profile(user_data: Dict[str, Any]) -> Optional[Dict[str, A
 
 async def create_user_verification_documents(user_id: int, document_urls: Dict[str, str]) -> Optional[Dict[str, Any]]:
     """
-    Create user verification documents entry
+    Create user verification documents entry in the user_verification table
     """
     try:
-        supabase = get_supabase_client()
+        # Use authenticated client with user context for RLS
+        supabase = get_authenticated_supabase_client(user_id)
         if not supabase:
-            print("Failed to get Supabase client")
+            print("Failed to get Supabase authenticated client")
             return None
-        
         verification_data = {
             "user_id": user_id,
-            **document_urls
+            "student_id_front_url": document_urls.get("student_id_front_url"),
+            "student_id_back_url": document_urls.get("student_id_back_url"),
+            "cor_url": document_urls.get("cor_url"),
+            "status": "pending"
         }
-        
-        result = supabase.table("user_verified").insert(verification_data).execute()
-        
+        print(f"Attempting to insert verification data for user_id: {user_id}")
+        result = supabase.table("user_verification").insert(verification_data).execute()
         if result.data:
+            print(f"Successfully created verification record: {result.data[0]}")
             return result.data[0]
+        else:
+            print(f"No data returned from insert operation. Result: {result}")
         return None
     except Exception as e:
         print(f"Error creating user verification documents: {e}")
+        return None
+
+
+async def update_user_verification_documents(user_id: int, document_urls: Dict[str, str]) -> Optional[Dict[str, Any]]:
+    """
+    Update existing user verification documents (for resubmission)
+    """
+    try:
+        # Use authenticated client with user context for RLS
+        supabase = get_authenticated_supabase_client(user_id)
+        if not supabase:
+            print("Failed to get Supabase authenticated client")
+            return None
+        
+        update_data = {
+            "student_id_front_url": document_urls.get("student_id_front_url"),
+            "student_id_back_url": document_urls.get("student_id_back_url"),
+            "cor_url": document_urls.get("cor_url"),
+            "status": "pending"  # Reset to pending when resubmitting
+        }
+        
+        print(f"Attempting to update verification data for user_id: {user_id}")
+        result = supabase.table("user_verification").update(update_data).eq("user_id", user_id).execute()
+        
+        if result.data:
+            print(f"Successfully updated verification record: {result.data[0]}")
+            return result.data[0]
+        else:
+            print(f"No data returned from update operation. Result: {result}")
+        return None
+    except Exception as e:
+        print(f"Error updating user verification documents: {e}")
+        return None
+
+async def get_user_verification_status(user_id: int) -> Optional[Dict[str, Any]]:
+    """
+    Get user verification status by user_id
+    """
+    try:
+        # Use authenticated client with user context for RLS
+        supabase = get_authenticated_supabase_client(user_id)
+        if not supabase:
+            print("Failed to get Supabase authenticated client")
+            return None
+        
+        result = supabase.table("user_verification").select("*").eq("user_id", user_id).execute()
+        
+        if result.data and len(result.data) > 0:
+            return result.data[0]
+        return None
+    except Exception as e:
+        print(f"Error getting user verification status: {e}")
         return None
 
 async def get_user_by_student_number(student_number: str) -> Optional[Dict[str, Any]]:
@@ -86,7 +111,8 @@ async def get_user_by_student_number(student_number: str) -> Optional[Dict[str, 
     Get a user profile by student number
     """
     try:
-        supabase = get_supabase_client()
+        # Use unauthenticated client for public lookup
+        supabase = get_unauthenticated_supabase_client()
         if not supabase:
             print("Failed to get Supabase client")
             return None
