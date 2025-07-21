@@ -4,6 +4,7 @@ import smtplib
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 from typing import Optional, Dict, Any
 from supabase_client.auth_client import get_unauthenticated_supabase_client
 from core.utils import create_standardized_response
@@ -12,8 +13,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def generate_verification_token() -> str:
-    """Generate a secure 6-digit verification token"""
-    return str(secrets.randbelow(900000) + 100000)
+    """Generate a secure URL-safe verification token for email links"""
+    return secrets.token_urlsafe(32)
 
 def generate_verification_token_secure() -> str:
     """Generate a secure random verification token (alternative approach)"""
@@ -77,7 +78,7 @@ async def create_email_verification_request(email: str) -> Optional[Dict[str, An
 
 async def send_verification_email(email: str, token: str) -> bool:
     """
-    Send verification email with the token.
+    Send verification email with a clickable verification link.
     Returns True if successful, False otherwise.
     """
     try:
@@ -87,81 +88,90 @@ async def send_verification_email(email: str, token: str) -> bool:
         sender_email = os.getenv("SENDER_EMAIL")
         sender_password = os.getenv("SENDER_PASSWORD")
         
+        # Get the base URL for the verification link
+        base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
+        verification_url = f"{base_url}/auth/verify-email?token={token}"
+        
         if not sender_email or not sender_password:
             print("Email configuration missing")
             return False
         
-        # FOR TESTING: Still print the token to console for debugging
-        print(f"=== EMAIL VERIFICATION TOKEN ===")
+        # FOR TESTING: Print the verification link to console for debugging
+        print(f"=== EMAIL VERIFICATION LINK ===")
         print(f"Email: {email}")
-        print(f"Token: {token}")
+        print(f"Verification URL: {verification_url}")
         print(f"=== SENDING EMAIL NOW ===")
         
         # Now attempt to send the actual email
         # Create message
-        message = MIMEMultipart("alternative")
-        message["Subject"] = "Verify Your Email - Polymart"
+        message = MIMEMultipart("related")
+        message["Subject"] = "Welcome to Polymart - Verify Your Email to Get Started"
         message["From"] = sender_email
         message["To"] = email
+
+        # Create alternative container for text and HTML parts
+        msg_alternative = MIMEMultipart("alternative")
         
-        # HTML email content
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Email Verification</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-                <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to Polymart!</h1>
-                <p style="color: #f0f0f0; margin: 10px 0 0 0;">Your campus marketplace awaits</p>
-            </div>
-            
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-                <h2 style="color: #333; margin-top: 0;">Verify Your Email Address</h2>
-                <p>Thank you for signing up! To complete your registration, please enter the verification code below:</p>
-                
-                <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; margin: 25px 0; border: 2px dashed #667eea;">
-                    <h3 style="margin: 0; color: #667eea; font-size: 32px; letter-spacing: 8px; font-weight: bold;">{token}</h3>
-                    <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">This code expires in 15 minutes</p>
-                </div>
-                
-                <p style="color: #666; font-size: 14px; margin-top: 25px;">
-                    If you didn't request this verification, please ignore this email.
-                </p>
-                
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
-                    <p style="color: #999; font-size: 12px; margin: 0;">
-                        This email was sent from Polymart. Please do not reply to this email.
-                    </p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
+        # Read HTML template
+        template_path = os.path.join(os.path.dirname(__file__), "..", "templates", "email-verification.html")
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                html_template = f.read()
+        except FileNotFoundError:
+            print(f"Template file not found at: {template_path}")
+            return False
+        
+        # Replace template variables
+        html_content = html_template.replace("{{ verification_url }}", verification_url)
         
         # Plain text fallback
         text_content = f"""
-        Welcome to Polymart!
-        
-        Thank you for signing up! To complete your registration, please enter the verification code below:
-        
-        Verification Code: {token}
-        
-        This code expires in 15 minutes.
-        
-        If you didn't request this verification, please ignore this email.
+Welcome to Polymart
+
+Sa Polymart, lahat ng isko may pwesto!
+
+Salamat for joining our community! To complete your registration and start exploring what Polymart has to offer, please verify your email address by clicking the link below:
+
+{verification_url}
+
+What awaits you:
+• Buy and sell within your campus community
+• Connect with fellow students  
+• Verified and safe transactions
+• Find textbooks, gadgets, and more
+
+This verification link expires in 15 minutes.
+
+Hindi mo naman ni-request? Just ignore this email.
+
+---
+Polymart - Your trusted campus marketplace
+This email was sent automatically. Please do not reply.
         """
         
         # Create MIMEText objects
         text_part = MIMEText(text_content, "plain")
         html_part = MIMEText(html_content, "html")
         
-        # Add parts to message
-        message.attach(text_part)
-        message.attach(html_part)
+        # Add parts to alternative container
+        msg_alternative.attach(text_part)
+        msg_alternative.attach(html_part)
+        
+        # Attach the alternative container to main message
+        message.attach(msg_alternative)
+        
+        # Embed logo image
+        logo_path = os.path.join(os.path.dirname(__file__), "..", "templates", "market.png")
+        try:
+            with open(logo_path, 'rb') as f:
+                img_data = f.read()
+            image = MIMEImage(img_data)
+            image.add_header('Content-ID', '<polymart_logo>')
+            image.add_header('Content-Disposition', 'inline', filename="polymart_logo.png")
+            message.attach(image)
+        except FileNotFoundError:
+            print(f"Logo file not found at: {logo_path}")
+            # Continue without logo - the email will still work
         
         # Send email
         with smtplib.SMTP(smtp_server, smtp_port) as server:
@@ -218,6 +228,86 @@ async def verify_email_token_backend(email: str, token: str) -> Dict[str, Any]:
         return create_standardized_response(
             message="Verification failed",
             data={"email": email, "verified": False},
+            status="error"
+        )
+
+async def verify_email_token_by_link(token: str) -> Dict[str, Any]:
+    """
+    Verify email token from a verification link (no email required).
+    Used when user clicks verification link in email.
+    Returns a standardized response with email and verification status.
+    """
+    try:
+        # Get unauthenticated client for RPC call
+        supabase = get_unauthenticated_supabase_client()
+        if not supabase:
+            return create_standardized_response(
+                message="Database connection failed",
+                data={"verified": False},
+                status="error"
+            )
+        
+        # First, get the email associated with this token
+        token_query = supabase.table("email_verification_requests")\
+            .select("email, is_used, expires_at")\
+            .eq("token", token)\
+            .eq("is_used", False)\
+            .single()\
+            .execute()
+        
+        if not token_query.data:
+            return create_standardized_response(
+                message="Invalid or expired verification link",
+                data={"verified": False},
+                status="error"
+            )
+        
+        email = token_query.data["email"]
+        expires_at = token_query.data["expires_at"]
+        
+        # Check if token has expired
+        from datetime import datetime
+        try:
+            # Parse the expires_at timestamp
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+            
+            if datetime.utcnow() > expires_at.replace(tzinfo=None):
+                return create_standardized_response(
+                    message="Verification link has expired",
+                    data={"email": email, "verified": False},
+                    status="error"
+                )
+        except Exception as date_error:
+            print(f"Error parsing expiration date: {date_error}")
+            # Continue with verification if date parsing fails
+        
+        # Call the PostgreSQL function to verify and mark as used
+        result = supabase.rpc('verify_email_token', {
+            'p_token': token
+        }).execute()
+        
+        print(f"PostgreSQL function result for token verification: {result}")
+        
+        # The function returns a boolean: True if valid, False if invalid/expired
+        if result.data is True:
+            return create_standardized_response(
+                message="Email verified successfully",
+                data={"email": email, "verified": True},
+                status="success"
+            )
+        else:
+            return create_standardized_response(
+                message="Invalid or expired verification link",
+                data={"email": email, "verified": False},
+                status="error"
+            )
+            
+    except Exception as e:
+        print(f"Error verifying email token by link: {e}")
+        return create_standardized_response(
+            message="Verification failed",
+            data={"verified": False},
             status="error"
         )
 

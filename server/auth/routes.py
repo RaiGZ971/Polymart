@@ -1,26 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi.responses import JSONResponse, RedirectResponse
 from auth import utils
 from auth.email_verification import (
     create_email_verification_request, 
     send_verification_email, 
-    verify_email_token_backend,
+    verify_email_token_by_link,
     create_email_verification_response
 )
 from supabase_client.database import create_user_profile, get_user_by_student_number, create_user_verification_documents
 from core.utils import create_standardized_response
 from typing import Optional
 from pydantic import BaseModel, EmailStr
+import os
 
 router = APIRouter()
 
 # Pydantic models for request validation
 class EmailVerificationRequest(BaseModel):
     email: EmailStr
-
-class EmailVerificationConfirm(BaseModel):
-    email: EmailStr
-    token: str
 
 # =============================================
 # EMAIL VERIFICATION ENDPOINTS (STEP 1)
@@ -66,31 +63,36 @@ async def send_email_verification(request: EmailVerificationRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@router.post("/verify-email/confirm")
-async def confirm_email_verification(request: EmailVerificationConfirm):
+@router.get("/verify-email")
+async def verify_email_link(token: str = Query(..., description="Verification token from email link")):
     """
-    Step 1 Completion: Verify the email token entered by user.
-    On success, user can proceed to Step 2 (full registration).
+    Email verification via link (GET request).
+    This endpoint is called when users click the verification link in their email.
+    Redirects to frontend with success/error status.
     """
     try:
-        email = request.email.lower().strip()
-        token = request.token.strip()
+        # Verify token using the new link verification function
+        verification_result = await verify_email_token_by_link(token)
         
-        # Verify token using PostgreSQL function
-        verification_result = await verify_email_token_backend(email, token)
+        # Get base URL for redirects (use backend URL for now, update to frontend URL when available)
+        base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
         
         if verification_result.get("status") == "success":
-            return JSONResponse(content=verification_result, status_code=200)
+            # Redirect to success page with email parameter
+            email = verification_result.get("email", "")
+            success_url = f"{base_url}/email-verified?success=true&email={email}"
+            return RedirectResponse(url=success_url, status_code=302)
         else:
-            return JSONResponse(content=verification_result, status_code=400)
+            # Redirect to error page with error message
+            error_message = verification_result.get("message", "Verification failed")
+            error_url = f"{base_url}/email-verified?success=false&error={error_message}"
+            return RedirectResponse(url=error_url, status_code=302)
             
     except Exception as e:
-        response_data = create_email_verification_response(
-            success=False,
-            message=f"Verification failed: {str(e)}",
-            email=request.email
-        )
-        return JSONResponse(content=response_data, status_code=500)
+        # Redirect to error page with generic error
+        base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
+        error_url = f"{base_url}/email-verified?success=false&error=Server error occurred"
+        return RedirectResponse(url=error_url, status_code=302)
 
 # =============================================
 # USER REGISTRATION ENDPOINTS (STEP 2-5)
