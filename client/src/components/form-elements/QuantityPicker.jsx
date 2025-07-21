@@ -28,7 +28,7 @@ export default function QuantityPicker({ min = 1, max = 99, value, onChange }) {
         <div className="flex items-center gap-2">
             <button
                 type="button"
-                className="px-3 py-1 rounded-full bg-gray-100 shadow-light hover:bg-gray-200 text-sm font-bold"
+                className="px-3 py-1 border-gray-300 border-1 rounded-full bg-gray-100 shadow-light hover:bg-gray-200 text-xs font-bold"
                 onClick={handleDecrement}
                 disabled={quantity <= min}
             >
@@ -36,7 +36,7 @@ export default function QuantityPicker({ min = 1, max = 99, value, onChange }) {
             </button>
             <input
                 type="number"
-                className="w-12 text-center border rounded-full"
+                className="w-16 text-center border rounded-full"
                 value={quantity}
                 min={min}
                 max={max}
@@ -44,7 +44,7 @@ export default function QuantityPicker({ min = 1, max = 99, value, onChange }) {
             />
             <button
                 type="button"
-                className="px-3 py-1 rounded-full bg-gray-100 shadow-light hover:bg-gray-200 text-sm font-bold"
+                className="px-3 py-1 border-gray-300 border-1 rounded-full bg-gray-100 shadow-light hover:bg-gray-200 text-xs font-bold"
                 onClick={handleIncrement}
                 disabled={quantity >= max}
             >

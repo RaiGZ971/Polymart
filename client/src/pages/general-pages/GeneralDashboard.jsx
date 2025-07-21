@@ -13,7 +13,10 @@ export default function GeneralDashboard() {
     const [pendingSearch, setPendingSearch] = useState('');
     const navigate = useNavigate();
     
-    const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'listings'
+    const [activeTab, setActiveTab] = useState('all-listings'); 
+
+    const currentUser = { id: 'user123', role: 'user' };
+
     const handleCategoryChange = (categoryValue) => {
         setActiveCategory(categoryValue);
     };
@@ -22,10 +25,14 @@ export default function GeneralDashboard() {
         setSortBy(newSortBy);
     };
 
-    // Only filter when searchTerm is updated (on Enter)
     const filteredOrders = ordersSampleData.filter(order => {
         const matchesCategory = activeCategory === 'all' || order.category === activeCategory;
         const matchesSearch = order.productName.toLowerCase().includes(searchTerm.toLowerCase());
+        // Tab filtering
+        if (activeTab === 'your-listings') {
+            return matchesCategory && matchesSearch && order.sellerId === currentUser.id;
+        }
+        // all-listings
         return matchesCategory && matchesSearch;
     });
 
@@ -42,7 +49,6 @@ export default function GeneralDashboard() {
         navigate('/buyer/view-product-details', { state: { order } });
     };
 
-    // Handler for SearchBar
     const handleSearchInputChange = (value) => {
         setPendingSearch(value);
     };
@@ -78,18 +84,19 @@ export default function GeneralDashboard() {
             <div className='flex items-center justify-between gap-2 w-[80%] mt-10'>
                 <div className="flex flex-row gap-4 justify-end ">
                     <button
-                            className={`font-semibold ${activeTab === "orders" ? "text-primary-red underline" : "text-gray-400 hover:text-primary-red"}`}
-                            onClick={() => setActiveTab("all-listings")}
-                        >
-                            All Listings
-                        </button>
-                        <span className="font-semibold text-gray-400">|</span>
-                        <button
-                            className={`font-semibold ${activeTab === "listings" ? "text-primary-red underline" : "text-gray-400 hover:text-primary-red"}`}                                onClick={() => setActiveTab("your-listings")}
-                        >
-                            Your Listings
-                        </button>
-                    </div>
+                        className={`font-semibold ${activeTab === "all-listings" ? "text-primary-red underline" : "text-gray-400 hover:text-primary-red"}`}
+                        onClick={() => setActiveTab("all-listings")}
+                    >
+                        All Listings
+                    </button>
+                    <span className="font-semibold text-gray-400">|</span>
+                    <button
+                        className={`font-semibold ${activeTab === "your-listings" ? "text-primary-red underline" : "text-gray-400 hover:text-primary-red"}`}
+                        onClick={() => setActiveTab("your-listings")}
+                    >
+                        Your Listings
+                    </button>
+                </div>
                 <DropdownFilter 
                     options={sortByPriceOptions}
                     selectedOption={sortBy}
