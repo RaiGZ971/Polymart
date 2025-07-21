@@ -3,11 +3,13 @@ import Logo from '../../assets/PolymartLogo.png';
 import { useState } from 'react';
 import ChatApp from '../chat/ChatApp';
 import NotificationOverlay from '../notifications/NotificationOverlay';
+import CreateListingComponent from '../CreateListingComponent';
 
 export default function NavigationDashboard() {
     const firstName = "Jianna";
     const [showChat, setShowChat] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [showCreateListing, setShowCreateListing] = useState(false);
     
     // Sample notifications data - you can move this to a hook later
     const notifications = [
@@ -52,7 +54,7 @@ export default function NavigationDashboard() {
 
     const rightNavItems = [
         { name: 'Home', path: '/dashboard', icon: 'home' },
-        { name: 'Create New Listing', path: '/', icon: 'plus' },
+        { name: 'Create New Listing', path: '/', icon: 'plus', action: 'create-listing' },
         { name: 'Manage Listing', path: '/', icon: 'box' },
         { name: 'Sign Out', path: '/', icon: 'logout' },
     ];
@@ -69,8 +71,9 @@ export default function NavigationDashboard() {
             setShowChat(true);
         } else if (item.action === 'notifications') {
             setShowNotifications(true);
+        } else if (item.action === 'create-listing') {
+            setShowCreateListing(true);
         }
-        // Add other actions here if needed
     };
 
     const handleCloseChat = () => {
@@ -79,6 +82,10 @@ export default function NavigationDashboard() {
 
     const handleCloseNotifications = () => {
         setShowNotifications(false);
+    };
+
+    const handleCloseCreateListing = () => {
+        setShowCreateListing(false);
     };
     
     return (
@@ -111,13 +118,23 @@ export default function NavigationDashboard() {
                             const IconComponent = iconMap[item.icon];
                             return (
                                 <div key={index} className="flex items-center">
-                                    <a 
-                                        href={item.path}
-                                        className="hover:underline hover:text-gray-200 transition-colors duration-200 inline-flex items-center gap-1"
-                                    >
-                                        {IconComponent && <IconComponent size={14} />}
-                                        {item.name}
-                                    </a>
+                                    {item.action ? (
+                                        <button
+                                            onClick={() => handleItemClick(item)}
+                                            className="hover:underline hover:text-gray-200 transition-colors duration-200 inline-flex items-center gap-1"
+                                        >
+                                            {IconComponent && <IconComponent size={14} />}
+                                            {item.name}
+                                        </button>
+                                    ) : (
+                                        <a 
+                                            href={item.path}
+                                            className="hover:underline hover:text-gray-200 transition-colors duration-200 inline-flex items-center gap-1"
+                                        >
+                                            {IconComponent && <IconComponent size={14} />}
+                                            {item.name}
+                                        </a>
+                                    )}
                                     {index < rightNavItems.length - 1 && <span className="mx-3">|</span>}
                                 </div>
                             );
@@ -153,6 +170,30 @@ export default function NavigationDashboard() {
                     })}
                 </div>
             </div>
+
+            {/* Create Listing Popup */}
+            {showCreateListing && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    {/* Background overlay with fade-in */}
+                    <div
+                        className="absolute inset-0 bg-black bg-opacity-40 transition-opacity duration-300"
+                        onClick={handleCloseCreateListing}
+                    />
+                    {/* Popup content with scale and fade animation */}
+                    <div
+                        className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-lg
+                            transition-all duration-300
+                            animate-in
+                            animate-fade-in
+                            animate-scale-in"
+                        style={{
+                            animation: 'fadeScaleIn 0.3s cubic-bezier(0.4,0,0.2,1)'
+                        }}
+                    >
+                        <CreateListingComponent onClose={handleCloseCreateListing} />
+                    </div>
+                </div>
+            )}
 
             {/* Chat Slide-in Overlay */}
             <div className={`fixed inset-0 z-50 transition-opacity duration-300 ${showChat ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>

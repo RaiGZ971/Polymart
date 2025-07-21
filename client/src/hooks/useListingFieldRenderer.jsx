@@ -19,6 +19,70 @@ export const useListingFieldRenderer = (listingData, listingFieldConfig, handler
     const config = listingFieldConfig[fieldName];
     if (!config) return null;
 
+    // Custom rendering for price and stock
+    if (fieldName === "price") {
+      return (
+        <div key="price" className="flex flex-col gap-2">
+          {listingData.hasPriceRange ? (
+            <div className="flex gap-2">
+              <Textfield
+                label="Min Price"
+                value={listingData.priceRange?.min || ""}
+                onChange={handleChange("priceRange.min")}
+                type="number"
+                min={1}
+                required
+                integerOnly
+              />
+              <Textfield
+                label="Max Price"
+                value={listingData.priceRange?.max || ""}
+                onChange={handleChange("priceRange.max")}
+                type="number"
+                min={1}
+                required
+                integerOnly
+              />
+            </div>
+          ) : (
+            <Textfield
+              label={config.label}
+              value={listingData.price}
+              onChange={handleChange("price")}
+              type="number"
+              min={1}
+              required
+              integerOnly
+            />
+          )}
+          {renderListingField("hasPriceRange")}
+        </div>
+      );
+    }
+
+    if (fieldName === "stock") {
+      return (
+        <div key="stock" className="flex flex-col gap-2">
+          <Textfield
+            label={config.label}
+            value={listingData.stock}
+            onChange={handleChange("stock")}
+            type="number"
+            min={1}
+            required
+            disabled={listingData.isSingleItem}
+          />
+
+          <Checkbox
+            id="isSingleItem"
+            label="Single-item product"
+            checked={listingData.isSingleItem}
+            onChange={(e) => handleBooleanToggle("isSingleItem", e.target.checked)}
+          />
+        </div>
+      );
+    }
+
     const commonProps = {
       label: config.label,
       value: getFieldValue(fieldName),
@@ -87,16 +151,38 @@ export const useListingFieldRenderer = (listingData, listingFieldConfig, handler
         );
 
       case 'toggle':
+        // Support multiple selections (array) for toggles
+        const value = getFieldValue(fieldName);
+        const isArray = Array.isArray(value);
         return (
-          <div key={fieldName} className="flex gap-2">
-            {config.options?.map((option) => (
-              <ToggleButton
-                key={option.value}
-                label={option.label}
-                isActive={getFieldValue(fieldName) === option.value}
-                onClick={() => handleBooleanToggle && handleBooleanToggle(fieldName, option.value)}
-              />
-            ))}
+          <div key={fieldName} className="flex gap-2 flex-wrap">
+            {config.options?.map((option) => {
+              const isActive = isArray
+                ? value.includes(option.value)
+                : value === option.value;
+              return (
+                <ToggleButton
+                  key={option.value}
+                  label={option.label}
+                  isActive={isActive}
+                  onClick={() => {
+                    if (isArray) {
+                      // Toggle value in array
+                      let newValue = value.includes(option.value)
+                        ? value.filter((v) => v !== option.value)
+                        : [...value, option.value];
+                      // Respect maxSelections if set
+                      if (config.maxSelections && newValue.length > config.maxSelections) {
+                        return;
+                      }
+                      handleArraySelection(fieldName, newValue, config.maxSelections);
+                    } else {
+                      handleBooleanToggle && handleBooleanToggle(fieldName, option.value);
+                    }
+                  }}
+                />
+              );
+            })}
           </div>
         );
 

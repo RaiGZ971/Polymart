@@ -1,4 +1,4 @@
-import { NavigationDashboard, SearchBar, CategoryFilter, DropdownFilter, SmallButton } from '../../components';
+import { NavigationDashboard, SearchBar, CategoryFilter, DropdownFilter, SmallButton, CreateListingComponent } from '../../components';
 import { Cat, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
 import { sortByPriceOptions, sortProducts, productCategories} from '../../data';
@@ -42,7 +42,6 @@ export default function GeneralDashboard() {
                 </div>
             </div>
             <div>
-            
             {/* Products Filter Section */}
             <div className='flex items-center justify-end mt-2 gap-2 w-[80%]'>
             <SmallButton 
