@@ -1,9 +1,16 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 from dynamodb import client, utils, models
+from core import config
+from s3 import utils as s3Utlis
+from dotenv import load_dotenv
+import os
+import json
+
+load_dotenv()
 
 router = APIRouter()
 manager = client.ConnectionManager()
@@ -27,7 +34,8 @@ html = """
     <div id="chat-box"></div>
 
     <form onsubmit="sendMessage(event)">
-        <input type="text" id="messageText" autocomplete="off" style="width: 80%;" />
+        <input type="text" id="messageText" autocomplete="off" style="width: 60%;" />
+        <input type="file" id="imageFile" accept="image/*" style="width: 20%;" />
         <button type="submit">Send</button>
     </form>
 
@@ -46,18 +54,45 @@ html = """
         ws.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
+
                 appendMessage(data);  // will use correct sender_id
             } catch (err) {
                 console.error("Invalid JSON message:", event.data);
             }
         };
 
-        function sendMessage(event) {
+        async function sendMessage(event) {
             event.preventDefault();
             const input = document.getElementById("messageText");
+            const fileInput = document.getElementById("imageFile");
             const text = input.value.trim();
+            const file = fileInput.files[0];
+
+            if (file) {
+                const formData = new FormData();
+                formData.append("image", file);
+
+                const response = await fetch(`/dynamodb/message/${room_id}`, {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                ws.send(JSON.stringify({
+                    sender_id,
+                    image: data.image
+                }));
+
+                fileInput.value = "";  // Reset
+            }
+            
             if (text !== "") {
-                ws.send(text);
+
+                ws.send(JSON.stringify({
+                    sender_id,
+                    content: text
+                }));
                 input.value = "";
             }
         }
@@ -66,8 +101,24 @@ html = """
             const data = typeof msgJSON === 'string' ? JSON.parse(msgJSON) : msgJSON;
 
             const msgDiv = document.createElement("div");
+
             msgDiv.className = "message " + (data.sender_id === sender_id ? "you" : "them");
-            msgDiv.textContent = data.content;
+            msgDiv.id = data.message_id
+
+            if(data.image){
+                const img = document.createElement("img");
+                img.src = data.image;
+                img.style.maxWidth = "200px";
+                img.style.display = "block"
+                msgDiv.appendChild(img);
+            }
+
+            if(data.content){
+                const text = document.createElement("p");
+                text.textContent = data.content;
+                msgDiv.appendChild(text);
+            }
+
             chatBox.appendChild(msgDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
@@ -96,11 +147,33 @@ html = """
 """
 
 # Create client
+s3Client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
 tableMessage = dynamodb.Table("hackybara-message") #type:ignore
 tableReport = dynamodb.Table("hackybara-report") #type:ignore
 tableReview = dynamodb.Table("hackybara-review") #type:ignore
 tableNotification = dynamodb.Table("hackybara-notification") #type:ignore
+
+#TEMPORARY
+@router.post("/message/{room_id}")
+async def upload_message_image(room_id: str, image: UploadFile = File(...)):
+    try:
+        processedImage = s3Utlis.create_image_url("messages", room_id, image)
+
+        s3Client.upload_fileobj(
+            image.file,
+            os.getenv("S3_PRIVATE_BUCKET"),
+            processedImage,
+            ExtraArgs={"ContentType": image.content_type}
+        )
+
+        return{"image": processedImage}
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to upload image in {os.getenv("S3-POLYMART-PRIVATE")}/user_documents/messages/{room_id}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
 
 #CHATTING SYSTEM
 @router.websocket("/message/{room_id}/{sender_id}/{receiver_id}")
@@ -109,20 +182,28 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, sender_id: str,
     try:
         while True:
             data = await websocket.receive_text()
-            processedForm = (await manager.send_personal_message(data, room_id, sender_id, receiver_id, websocket)).model_dump()
+            msg = json.loads(data)
+
+            content = msg.get("content")
+            image = msg.get("image")
+
+            processedForm = utils.process_message_form(room_id, content, sender_id, receiver_id, image)
 
             # Post message in dynamodb hackybara-message
             try:
                 tableMessage.put_item(
-                    Item=processedForm
+                    Item=processedForm.model_dump(exclude_none=True)
                 )
             except ClientError as e:
                 raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed Post in hackybara-message: {e.response["Error"]["Message"]}")
             
+            image_url = config.generate_private_url(image) if image else None
+            
             await manager.broadcast({
                 "sender_id": sender_id,
-                "content": data,
-                "message_id": processedForm["message_id"]
+                "content": content,
+                "image": image_url,
+                "message_id": processedForm.message_id
             }, room_id)
 
     except WebSocketDisconnect:
@@ -155,11 +236,33 @@ async def get_messages(sender_id: str, receiver_id: str):
         # Read history messages in dynamodb hackybara-message
         query = tableMessage.query(
             KeyConditionExpression=Key("room_id").eq(room_id),
+            FilterExpression=Attr("content").exists(),
             ScanIndexForward=True
         )
 
         messages = query.get("Items", [])
-        return messages
+
+        query = tableMessage.query(
+            KeyConditionExpression=Key("room_id").eq(room_id),
+            FilterExpression=Attr("image").exists(),
+            ScanIndexForward=True
+        )
+
+        imageMessages = query.get("Items", [])
+
+        URLs = []
+        for message in imageMessages:
+            URLs.append(message["image"])
+
+        processedURLs = config.generate_private_urls(URLs)
+
+        for message, url in zip(imageMessages, processedURLs):
+            message["image"] = url
+
+        allMessages: list[dict] = messages + imageMessages
+        allMessages.sort(key=lambda x: x["created_at"])
+
+        return allMessages
     
     except ClientError as e:
         raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch messages in hackybara-message: {e.response["Error"]["Message"]}")
@@ -419,6 +522,63 @@ async def delete_review(reviewee_id: str, review_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete review: {str(e)}")
+    
+@router.delete("/review-image/{reviewee_id}/{review_id}", response_model=models.review)
+async def delete_image_review(reviewee_id: str, review_id: str, image: str):
+    try:
+        query = tableReview.query(
+            KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
+            FilterExpression=Attr("review_id").eq(review_id)
+        )
+
+        review = query.get("Items", [])[0]
+
+        updatedImages = [reviewImage for reviewImage in review["images"] if reviewImage != image]
+
+        response = tableReview.update_item(
+            Key={"reviewee_id": reviewee_id, "created_at": review["created_at"]},
+            UpdateExpression="set images=:image",
+            ExpressionAttributeValues={":image": updatedImages},
+            ReturnValues="ALL_NEW"
+        )
+
+        return response.get("Attributes", {})
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete image review in hackybara-review: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete image review: {str(e)}")
+
+@router.delete("/review-images/{reviewee_id}/{review_id}")
+async def delete_images_review(reviewee_id: str, review_id: str, images: list[str]):
+    try:
+        query = tableReview.query(
+            KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
+            FilterExpression=Attr("review_id").eq(review_id)
+        )
+
+        review = query.get("Items", [])[0]
+
+        updatedImages = [reviewImage for reviewImage in review["images"] if reviewImage not in images]
+
+        response = tableReview.update_item(
+            Key={"reviewee_id": reviewee_id, "created_at": review["created_at"]},
+            UpdateExpression="set images=:image",
+            ExpressionAttributeValues={":image": updatedImages},
+            ReturnValues="ALL_NEW"
+        )
+
+        return response.get("Attributes", {})
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete images review in hackybara-review: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete images review: {str(e)}")
+    
     
 #REPORT SYSTEM
 @router.get("/report/{report_id}", response_model=models.report)
