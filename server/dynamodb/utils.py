@@ -8,13 +8,14 @@ def get_room(sender_id, receiver_id) -> str:
 def get_current_date() -> str:
     return str(datetime.now(UTC))
 
-def process_message_form( room_id: str, message: str, sender_id: str, receiver_id: str) -> models.message:
+def process_message_form( room_id: str, message: str, sender_id: str, receiver_id: str, image: str | None = None) -> models.message:
     messageID = str(uuid.uuid4())
     currentDate = get_current_date()
 
     formattedResponse = {
         "room_id": room_id,
         "message_id": messageID,
+        "image": image,
         "sender_id": sender_id,
         "receiver_id": receiver_id,
         "content": message,
