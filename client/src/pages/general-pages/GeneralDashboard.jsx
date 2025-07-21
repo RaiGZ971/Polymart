@@ -12,7 +12,8 @@ export default function GeneralDashboard() {
     const [searchTerm, setSearchTerm] = useState('');
     const [pendingSearch, setPendingSearch] = useState('');
     const navigate = useNavigate();
-
+    
+    const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'listings'
     const handleCategoryChange = (categoryValue) => {
         setActiveCategory(categoryValue);
     };
@@ -74,7 +75,21 @@ export default function GeneralDashboard() {
                 </div>
             </div>
             {/* Products Filter Section */}
-            <div className='flex items-center justify-end gap-2 w-[80%] mt-10'>
+            <div className='flex items-center justify-between gap-2 w-[80%] mt-10'>
+                <div className="flex flex-row gap-4 justify-end ">
+                    <button
+                            className={`font-semibold ${activeTab === "orders" ? "text-primary-red underline" : "text-gray-400 hover:text-primary-red"}`}
+                            onClick={() => setActiveTab("all-listings")}
+                        >
+                            All Listings
+                        </button>
+                        <span className="font-semibold text-gray-400">|</span>
+                        <button
+                            className={`font-semibold ${activeTab === "listings" ? "text-primary-red underline" : "text-gray-400 hover:text-primary-red"}`}                                onClick={() => setActiveTab("your-listings")}
+                        >
+                            Your Listings
+                        </button>
+                    </div>
                 <DropdownFilter 
                     options={sortByPriceOptions}
                     selectedOption={sortBy}
@@ -83,12 +98,24 @@ export default function GeneralDashboard() {
                 />
             </div>
             {/* Product Cards Grid */}
-            <div className="w-[80%] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8 mx-auto">
-                {sortedOrders.map((order, idx) => (
-                    <div key={idx} onClick={() => handleProductClick(order)} className="cursor-pointer">
-                        <ProductCard order={order} />
+            <div className="w-[80%] min-h-[300px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mt-4 mx-auto">
+                {sortedOrders.length === 0 ? (
+                    <div className="col-span-full flex flex-col items-center justify-center min-h-[200px]">
+                        <span className="text-gray-500 text-lg py-12">
+                            No items matched
+                        </span>
                     </div>
-                ))}
+                ) : (
+                    sortedOrders.map((order, idx) => (
+                        <div
+                            key={idx}
+                            onClick={() => handleProductClick(order)}
+                            className="cursor-pointer h-full"
+                        >
+                            <ProductCard order={order} />
+                        </div>
+                    ))
+                )}
             </div>
         </MainDashboard>
     );
