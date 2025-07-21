@@ -103,7 +103,6 @@ export const fieldConfig = {
     label: "Student ID Number",
     required: true, 
     uppercase: true,
-    studID: true,
     type: 'text',
     component: 'textfield'
   },
@@ -209,7 +208,7 @@ export const phaseConfig = {
   3: {
     label: "Student Details", 
     title: "",
-    fields: ['studentID', 'universityBranch', 'college', 'course', 'yearLevel', 'expectedGraduation']
+    fields: ['studentID', 'universityBranch', 'college', 'course', 'yearLevel']
   },
   4: {
     label: "Account Setup",

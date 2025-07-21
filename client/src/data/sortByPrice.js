@@ -1,5 +1,4 @@
 export const sortByPriceOptions = [
-    { label: 'Newest', value: 'newest' },
     { label: 'Low to High', value: 'low-to-high' },
     { label: 'High to Low', value: 'high-to-low' },
 ];
