@@ -5,7 +5,8 @@ export default function DropdownFilter({
     options = [], 
     selectedOption = "", 
     onChange, 
-    placeholder = "Price",
+    placeholder = "",
+    labelPrefix = "", // <-- add this prop
     ...props 
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -50,6 +51,9 @@ export default function DropdownFilter({
         {/* Dropdown Display */}
         <div className="flex justify-between items-center text-xs font-bold">
           <span className="text-hover-red group-hover:text-white truncate">
+            {labelPrefix && (
+              <span className="mr-1">{labelPrefix}:</span>
+            )}
             {displayValue}
           </span>
           

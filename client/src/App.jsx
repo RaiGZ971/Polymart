@@ -4,7 +4,14 @@ import './App.css'
 import { LandingPage, SignUp, SignIn } from './pages'
 import NotificationTest from "./pages/general-pages/NotificationTest"; //For testing notification overlay
 import ProductCardPreview from "./pages/general-pages/ProductCardPreview";
+import NotificationTest from "./pages/general-pages/NotificationTest";
+import LandingPage from './pages/general-pages/LandingPage'
+import SignUp from './pages/general-pages/SignUp'
+import SignIn from './pages/general-pages/SignIn'
+import GeneralDashboard from './pages/general-pages/GeneralDashboard'
+import TestPage from './pages/general-pages/TestPage'
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import OrdersMeetups from './pages/general-pages/OrdersMeetups'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -16,8 +23,10 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/signin" element={<SignIn />} />
-          <Route path="/notification-test" element={<NotificationTest />} /> 
-          <Route path="/product-card-preview" element={<ProductCardPreview />} />
+          <Route path="/notification-test" element={<NotificationTest />} />
+          <Route path="/dashboard" element={<GeneralDashboard />} />
+          <Route path="/orders-meetups" element={<OrdersMeetups />} />
+          <Route path="/testpage" element={<TestPage />} />
         </Routes>
       </div>
     </Router>

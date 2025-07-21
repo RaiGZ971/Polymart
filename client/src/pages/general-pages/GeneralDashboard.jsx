@@ -1,23 +1,13 @@
-import { NavigationDashboard, SearchBar, CategoryFilter, DropdownFilter, SmallButton } from '../../components';
-import { Cat, ShoppingBag } from 'lucide-react';
+import { SearchBar, CategoryFilter, DropdownFilter, SmallButton } from '../../components';
+import { ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
-import { sortByPriceOptions, sortProducts } from '../../data';
+import { sortByPriceOptions, sortProducts, productCategories } from '../../data';
+import MainDashboard from '../../components/layout/MainDashboard';
 
 export default function GeneralDashboard() {
     const [activeCategory, setActiveCategory] = useState('all');
     const [sortBy, setSortBy] = useState('newest');
     const [products, setProducts] = useState([]); // Your products array
-
-    const categories = [
-        { name: 'All Categories', value: 'all' },
-        { name: 'Academic Essentials', value: 'academic' },
-        { name: 'Creative Works', value: 'creative' },
-        { name: 'Services', value: 'services' },
-        { name: 'Tech & Gadgets', value: 'technology' },
-        { name: 'Fashion', value: 'fashion' },
-        { name: 'Anik-Anik', value: 'anik' },
-        { name: 'Other', value: 'other' }
-    ];
 
     const handleCategoryClick = (categoryValue) => {
         setActiveCategory(categoryValue);
@@ -30,13 +20,7 @@ export default function GeneralDashboard() {
     };
 
     return (
-       <div className='w-full h-screen bg-white flex flex-col items-center'>
-            <div className="w-full px-0 mx-0">
-                <NavigationDashboard/>
-            </div>
-
-            <div>
-            </div>
+        <MainDashboard>
             {/* Categories Section */}
             <div className='w-[80%] mt-0 space-y-6'>
                 <h1 className="text-4xl font-bold text-primary-red mt-10">Welcome Back, User!</h1>
@@ -52,23 +36,17 @@ export default function GeneralDashboard() {
                     Your Bag
                 </div>
             </div>
-            <div>
-            
             {/* Products Filter Section */}
             <div className='flex items-center justify-end mt-2 gap-2 w-[80%]'>
-            <SmallButton 
-                label='Latest'
-            />
-            <SmallButton 
-                label='Popular'
-            />
-            <DropdownFilter 
-                options={sortByPriceOptions}
-                selectedOption={sortBy}
-                onChange={handleSortChange}
-            />
+                <SmallButton label='Latest' />
+                <SmallButton label='Popular' />
+                <DropdownFilter 
+                    options={sortByPriceOptions}
+                    selectedOption={sortBy}
+                    labelPrefix='Price'
+                    onChange={handleSortChange}
+                />
             </div>
-            </div>
-        </div>
+        </MainDashboard>
     );
 }

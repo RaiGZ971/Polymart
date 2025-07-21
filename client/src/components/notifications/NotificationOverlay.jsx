@@ -1,11 +1,9 @@
 import React from "react";
-import {
-  ChevronRight,
-} from "lucide-react"; 
+import { ChevronRight, ChevronLeft } from "lucide-react";
 
 // Emoji mapping for each notification type
 const EMOJI_MAP = {
-    "meetup": "📍",
+  "meetup": "📍",
   "listing-under-review": "⏳",
   "warning": "⚠️",
   "suspended": "⛔",
@@ -15,42 +13,64 @@ const EMOJI_MAP = {
   "meetup-reported": "📍"
 };
 
-const NotificationOverlay = ({ notifications, onClose }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
-    {/* Blurred background */}
-    <div
-      className="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm transition-colors"
-      onClick={onClose}
-    />
-    {/* Notification panel */}
-    <div className="relative bg-white rounded-[10px] shadow-lg w-[315px] h-[562px] p-6 z-10 flex flex-col" style={{fontFamily: 'Montserrat, ui-sans-serif'}}>
-      <h2 className="mb-0.5 mt-2 px-4 font-bold text-left" style={{color:'#950000', fontFamily:'Montserrat, ui-sans-serif', fontSize:'20px', lineHeight:'1.2'}}>Notifications</h2>
-      <hr className="border-[#950000] mx-auto" style={{width:'250.68px', marginTop:'2px', marginBottom:'13px'}} />
-      <div className="space-y-4 overflow-y-auto flex-1">
-        {notifications.map((notif, idx) => (
-          <div key={idx} className="relative flex justify-center">
-            {/* Red drop shadow effect outside the card on hover */}
-            <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-[245px] h-[calc(100%+12px)] rounded-[16px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-0"
-                 style={{boxShadow: '0 0 16px 4px rgba(149,0,0,0.18)'}}></div>
-            <div
-              className="group bg-white border border-gray-300 rounded-lg px-4 py-3 flex flex-col cursor-pointer transition-shadow relative w-[233px] mx-auto z-10 items-center hover:shadow-[0_2px_5px_0_rgba(115,12,12,0.5)]"
-              style={{ minHeight: 'auto' }}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span className="font-semibold text-left" style={{fontFamily:'Montserrat, ui-sans-serif', fontSize:'12px'}}>
-                  {(EMOJI_MAP[notif.type] || "🔔") + " "}{notif.title}
-                </span>
-                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#950000] transition-colors duration-200" />
-              </div>
-              <div className="mb-1 w-full text-left" style={{fontFamily:'Montserrat, ui-sans-serif', fontSize:'8px', color:'#6b7280'}}>{notif.time}</div>
-              <div className="text-left" style={{fontFamily:'Montserrat, ui-sans-serif', fontSize:'10px', color:'#1f2937'}}>{notif.message}</div>
-              {notif.details && (
-                <div className="mt-1 text-left" style={{fontFamily:'Montserrat, ui-sans-serif', fontSize:'10px', color:'#4b5563', whiteSpace:'pre-line'}}>{notif.details}</div>
-              )}
-            </div>
-          </div>
-        ))}
+// Individual notification item component
+const NotificationItem = ({ notif, index }) => (
+  <div key={index} className="relative flex justify-center px-4">
+    {/* Hover shadow effect */}
+    <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-[245px] h-[calc(100%+12px)] rounded-[16px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-0 shadow-[0_0_16px_4px_rgba(149,0,0,0.18)]" />
+    
+    {/* Notification card */}
+    <div className="group bg-white shadow-md rounded-lg p-4 flex flex-col cursor-pointer transition-shadow relative w-full mx-auto z-10 hover:shadow-[0_2px_5px_0_rgba(115,12,12,0.5)]">
+      {/* Header with emoji, title and chevron */}
+      <div className="flex items-center justify-between w-full text-left">
+        <span className="font-semibold">
+          {(EMOJI_MAP[notif.type] || "🔔") + " "}{notif.title}
+        </span>
+        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#950000] transition-colors duration-200" />
       </div>
+      
+      {/* Timestamp */}
+      <div className="mb-1 w-full text-left font-montserrat text-[10px] italic text-gray-500">
+        {notif.time}
+      </div>
+      
+      {/* Message */}
+      <div className="w-full text-left font-montserrat text-xs text-gray-800">
+        {notif.message}
+      </div>
+      
+      {/* Optional details */}
+      {notif.details && (
+        <div className="mt-1 w-full text-left font-montserrat text-[10px] text-gray-600 whitespace-pre-line">
+          {notif.details}
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// Main overlay component
+const NotificationOverlay = ({ notifications, onClose }) => (
+  <div className="bg-white rounded-[10px] shadow-lg w-full h-screen py-6 flex flex-col font-montserrat">
+    {/* Header */}
+    <div className="bg-white py-6 relative items-center">
+    <div className="flex items-center justify-center px-10">
+        <div 
+          className='absolute left-6 text-gray-400 font-regular text-sm cursor-pointer hover:text-primary-red transition-colors'
+          onClick={onClose}
+          >
+          <ChevronLeft size={24} className='inline' /> 
+          Back
+          </div>
+          <span className='font-bold text-primary-red text-xl'>Notifications</span>
+    </div>
+    </div>
+    
+    {/* Notifications list */}
+    <div className="space-y-4 overflow-y-auto flex-1 px-1">
+      {notifications.map((notif, idx) => (
+        <NotificationItem key={idx} notif={notif} index={idx} />
+      ))}
     </div>
   </div>
 );
