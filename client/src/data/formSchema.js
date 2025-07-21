@@ -21,7 +21,6 @@ export const initialFormData = {
   college: "",
   course: "",
   yearLevel: "",
-  expectedGraduation: "",
   // Phase Four
   username: "",
   profilePicture: null,
@@ -135,13 +134,6 @@ export const fieldConfig = {
     type: 'select',
     component: 'dropdown',
     options: yearLevelOptions
-  },
-  expectedGraduation: {
-    label: "Expected Year of Graduation",
-    required: true,
-    type: 'select',
-    component: 'dropdown',
-    options: expectedYearOptions 
   },
 
   // Phase Four

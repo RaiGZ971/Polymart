@@ -46,3 +46,4 @@ export { default as RatingStars } from './shared/RatingStars';
 export { default as ReviewComponent } from './ratings/ReviewComponent';
 export { default as QuantityPicker } from './form-elements/QuantityPicker';
 export { default as ProductCard } from './dashboard/ProductCard';
+export { default as StaticRatingStars } from './shared/StaticRatingStars';
