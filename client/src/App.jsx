@@ -1,9 +1,6 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import './App.css'
-import { LandingPage, SignUp, SignIn } from './pages'
-import NotificationTest from "./pages/general-pages/NotificationTest"; //For testing notification overlay
-import ProductCardPreview from "./pages/general-pages/ProductCardPreview";
 import NotificationTest from "./pages/general-pages/NotificationTest";
 import LandingPage from './pages/general-pages/LandingPage'
 import SignUp from './pages/general-pages/SignUp'
@@ -12,6 +9,7 @@ import GeneralDashboard from './pages/general-pages/GeneralDashboard'
 import TestPage from './pages/general-pages/TestPage'
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import OrdersMeetups from './pages/general-pages/OrdersMeetups'
+import ViewProductDetails from './pages/buyer-pages/ViewProductDetails';
 
 function App() {
   const [count, setCount] = useState(0)
@@ -27,6 +25,8 @@ function App() {
           <Route path="/dashboard" element={<GeneralDashboard />} />
           <Route path="/orders-meetups" element={<OrdersMeetups />} />
           <Route path="/testpage" element={<TestPage />} />
+          <Route path="/buyer/view-product-details" element={<ViewProductDetails />} />
+          {/* Add more routes as needed */}
         </Routes>
       </div>
     </Router>

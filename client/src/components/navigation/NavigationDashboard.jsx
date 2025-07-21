@@ -4,10 +4,11 @@ import { useState } from 'react';
 import ChatApp from '../chat/ChatApp';
 import NotificationOverlay from '../notifications/NotificationOverlay';
 import CreateListingComponent from '../CreateListingComponent';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function NavigationDashboard() {
     const navigate = useNavigate();
+    const location = useLocation(); // Add this line
     const firstName = "Jianna";
     const [showChat, setShowChat] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -92,6 +93,12 @@ export default function NavigationDashboard() {
         setShowCreateListing(false);
     };
     
+    // Helper to check if nav item is active
+    const isActive = (item) => {
+        // For demo, match by path (customize as needed)
+        return item.path !== '/' && location.pathname.startsWith(item.path);
+    };
+
     return (
         <div>
             {/* Red Navigation Bar */}
@@ -159,15 +166,16 @@ export default function NavigationDashboard() {
                 <div className="flex items-center gap-4">
                     {bottomNavItems.map((item, index) => {
                         const IconComponent = iconMap[item.icon];
+                        const active = isActive(item);
                         return (
                             <div 
                                 key={index} 
-                                className={`cursor-pointer hover:text-hover-red transition-colors duration-200 group ${
+                                className={`cursor-pointer group hover:text-hover-red transition-colors duration-200 ${
                                     item.hasText ? 'flex items-center gap-2' : ''
-                                }`}
+                                } ${active ? 'text-primary-red font-bold' : ''}`}
                                 onClick={() => handleItemClick(item)}
                             >
-                                <IconComponent size={28} className="text-gray-800 group-hover:text-hover-red transition-colors duration-200" />
+                                <IconComponent size={28} className={`group-hover:text-hover-red transition-colors duration-200 ${active ? 'text-primary-red' : 'text-gray-800'}`} />
                                 {item.hasText && item.name}
                             </div>
                         );

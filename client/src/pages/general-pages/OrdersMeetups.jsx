@@ -38,7 +38,8 @@ export default function OrdersMeetups() {
 
     return (
         <MainDashboard>
-            <div className="flex w-[80%] min-h-screen mt-10 justify-center">
+            <div className="flex flex-col w-[80%] min-h-screen mt-10 justify-center">
+                <h1 className="text-left mb-6 font-bold text-4xl text-primary-red">Orders & Meet Ups</h1>
                 <div className="w-full items-center space-y-6">
                     <nav className="flex flex-row border-b-2 border-gray-300 pb-4 justify-between">
                         <div className="flex flex-row gap-4">

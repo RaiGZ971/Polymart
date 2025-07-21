@@ -45,6 +45,7 @@ export default function SearchBar({
           onFocus={handleFocus}
           onBlur={handleBlur}
           onChange={handleChange}
+          onKeyDown={props.onKeyDown}
           {...props}
         />
 

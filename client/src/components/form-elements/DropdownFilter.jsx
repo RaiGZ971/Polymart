@@ -6,7 +6,7 @@ export default function DropdownFilter({
     selectedOption = "", 
     onChange, 
     placeholder = "",
-    labelPrefix = "", // <-- add this prop
+    labelPrefix = "", 
     ...props 
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,12 +45,12 @@ export default function DropdownFilter({
     <div className="relative inline-block font-montserrat " ref={dropdownRef}>
       {/* Dropdown Container */}
       <div
-        className="border border-hover-red py-1 px-3 rounded-[15px] cursor-pointer transition-all duration-100 ease-in-out hover:bg-secondary-red group"
+        className="border border-primary-red py-1 px-3 rounded-[15px] cursor-pointer transition-all duration-100 ease-in-out hover:bg-primary-red group"
         onClick={handleToggle}
       >
         {/* Dropdown Display */}
         <div className="flex justify-between items-center text-xs font-bold">
-          <span className="text-hover-red group-hover:text-white truncate">
+          <span className="text-primary-red group-hover:text-white truncate">
             {labelPrefix && (
               <span className="mr-1">{labelPrefix}:</span>
             )}
@@ -59,9 +59,9 @@ export default function DropdownFilter({
           
           {/* Chevron Icon */}
           {isOpen ? (
-            <ChevronUp className="w-3 h-3 text-hover-red group-hover:text-white ml-2 flex-shrink-0" />
+            <ChevronUp className="w-3 h-3 text-primary-red group-hover:text-white ml-2 flex-shrink-0" />
           ) : (
-            <ChevronDown className="w-3 h-3 text-hover-red group-hover:text-white ml-2 flex-shrink-0" />
+            <ChevronDown className="w-3 h-3 text-primary-red group-hover:text-white ml-2 flex-shrink-0" />
           )}
         </div>
 

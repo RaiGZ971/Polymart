@@ -1,22 +1,55 @@
-import { SearchBar, CategoryFilter, DropdownFilter, SmallButton } from '../../components';
-import { ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
-import { sortByPriceOptions, sortProducts, productCategories } from '../../data';
+import { SearchBar, CategoryFilter, DropdownFilter, SmallButton, ProductCard } from '../../components';
+import { ShoppingBag } from 'lucide-react';
+import { sortByPriceOptions } from '../../data';
 import MainDashboard from '../../components/layout/MainDashboard';
+import ordersSampleData from '../../data/ordersSampleData';
+import { useNavigate } from 'react-router-dom';
 
 export default function GeneralDashboard() {
     const [activeCategory, setActiveCategory] = useState('all');
     const [sortBy, setSortBy] = useState('newest');
-    const [products, setProducts] = useState([]); // Your products array
+    const [searchTerm, setSearchTerm] = useState('');
+    const [pendingSearch, setPendingSearch] = useState('');
+    const navigate = useNavigate();
 
-    const handleCategoryClick = (categoryValue) => {
+    const handleCategoryChange = (categoryValue) => {
         setActiveCategory(categoryValue);
     };
 
     const handleSortChange = (newSortBy) => {
         setSortBy(newSortBy);
-        const sortedProducts = sortProducts(products, newSortBy);
-        setProducts(sortedProducts);
+    };
+
+    // Only filter when searchTerm is updated (on Enter)
+    const filteredOrders = ordersSampleData.filter(order => {
+        const matchesCategory = activeCategory === 'all' || order.category === activeCategory;
+        const matchesSearch = order.productName.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesCategory && matchesSearch;
+    });
+
+    const sortedOrders = [...filteredOrders].sort((a, b) => {
+        if (sortBy === 'low-to-high') {
+            return a.productPrice - b.productPrice;
+        } else if (sortBy === 'high-to-low') {
+            return b.productPrice - a.productPrice;
+        }
+        return 0;
+    });
+
+    const handleProductClick = (order) => {
+        navigate('/buyer/view-product-details', { state: { order } });
+    };
+
+    // Handler for SearchBar
+    const handleSearchInputChange = (value) => {
+        setPendingSearch(value);
+    };
+
+    const handleSearchInputKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            setSearchTerm(pendingSearch);
+        }
     };
 
     return (
@@ -24,12 +57,16 @@ export default function GeneralDashboard() {
             {/* Categories Section */}
             <div className='w-[80%] mt-0 space-y-6'>
                 <h1 className="text-4xl font-bold text-primary-red mt-10">Welcome Back, User!</h1>
-                <CategoryFilter />
+                <CategoryFilter onCategoryChange={handleCategoryChange} initialCategory={activeCategory} />
             </div>
 
             <div className='w-[80%] mt-10 flex flex-row justify-between items-center gap-4'>
                 <div className='w-[90%]'>
-                    <SearchBar />
+                    <SearchBar
+                        searchTerm={pendingSearch}
+                        setSearchTerm={handleSearchInputChange}
+                        onKeyDown={handleSearchInputKeyDown}
+                    />
                 </div>
                 <div className='flex items-center justify-center text-sm gap-2 w-[10%]'>
                     <ShoppingBag size={24} />
@@ -37,15 +74,21 @@ export default function GeneralDashboard() {
                 </div>
             </div>
             {/* Products Filter Section */}
-            <div className='flex items-center justify-end mt-2 gap-2 w-[80%]'>
-                <SmallButton label='Latest' />
-                <SmallButton label='Popular' />
+            <div className='flex items-center justify-end gap-2 w-[80%] mt-10'>
                 <DropdownFilter 
                     options={sortByPriceOptions}
                     selectedOption={sortBy}
                     labelPrefix='Price'
                     onChange={handleSortChange}
                 />
+            </div>
+            {/* Product Cards Grid */}
+            <div className="w-[80%] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8 mx-auto">
+                {sortedOrders.map((order, idx) => (
+                    <div key={idx} onClick={() => handleProductClick(order)} className="cursor-pointer">
+                        <ProductCard order={order} />
+                    </div>
+                ))}
             </div>
         </MainDashboard>
     );
