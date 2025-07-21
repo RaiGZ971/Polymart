@@ -4,7 +4,7 @@ import hashlib
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv("server/.env")
 
 def create_hashed_password(pwd):
     pwd_salt = pwd + os.getenv("PWD_SALT")
