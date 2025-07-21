@@ -2,8 +2,11 @@ import { useState } from "react";
 import { MainDashboard } from "../../components";
 import ReviewComponent from "../../components/ratings/ReviewComponent";
 import { reviewData } from "../../data/reviewData";
+import { QuantityPicker } from "../../components";
 
 export default function TestPage() {
+    const [quantity, setQuantity] = useState(1);
+
     return (
         <>
             <MainDashboard>
@@ -36,6 +39,7 @@ export default function TestPage() {
                             </p>
                             <p>Availability: 20 in stock</p>
                             <p>Item Quantity: </p>
+                            <QuantityPicker value={quantity} min={1} max={20} onChange={setQuantity} />
                             <button className="hover:bg-primary-red hover:text-white px-4 py-2 rounded-full bg-white border-2 border-primary-red transition-colors text-primary-red font-bold w-full">
                                 Place Order
                             </button>

@@ -44,3 +44,4 @@ export { default as MainDashboard } from './layout/MainDashboard';
 export { default as ProductDetail } from './listing/ProductDetail';
 export { default as RatingStars } from './shared/RatingStars';
 export { default as ReviewComponent } from './ratings/ReviewComponent';
+export { default as QuantityPicker } from './form-elements/QuantityPicker';

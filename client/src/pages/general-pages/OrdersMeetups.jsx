@@ -79,11 +79,17 @@ export default function OrdersMeetups() {
                     {selectedOrder ? (
                         <ProductDetail order={selectedOrder} onBack={handleBack} />
                     ) : (
-                        filteredData.map((order, idx) => (
-                            <div key={idx} onClick={() => setSelectedOrder(order)}>
-                                <OrdersListingsComponent {...order} />
+                        filteredData.length > 0 ? (
+                            filteredData.map((order, idx) => (
+                                <div key={idx} onClick={() => setSelectedOrder(order)}>
+                                    <OrdersListingsComponent {...order} />
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center text-gray-400 py-10 text-lg font-semibold">
+                                No matches for your filters.
                             </div>
-                        ))
+                        )
                     )}
                 </div>
             </div>
