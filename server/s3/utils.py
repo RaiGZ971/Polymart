@@ -1,67 +1,122 @@
+from fastapi import UploadFile, File, HTTPException
+import uuid
 import boto3
 import os
 from dotenv import load_dotenv
-from typing import Optional
-import uuid
 
-# Load .env from the correct path
-env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
-load_dotenv(env_path)
+load_dotenv()
 
-# AWS Configuration
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-PRIVATE_BUCKET = os.getenv("S3_PRIVATE_BUCKET")  # For IDs and COR
-PUBLIC_BUCKET = os.getenv("S3_PUBLIC_BUCKET")    # For profile pictures
+# Create S3 client
+s3_client = boto3.client("s3")
 
-s3_client = boto3.client(
-    's3',
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    region_name=AWS_REGION
-)
+def create_image_url(types: str, id: str, file: UploadFile = File(...)) -> str:
+    """Create a unique image URL path for S3 storage"""
+    file_ext = file.filename.split('.')[-1] if file.filename and '.' in file.filename else 'jpg'
+    return f"user_documents/{types}/{id}/{uuid.uuid4()}.{file_ext}"
 
-def generate_s3_url(bucket_name: str, file_key: str) -> str:
-    """Generate the proper S3 URL based on region"""
-    if AWS_REGION == "us-east-1":
-        return f"https://{bucket_name}.s3.amazonaws.com/{file_key}"
-    else:
-        return f"https://{bucket_name}.s3.{AWS_REGION}.amazonaws.com/{file_key}"
+def get_file_extension(filename: str, default_ext: str = "jpg") -> str:
+    """Extract file extension from filename, return default if not found"""
+    if filename and '.' in filename:
+        return filename.split('.')[-1]
+    return default_ext
 
 async def upload_file_to_s3(
-    file_content: bytes, 
-    file_extension: str, 
-    folder: str = "user_documents",
+    file_content: bytes,
+    file_ext: str,
+    folder_path: str,
     is_public: bool = False
-) -> Optional[str]:
-    """
-    Upload file to S3 and return the URL
-    
-    Args:
-        file_content: The file content as bytes
-        file_extension: File extension (jpg, png, pdf, etc.)
-        folder: Folder structure within the bucket
-        is_public: If True, uses public bucket; if False, uses private bucket
-    """
+) -> str:
+    """Upload file content to S3 and return the URL"""
     try:
-        # Choose bucket based on file type
-        bucket_name = PUBLIC_BUCKET if is_public else PRIVATE_BUCKET
+        unique_filename = f"{uuid.uuid4()}.{file_ext}"
+        s3_key = f"{folder_path}/{unique_filename}"
         
+        bucket_name = os.getenv("S3_PUBLIC_BUCKET") if is_public else os.getenv("S3_PRIVATE_BUCKET")
         if not bucket_name:
-            raise ValueError(f"{'Public' if is_public else 'Private'} bucket name not configured in environment variables")
+            raise ValueError(f"{'Public' if is_public else 'Private'} S3 bucket name not configured")
         
-        file_key = f"{folder}/{uuid.uuid4()}.{file_extension}"
+        s3_client.put_object(Bucket=bucket_name, Key=s3_key, Body=file_content)
         
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key=file_key,
-            Body=file_content,
-            ContentType=f"image/{file_extension}" if file_extension in ['jpg', 'jpeg', 'png', 'svg'] else "application/pdf"
+        if is_public:
+            return f"https://{bucket_name}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{s3_key}"
+        else:
+            return s3_key  # Return S3 key for private files
+        
+    except Exception as e:
+        print(f"Error uploading to S3: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload file to S3: {str(e)}")
+
+def generate_presigned_url(s3_key: str, expiration: int = 3600) -> str:
+    """Generate a presigned URL for accessing a private S3 object."""
+    try:
+        bucket_name = os.getenv("S3_PRIVATE_BUCKET")
+        if not bucket_name:
+            raise ValueError("Private S3 bucket name not configured")
+        
+        url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': bucket_name, 'Key': s3_key},
+            ExpiresIn=expiration
         )
-        
-        # Generate the proper S3 URL
-        url = generate_s3_url(bucket_name, file_key)
         return url
         
     except Exception as e:
-        print(f"Error uploading file to S3: {e}")
-        return None
+        print(f"Error generating presigned URL: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate presigned URL: {str(e)}")
+
+async def upload_file_with_metadata(
+    file: UploadFile,
+    document_type: str,
+    folder_prefix: str = "documents",
+    is_public: bool = False,
+    default_ext: str = "jpg",
+    context_info: str = ""
+) -> str:
+    """
+    Upload a file to S3 with metadata handling
+    
+    Args:
+        file: The uploaded file
+        document_type: Type of document (e.g., 'student_id', 'cor', 'profile')
+        folder_prefix: S3 folder prefix (default: 'documents')
+        is_public: Whether to upload to public or private bucket
+        default_ext: Default file extension if none found
+        context_info: Additional context for logging
+    
+    Returns:
+        The S3 URL of the uploaded file
+    """
+    log_context = f" for {context_info}" if context_info else ""
+    print(f"Uploading {document_type}{log_context}, filename: {file.filename}")
+    
+    try:
+        # Read file content
+        file_content = await file.read()
+        
+        # Get file extension
+        file_ext = get_file_extension(file.filename, default_ext)
+        
+        # Upload to S3
+        file_url = await upload_file_to_s3(
+            file_content,
+            file_ext,
+            f"{folder_prefix}/{document_type}",
+            is_public=is_public
+        )
+        
+        if not file_url:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to upload {document_type.replace('_', ' ')}"
+            )
+        
+        print(f"{document_type} uploaded{log_context}: {file_url}")
+        return file_url
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error uploading {document_type}: {str(e)}"
+        )
