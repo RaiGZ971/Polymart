@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import './App.css'
+import { LandingPage, SignUp, SignIn } from './pages'
+import NotificationTest from "./pages/general-pages/NotificationTest"; //For testing notification overlay
+import ProductCardPreview from "./pages/general-pages/ProductCardPreview";
 import NotificationTest from "./pages/general-pages/NotificationTest";
 import LandingPage from './pages/general-pages/LandingPage'
 import SignUp from './pages/general-pages/SignUp'
@@ -11,6 +14,8 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import OrdersMeetups from './pages/general-pages/OrdersMeetups'
 
 function App() {
+  const [count, setCount] = useState(0)
+
   return (
     <Router>
       <div className="App">
