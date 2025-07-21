@@ -39,3 +39,8 @@ export { default as Checkbox } from './form-elements/Checkbox';
 export { default as CalendarPicker } from './form-elements/CalendarPicker';
 export { default as CreateListingComponent } from './CreateListingComponent';
 export { default as Modal } from './shared/Modal';
+export { default as OrdersListingsComponent } from './listing/OrdersListingsComponent';
+export { default as MainDashboard } from './layout/MainDashboard';
+export { default as ProductDetail } from './listing/ProductDetail';
+export { default as RatingStars } from './shared/RatingStars';
+export { default as ReviewComponent } from './ratings/ReviewComponent';

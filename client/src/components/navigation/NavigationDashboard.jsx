@@ -4,8 +4,10 @@ import { useState } from 'react';
 import ChatApp from '../chat/ChatApp';
 import NotificationOverlay from '../notifications/NotificationOverlay';
 import CreateListingComponent from '../CreateListingComponent';
+import { useNavigate } from 'react-router-dom';
 
 export default function NavigationDashboard() {
+    const navigate = useNavigate();
     const firstName = "Jianna";
     const [showChat, setShowChat] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -61,7 +63,7 @@ export default function NavigationDashboard() {
 
     const bottomNavItems = [
         { name: firstName, path: '/', icon: 'user', hasText: true },
-        { name: 'Orders & Meet Ups', path: '/', icon: 'map', hasText: true },
+        { name: 'Orders & Meet Ups', path: '/orders-meetups', icon: 'map', hasText: true },
         { name: 'Notifications', path: '/', icon: 'bell', hasText: false, action: 'notifications' },
         { name: 'Messages', path: '/', icon: 'message', hasText: false, action: 'chat' },
     ];
@@ -73,6 +75,8 @@ export default function NavigationDashboard() {
             setShowNotifications(true);
         } else if (item.action === 'create-listing') {
             setShowCreateListing(true);
+        } else {
+            navigate(item.path);
         }
     };
 
@@ -199,7 +203,7 @@ export default function NavigationDashboard() {
             <div className={`fixed inset-0 z-50 transition-opacity duration-300 ${showChat ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
                 {/* Background overlay */}
                 <div 
-                    className="absolute inset-0 bg-black bg-opacity-30"
+                    className="absolute inset-0"
                     onClick={handleCloseChat}
                 />
                 
@@ -215,7 +219,7 @@ export default function NavigationDashboard() {
             <div className={`fixed inset-0 z-50 transition-opacity duration-300 ${showNotifications ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
                 {/* Background overlay */}
                 <div 
-                    className="absolute inset-0 bg-black bg-opacity-30"
+                    className="absolute inset-0 "
                     onClick={handleCloseNotifications}
                 />
                 

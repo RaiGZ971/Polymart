@@ -1,16 +1,25 @@
 const meetUpLocations = [
-  { value: 'lagoon', label: '1. Lagoon' },
-  { value: 'westwing', label: '2. West Wing' },
-  { value: 'dome', label: '3. Dome' },
-  { value: 'eastwing', label: '4. East Wing' },
-  { value: 'southwing', label: '5. South Wing' },
-  { value: 'linearpark', label: '6. Linear Park' },
-  { value: 'charliebuilding', label: '7. Charlie Building' },
-  { value: 'grandstand', label: '8. Grandstand' },
-  { value: 'tenniscourtside', label: '9. Tennis Court Side' },
-  { value: 'souvenirshop', label: '10. Souvenir Shop' },
-  { value: 'gateexit', label: '11. Gate Exit' },
-  { value: 'gateentrance', label: '12. Gate Entrance' },
+  { value: 'lagoon', label: 'Lagoon' },
+  { value: 'westwing', label: 'West Wing' },
+  { value: 'dome', label: 'Dome' },
+  { value: 'eastwing', label: 'East Wing' },
+  { value: 'southwing', label: 'South Wing' },
+  { value: 'linearpark', label: 'Linear Park' },
+  { value: 'charliebuilding', label: 'Charlie Building' },
+  { value: 'grandstand', label: 'Grandstand' },
+  { value: 'tenniscourtside', label: 'Tennis Court Side' },
+  { value: 'souvenirshop', label: 'Souvenir Shop' },
+  { value: 'gateexit', label: 'Gate Exit' },
+  { value: 'gateentrance', label: 'Gate Entrance' },
+];
+
+// For create a listing (no "All" option)
+export const meetUpLocationsCreate = meetUpLocations;
+
+// For categorical filtering (with "All" option)
+export const meetUpLocationsFilter = [
+  { value: 'all', label: 'All' },
+  ...meetUpLocationsCreate
 ];
 
 export default meetUpLocations;
