@@ -4,7 +4,9 @@ from s3 import utils
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 import os
+
 from urllib.parse import urlparse
+
 
 load_dotenv()
 
