@@ -298,6 +298,37 @@ async def serve_chat_html(sender_id: str, receiver_id: str):
                          .replace("{{receiver_id}}", receiver_id)
     return HTMLResponse(html_with_room)
 
+@router.get("/contacts/{user_id}")
+async def get_contacts(user_id: str):
+    try:
+        response = tableMessage.scan(
+            FilterExpression=Attr("room_id").contains(user_id)
+        )
+
+        sortedItems = sorted(response["Items"], key=lambda x: x["created_at"], reverse=True)
+
+        seen = set()
+
+        roomIDs = []
+
+        for item in sortedItems:
+            room_id = item.get("room_id")
+            if room_id not in seen:
+                seen.add(room_id)
+                roomIDs.append(room_id)
+
+        contacts = [roomID.replace(user_id, "") for roomID in roomIDs]
+
+        return {"contacts": contacts}
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch rooms in hackybara-message: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch rooms: {str(e)}")
+
+
 @router.put("/message-update/{room_id}/{message_id}", response_model=models.message)
 async def update_message(room_id: str, message_id: str, content: str):
     currentDate = utils.get_current_date()
