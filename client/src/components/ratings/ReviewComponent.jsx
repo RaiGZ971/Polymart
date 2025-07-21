@@ -19,7 +19,7 @@ export default function ReviewComponent({ review = reviewData }) {
                     />
                 </div>
                 {/* User Name */}
-                <div>
+                <div className="text-left">
                     <div className="flex flex-row gap-1 text-xs items-center">
                         <p className="text-xs font-semibold text-gray-800">{review.user.name}</p>
                         <span>says:</span>

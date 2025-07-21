@@ -1,4 +1,5 @@
 import { ChevronLeft } from "lucide-react";
+import QuantityPicker from "../form-elements/QuantityPicker";
 
 export default function ProductDetail({ order, onBack }) {
     if (!order) return null;
@@ -23,6 +24,7 @@ export default function ProductDetail({ order, onBack }) {
                 <p>Schedule: {order.schedule}</p>
                 <p>Location: {order.location}</p>
                 <p>Remarks: {order.remark || "None"}</p>
+               
             </div>
         </>
     );
