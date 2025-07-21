@@ -25,6 +25,15 @@ import { useFileUpload } from "../../hooks/useFileUpload";
 import { useFormData } from "../../hooks/useFormData";
 
 export default function SignUp() {
+  // Define steps array
+  const steps = [
+    'Email Verification',
+    'Personal Details', 
+    'Student Details',
+    'Account Setup',
+    'Student Verification',
+  ];
+
   // Use the form data management hook
   const {
     formData,
@@ -168,7 +177,7 @@ export default function SignUp() {
 
         <div className="w-[60%] flex flex-row justify-between mt-8">
           <h1 className="text-5xl font-bold text-primary-red">Sign Up</h1>
-          <PhaseIndicator currentStep={currentStep} />
+          <PhaseIndicator currentStep={currentStep} steps={steps} />
         </div>
       
         <div className="w-[60%] h-full flex flex-col mt-10">
