@@ -10,10 +10,11 @@ export const initialListingData = {
   productTitle: "",
   productDescription: "",
   productCategory: "",
-  productTags: [],
+  productTags: "",
   
   // Pricing
   hasPrice: true, // boolean: true = fixed price, false = price range
+  hasPriceRange: false,
   price: "",
   priceRange: {
     min: "",
@@ -59,34 +60,44 @@ export const listingFieldConfig = {
     required: false,
     component: 'textfield',
   },
+  hasPriceRange: {
+    label: "Include price range",
+    required: false,
+    component: "checkbox"
+  },
   price: {
     label: "Price",
     required: true,
-    component: 'textfield',
-    type: 'number',
+    component: "textfield",
+    type: "number",
     min: 1
   },
   priceRange: {
     min: {
       label: "Minimum Price",
       required: true,
-      component: 'textfield',
-      type: 'number',
+      component: "textfield",
+      type: "number",
       min: 1
     },
     max: {
       label: "Maximum Price",
       required: true,
-      component: 'textfield',
-      type: 'number',
+      component: "textfield",
+      type: "number",
       min: 1
     }
+  },
+  isSingleItem: {
+    label: "I'm selling a single-item product",
+    required: false,
+    component: "checkbox"
   },
   stock: {
     label: "Stock Quantity",
     required: true,
-    component: 'textfield',
-    type: 'number',
+    component: "textfield",
+    type: "number",
     min: 1
   },
   transactionMethods: {
@@ -111,11 +122,11 @@ export const listingFieldConfig = {
   availableDates: {
     label: "Available Dates",
     required: false,
-    component: 'calendar', // Assuming a date picker component exists
+    component: 'calendar',
     timeSlots: timeSlots
   },
   remark: {
-    label: "Additional Remarks (Optional)",
+    label: "Remarks (Optional)",
     required: false,
     component: 'textarea',
     maxLength: 200,

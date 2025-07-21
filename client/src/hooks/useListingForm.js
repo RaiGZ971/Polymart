@@ -8,10 +8,22 @@ export const useListingForm = () => {
   // Handle text field changes
   const handleChange = (fieldName) => (e) => {
     const value = e.target.value;
-    setListingData(prev => ({
-      ...prev,
-      [fieldName]: value
-    }));
+    // Support nested fields like "priceRange.min"
+    if (fieldName.includes(".")) {
+      const [parent, child] = fieldName.split(".");
+      setListingData(prev => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value
+        }
+      }));
+    } else {
+      setListingData(prev => ({
+        ...prev,
+        [fieldName]: value
+      }));
+    }
     
     // Clear error when user starts typing
     if (errors[fieldName]) {
@@ -70,11 +82,20 @@ export const useListingForm = () => {
   };
 
   // Update the handleBooleanToggle function to handle value setting
-  const handleBooleanToggle = (fieldName, value = null) => {
-    setListingData(prev => ({
-      ...prev,
-      [fieldName]: value !== null ? value : !prev[fieldName]
-    }));
+  const handleBooleanToggle = (fieldName, checked) => {
+    setListingData(prev => {
+      if (fieldName === "isSingleItem") {
+        return {
+          ...prev,
+          isSingleItem: checked,
+          stock: checked ? 1 : prev.stock // set stock to 1 if checked
+        };
+      }
+      return {
+        ...prev,
+        [fieldName]: checked
+      };
+    });
   };
 
   // Handle array selections (checkboxes and calendar)

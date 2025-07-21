@@ -8,7 +8,12 @@ export default function CalendarPicker({ label, value = [], onChange, timeSlots 
     const today = new Date();
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    
+
+    // Calculate max allowed month (2 months from today)
+    const maxDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+    const maxMonth = maxDate.getMonth();
+    const maxYear = maxDate.getFullYear();
+
     // Get first day of month and number of days
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -51,29 +56,29 @@ export default function CalendarPicker({ label, value = [], onChange, timeSlots 
 
     const renderCalendar = () => {
         const days = [];
-        
         // Empty cells for days before month starts
         for (let i = 0; i < firstDay; i++) {
             days.push(<div key={`empty-${i}`} className="p-2"></div>);
         }
-        
         // Days of the month
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const isPast = date < today;
+            // Disable if after max allowed date
+            const isAfterMax = date >= new Date(maxYear, maxMonth + 1, 1);
             const isSelected = selectedDate === dateStr;
             const hasBooking = value.some(([bookingDate]) => bookingDate === dateStr);
-            
+
             days.push(
                 <button
                     key={day}
                     type="button"
-                    onClick={() => !isPast && handleDateClick(day)}
-                    disabled={isPast || disabled}
+                    onClick={() => !isPast && !isAfterMax && handleDateClick(day)}
+                    disabled={isPast || isAfterMax || disabled}
                     className={`p-3 text-sm rounded-full transition duration-200 ${
-                        isPast 
-                            ? 'text-gray-300 cursor-not-allowed' 
+                        isPast || isAfterMax
+                            ? 'text-gray-300 cursor-not-allowed'
                             : isSelected
                             ? 'bg-primary-red text-white'
                             : hasBooking
@@ -85,7 +90,6 @@ export default function CalendarPicker({ label, value = [], onChange, timeSlots 
                 </button>
             );
         }
-        
         return days;
     };
 
@@ -96,7 +100,7 @@ export default function CalendarPicker({ label, value = [], onChange, timeSlots 
                     {label}
                 </label>
             )}
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Calendar */}
                 <div className="border rounded-lg p-4">
@@ -105,7 +109,7 @@ export default function CalendarPicker({ label, value = [], onChange, timeSlots 
                             type="button"
                             onClick={() => setCurrentMonth(new Date(year, month - 1))}
                             className="p-1 hover:bg-gray-100 rounded"
-                            disabled={disabled}
+                            disabled={disabled || (year === today.getFullYear() && month === today.getMonth())}
                         >
                             ←
                         </button>
@@ -116,7 +120,11 @@ export default function CalendarPicker({ label, value = [], onChange, timeSlots 
                             type="button"
                             onClick={() => setCurrentMonth(new Date(year, month + 1))}
                             className="p-1 hover:bg-gray-100 rounded-full"
-                            disabled={disabled}
+                            // Disable if at max allowed month
+                            disabled={
+                                disabled ||
+                                (year > maxYear || (year === maxYear && month >= maxMonth))
+                            }
                         >
                             →
                         </button>
@@ -173,7 +181,17 @@ export default function CalendarPicker({ label, value = [], onChange, timeSlots 
             {/* Saved Dates */}
             {value.length > 0 && (
                 <div className="border rounded-lg p-4">
-                    <h4 className="font-medium mb-3">Saved Available Times</h4>
+                    <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium">Saved Available Times</h4>
+                        <button
+                            type="button"
+                            onClick={() => onChange({ target: { value: [] } })}
+                            disabled={disabled}
+                            className="text-red-500 hover:text-red-700 text-sm font-semibold px-2 py-1 rounded disabled:opacity-50"
+                        >
+                            Remove All
+                        </button>
+                    </div>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
                         {value.map(([date, time], index) => (
                             <div key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
