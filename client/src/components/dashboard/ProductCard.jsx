@@ -1,14 +1,16 @@
 import { Heart, MoreVertical, ShoppingBag } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
-export default function ProductCard({
-  image = 'https://picsum.photos/247/245',
-  title = 'Crocheted Photocard Holder',
-  price = 'PHP 300',
-  username = 'backburnerngbayan',
-  itemsSold = 5,
-  userImage = 'https://picsum.photos/18/18',
-}) {
+export default function ProductCard({ order }) {
+  const {
+    productImage = 'https://picsum.photos/247/245',
+    productName = 'Crocheted Photocard Holder',
+    productPrice = 300,
+    username = 'backburnerngbayan',
+    itemsOrdered = 5,
+    userAvatar = 'https://picsum.photos/18/18',
+  } = order || {};
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -24,16 +26,15 @@ export default function ProductCard({
 
   return (
     <div
-      className="w-[247px] h-[346px] bg-white rounded-2xl shadow-md hover:shadow-lg hover:shadow-gray-400 shadow-gray-200 transition-shadow duration-200 relative flex flex-col overflow-hidden"
+      className="w-[247px] h-[346px] bg-white rounded-2xl shadow-md hover:shadow-glow hover:scale-105 hover:shadow-gray-400 transition-all duration-200 relative flex flex-col overflow-hidden"
       style={{ minWidth: 247, minHeight: 346 }}
     >
       {/* Image */}
       <div className="relative w-full h-[245px]">
         <img
-          src={image}
-          alt={title}
+          src={productImage}
+          alt={productName}
           className="w-full h-full object-cover rounded-t-2xl"
-          style={{ width: 247, height: 245 }}
         />
         {/* Top right icons */}
         <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
@@ -62,23 +63,26 @@ export default function ProductCard({
       {/* Card Content */}
       <div className="flex flex-col flex-1 justify-between px-4 py-3">
         <div className="text-left">
-          <div className="text-[13px] font-medium text-gray-900 truncate leading-tight">{title}</div>
-          <div className="text-[18px] font-bold text-primary-red leading-tight">{price}</div>
+          <div className="text-[13px] font-medium text-gray-900 truncate leading-tight">{productName}</div>
+          <div className="text-[18px] font-bold text-primary-red leading-tight">PHP {productPrice}</div>
         </div>
         <div className="flex items-center justify-between mt-3 gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <img
-              src={userImage}
+              src={userAvatar}
               alt={username}
-              className="rounded-full object-cover flex-shrink-0"
-              style={{ width: 18, height: 18 }}
+              className="rounded-full object-cover flex-shrink-0 w-[18px] h-[18px]"
             />
             <span className="text-xs text-gray-400 truncate">{username}</span>
             <span className="text-xs text-gray-400">·</span>
-            <span className="text-xs text-gray-400 whitespace-nowrap">{itemsSold} items sold</span>
+            <span className="text-xs text-gray-400 whitespace-nowrap">{itemsOrdered} items ordered</span>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+// Example usage elsewhere in your app:
+// {ordersSampleData.map((order, idx) => (
+//   <ProductCard key={idx} order={order}
