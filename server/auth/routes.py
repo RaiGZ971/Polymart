@@ -244,7 +244,7 @@ async def get_current_user_info(current_user: dict = Depends(utils.get_current_u
             "course": user["course"],
             "university_branch": user["university_branch"],
             "college": user["college"],
-            "is_verified": user["is_verified"],
+            "is_verified_student": user["is_verified_student"],
             "profile_photo_url": user["profile_photo_url"],
             "bio": user["bio"],
             "pronouns": user["pronouns"]

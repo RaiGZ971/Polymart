@@ -124,7 +124,7 @@ def create_login_response(user_data: Dict[str, Any], access_token: str) -> Dict[
             "first_name": user_data["first_name"],
             "last_name": user_data["last_name"],
             "student_number": user_data["student_number"],
-            "is_verified": user_data.get("is_verified", False)
+            "is_verified_student": user_data.get("is_verified_student", False)
         }
     }
     
