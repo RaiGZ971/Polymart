@@ -4,8 +4,8 @@ export default function Modal({
   title,
   description,
   type = "alert",
-  onConfirm, 
-  children
+  onConfirm,
+  children,
 }) {
   if (!isOpen) return null;
 

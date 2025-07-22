@@ -648,6 +648,10 @@ video {
   top: -0.5rem;
 }
 
+.-top-4{
+  top: -1rem;
+}
+
 .left-0{
   left: 0px;
 }
@@ -747,10 +751,6 @@ video {
 .mx-auto{
   margin-left: auto;
   margin-right: auto;
-}
-
-.-mb-2{
-  margin-bottom: -0.5rem;
 }
 
 .-mb-3{
@@ -853,6 +853,10 @@ video {
   margin-top: 0px;
 }
 
+.mt-0\.5{
+  margin-top: 0.125rem;
+}
+
 .mt-1{
   margin-top: 0.25rem;
 }
@@ -875,6 +879,10 @@ video {
 
 .mt-4{
   margin-top: 1rem;
+}
+
+.mt-5{
+  margin-top: 1.25rem;
 }
 
 .mt-6{
@@ -937,6 +945,10 @@ video {
   height: 5rem;
 }
 
+.h-24{
+  height: 6rem;
+}
+
 .h-3{
   height: 0.75rem;
 }
@@ -947,10 +959,6 @@ video {
 
 .h-40{
   height: 10rem;
-}
-
-.h-48{
-  height: 12rem;
 }
 
 .h-5{
@@ -989,6 +997,10 @@ video {
   height: 346px;
 }
 
+.h-\[480px\]{
+  height: 480px;
+}
+
 .h-\[calc\(100\%\+12px\)\]{
   height: calc(100% + 12px);
 }
@@ -1007,6 +1019,10 @@ video {
 
 .max-h-0{
   max-height: 0px;
+}
+
+.max-h-10{
+  max-height: 2.5rem;
 }
 
 .max-h-32{
@@ -1081,6 +1097,10 @@ video {
   width: 5rem;
 }
 
+.w-24{
+  width: 6rem;
+}
+
 .w-3{
   width: 0.75rem;
 }
@@ -1095,10 +1115,6 @@ video {
 
 .w-40{
   width: 10rem;
-}
-
-.w-48{
-  width: 12rem;
 }
 
 .w-5{
@@ -1157,6 +1173,10 @@ video {
   width: 30%;
 }
 
+.w-\[300px\]{
+  width: 300px;
+}
+
 .w-\[50\%\]{
   width: 50%;
 }
@@ -1188,6 +1208,10 @@ video {
 
 .min-w-\[148px\]{
   min-width: 148px;
+}
+
+.max-w-2xl{
+  max-width: 42rem;
 }
 
 .max-w-4xl{
@@ -1349,6 +1373,10 @@ video {
   align-items: flex-start;
 }
 
+.items-end{
+  align-items: flex-end;
+}
+
 .items-center{
   align-items: center;
 }
@@ -1467,10 +1495,22 @@ video {
   margin-bottom: calc(1rem * var(--tw-space-y-reverse));
 }
 
+.space-y-5 > :not([hidden]) ~ :not([hidden]){
+  --tw-space-y-reverse: 0;
+  margin-top: calc(1.25rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(1.25rem * var(--tw-space-y-reverse));
+}
+
 .space-y-6 > :not([hidden]) ~ :not([hidden]){
   --tw-space-y-reverse: 0;
   margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));
   margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));
+}
+
+.space-y-8 > :not([hidden]) ~ :not([hidden]){
+  --tw-space-y-reverse: 0;
+  margin-top: calc(2rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(2rem * var(--tw-space-y-reverse));
 }
 
 .overflow-hidden{
@@ -1554,6 +1594,11 @@ video {
 .rounded-b-2xl{
   border-bottom-right-radius: 1rem;
   border-bottom-left-radius: 1rem;
+}
+
+.rounded-b-xl{
+  border-bottom-right-radius: 0.75rem;
+  border-bottom-left-radius: 0.75rem;
 }
 
 .rounded-t-2xl{
@@ -1854,6 +1899,11 @@ video {
   padding-right: 3rem;
 }
 
+.px-14{
+  padding-left: 3.5rem;
+  padding-right: 3.5rem;
+}
+
 .px-16{
   padding-left: 4rem;
   padding-right: 4rem;
@@ -1862,6 +1912,11 @@ video {
 .px-2{
   padding-left: 0.5rem;
   padding-right: 0.5rem;
+}
+
+.px-20{
+  padding-left: 5rem;
+  padding-right: 5rem;
 }
 
 .px-24{
@@ -1877,6 +1932,11 @@ video {
 .px-4{
   padding-left: 1rem;
   padding-right: 1rem;
+}
+
+.px-5{
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
 }
 
 .px-6{
@@ -1986,6 +2046,10 @@ video {
 
 .pl-6{
   padding-left: 1.5rem;
+}
+
+.pr-1{
+  padding-right: 0.25rem;
 }
 
 .pr-2{
@@ -2136,6 +2200,10 @@ video {
 
 .lowercase{
   text-transform: lowercase;
+}
+
+.capitalize{
+  text-transform: capitalize;
 }
 
 .italic{
@@ -2402,6 +2470,12 @@ html, body {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
+.hover\:scale-\[102\%\]:hover{
+  --tw-scale-x: 102%;
+  --tw-scale-y: 102%;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+
 .hover\:border-none:hover{
   border-style: none;
 }
@@ -2477,6 +2551,10 @@ html, body {
 .hover\:bg-secondary-red:hover{
   --tw-bg-opacity: 1;
   background-color: rgb(115 12 12 / var(--tw-bg-opacity, 1));
+}
+
+.hover\:font-semibold:hover{
+  font-weight: 600;
 }
 
 .hover\:text-\[\#950000\]:hover{

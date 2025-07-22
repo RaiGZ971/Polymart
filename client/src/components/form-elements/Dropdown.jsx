@@ -1,22 +1,22 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
-export default function Dropdown({ 
-    label = "Label", 
-    required = false,
-    error: externalError = "",
-    onBlur,
-    onChange,
-    value = "",
-    options = [],
-    placeholder = "Select an option",
-    ...props
+export default function Dropdown({
+  label = "Label",
+  required = false,
+  error: externalError = "",
+  onBlur,
+  onChange,
+  value = "",
+  options = [],
+  placeholder = "Select an option",
+  ...props
 }) {
   const [isFocused, setIsFocused] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [internalError, setInternalError] = useState("");
   const dropdownRef = useRef(null);
-  
+
   // Use external error if provided, otherwise use internal error
   const displayError = externalError || internalError;
   const hasError = Boolean(displayError);
@@ -31,9 +31,9 @@ export default function Dropdown({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [hasValue]);
 
@@ -47,14 +47,14 @@ export default function Dropdown({
       onChange({
         target: {
           value: selectedValue,
-          label: selectedLabel
-        }
+          label: selectedLabel,
+        },
       });
     }
-    
+
     setIsOpen(false);
     setIsFocused(Boolean(selectedValue));
-    
+
     // Clear error when user makes selection
     if (internalError) {
       setInternalError("");
@@ -64,14 +64,14 @@ export default function Dropdown({
   const handleBlur = () => {
     if (!isOpen) {
       setIsFocused(hasValue);
-      
+
       // Validate required field
       if (required && !value) {
         setInternalError(`${label} is required.`);
       } else {
         setInternalError("");
       }
-      
+
       if (onBlur) {
         onBlur({ target: { value } });
       }
@@ -79,7 +79,7 @@ export default function Dropdown({
   };
 
   // Find the selected option to display its label
-  const selectedOption = options.find(option => option.value === value);
+  const selectedOption = options.find((option) => option.value === value);
   const displayValue = selectedOption ? selectedOption.label : "";
 
   return (
@@ -87,10 +87,10 @@ export default function Dropdown({
       {/*Dropdown Container*/}
       <div
         className={`border py-3 px-6 rounded-[30px] relative w-full transition-all duration-200 ease-in-out cursor-pointer ${
-          hasError 
-            ? "border-error-red" 
+          hasError
+            ? "border-error-red"
             : isFocused || isOpen
-              ? "border-black" 
+              ? "border-black"
               : "border-gray-400"
         }`}
         onClick={handleToggle}
@@ -101,7 +101,7 @@ export default function Dropdown({
           <span className={hasValue ? "text-black" : "text-transparent"}>
             {displayValue || placeholder}
           </span>
-          
+
           {/* Chevron Icon */}
           {isOpen ? (
             <ChevronUp className="w-4 h-4 text-gray-600" />
@@ -118,7 +118,8 @@ export default function Dropdown({
               : `top-3 text-base ${hasError ? "text-error-red" : "text-gray-400"}`
           }`}
         >
-          {label}{required && <span className="text-error-red ml-1">*</span>}
+          {label}
+          {required && <span className="text-error-red ml-1">*</span>}
         </span>
 
         {/*Dropdown Options*/}
@@ -145,7 +146,7 @@ export default function Dropdown({
           </div>
         )}
       </div>
-      
+
       {/*Error Message*/}
       {hasError && (
         <span className="text-error-red text-xs mt-2 px-2 max-w-full text-left italic w-full pl-6 font-poppins">

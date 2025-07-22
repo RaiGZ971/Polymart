@@ -7,9 +7,12 @@ export const EmailFailedState = ({ onResend, onChangeEmail }) => {
         <XCircle className="w-20 h-20 text-primary-red" />
       </div>
       <div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Verification failed</h3>
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">
+          Verification failed
+        </h3>
         <p className="text-gray-600 mb-4">
-          We couldn't verify your email address. The link may be invalid or already used.
+          We couldn't verify your email address. The link may be invalid or
+          already used.
         </p>
         <p className="text-sm text-gray-500">
           Please try requesting a new verification email.
