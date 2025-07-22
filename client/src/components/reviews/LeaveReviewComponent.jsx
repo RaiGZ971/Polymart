@@ -1,7 +1,12 @@
 import { useState } from "react";
 import RatingStars from "../shared/RatingStars";
 
-export default function LeaveReviewComponent({ isOpen, onClose, userProfile, onSubmitReview }) {
+export default function LeaveReviewComponent({
+  isOpen,
+  onClose,
+  userProfile,
+  onSubmitReview,
+}) {
   const [rating, setRating] = useState(0);
   const [remarks, setRemarks] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -11,14 +16,14 @@ export default function LeaveReviewComponent({ isOpen, onClose, userProfile, onS
     username: "nintendocicc", // PLACEHOLDER: Replace with actual username from backend
     campus: "PUP Sta Mesa", // PLACEHOLDER: Replace with actual campus from backend
     department: "CCIS", // PLACEHOLDER: Replace with actual department from backend
-    profileImage: "https://picsum.photos/201/150" // PLACEHOLDER: Replace with actual profile image URL from backend
+    profileImage: "https://picsum.photos/201/150", // PLACEHOLDER: Replace with actual profile image URL from backend
   };
 
   const handleSubmit = async () => {
     if (rating === 0) return; // Prevent submission without rating
-    
+
     setIsSubmitting(true);
-    
+
     // BACKEND INTEGRATION POINT: Prepare review data for backend submission
     const reviewData = {
       rating: rating, // Star rating (1-5)
@@ -101,53 +106,66 @@ export default function LeaveReviewComponent({ isOpen, onClose, userProfile, onS
           background-color: #b30000 !important;
         }
       `}</style>
-      
-      <div 
+
+      <div
         className="bg-white shadow-2xl relative flex flex-col"
-        style={{ 
-          width: '641.25px', 
-          height: '674.75px', 
-          boxShadow: '0 8px 32px 0 rgba(60,60,60,0.18)',
-          borderRadius: '15px'
+        style={{
+          width: "641.25px",
+          height: "674.75px",
+          boxShadow: "0 8px 32px 0 rgba(60,60,60,0.18)",
+          borderRadius: "15px",
         }}
       >
         {/* Back button */}
-        <button 
+        <button
           onClick={onClose}
           className="absolute top-8 left-8 flex items-center text-gray-400 hover:text-gray-700 transition-colors z-10"
         >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Back
         </button>
 
         {/* Content Container */}
         <div className="flex flex-col items-center px-12 pt-24 pb-12 h-full">
-          <h1 className="text-3xl font-bold leave-review-red mb-6">Leave A Review</h1>
+          <h1 className="text-3xl font-bold leave-review-red mb-6">
+            Leave A Review
+          </h1>
 
           {/* Profile Section */}
           <div className="flex flex-col items-center mb-6">
-            <div 
+            <div
               className="rounded-full overflow-hidden mb-4 border border-gray-200 flex items-center justify-center bg-gray-100"
-              style={{ width: '135px', height: '135px' }}
+              style={{ width: "135px", height: "135px" }}
             >
-              <img 
+              <img
                 src={mockUser.profileImage}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800">{mockUser.username}</h2>
-            <p className="text-gray-600 text-sm">{mockUser.campus} | {mockUser.department}</p>
+            <h2 className="text-xl font-semibold text-gray-800">
+              {mockUser.username}
+            </h2>
+            <p className="text-gray-600 text-sm">
+              {mockUser.campus} | {mockUser.department}
+            </p>
           </div>
 
           {/* Rating Stars */}
           <div className="mb-6 leave-review-stars w-full">
-            <RatingStars 
-              value={rating} 
-              onChange={setRating}
-            />
+            <RatingStars value={rating} onChange={setRating} />
           </div>
 
           {/* Remarks Section */}
@@ -157,14 +175,14 @@ export default function LeaveReviewComponent({ isOpen, onClose, userProfile, onS
               onChange={(e) => setRemarks(e.target.value)}
               placeholder="(Optional) Leave a remark..."
               className="leave-review-textarea border border-gray-300 rounded-lg p-4 resize-none focus:outline-none focus:ring-2 focus:ring-[#950000] focus:border-transparent"
-              style={{ width: '435px', height: '113px' }}
+              style={{ width: "435px", height: "113px" }}
               maxLength={700}
             />
           </div>
 
           {/* Character count */}
           <div className="text-sm text-gray-500 mb-8 w-full flex justify-center">
-            <div style={{ width: '435px' }} className="text-left">
+            <div style={{ width: "435px" }} className="text-left">
               {remarks.length}/700 characters
             </div>
           </div>
