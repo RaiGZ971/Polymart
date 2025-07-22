@@ -106,6 +106,33 @@ async def get_user_verification_status(user_id: int) -> Optional[Dict[str, Any]]
         print(f"Error getting user verification status: {e}")
         return None
 
+async def update_user_profile(user_id: int, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Update user profile data
+    """
+    try:
+        # Use authenticated client with user context for RLS
+        supabase = get_authenticated_supabase_client(user_id)
+        if not supabase:
+            print("Failed to get Supabase authenticated client")
+            return None
+        
+        # Add updated_at timestamp
+        update_data["updated_at"] = "now()"
+        
+        print(f"Attempting to update profile for user_id: {user_id} with data: {update_data}")
+        result = supabase.table("user_profile").update(update_data).eq("user_id", user_id).execute()
+        
+        if result.data and len(result.data) > 0:
+            print(f"Successfully updated user profile: {result.data[0]}")
+            return result.data[0]
+        else:
+            print(f"No data returned from update operation. Result: {result}")
+        return None
+    except Exception as e:
+        print(f"Error updating user profile: {e}")
+        return None
+
 async def get_user_by_student_number(student_number: str) -> Optional[Dict[str, Any]]:
     """
     Get a user profile by student number
