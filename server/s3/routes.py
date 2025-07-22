@@ -70,9 +70,15 @@ async def upload_profile_photo(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload profile photo (public bucket)"""
+    """Upload profile photo (public bucket) and update user profile"""
     try:
         username = current_user.get("username", "unknown")
+        user_id = current_user.get("user_id")
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID not found in authentication context")
+        
+        # Upload file to S3
         file_url = await utils.upload_file_with_metadata(
             file=file,
             document_type="profile_photo",
@@ -81,6 +87,17 @@ async def upload_profile_photo(
             default_ext="jpg",
             context_info=f"user: {username}"
         )
+        
+        # Update user profile with the new photo URL
+        from supabase_client.database import update_user_profile
+        update_result = await update_user_profile(
+            user_id=user_id,
+            update_data={"profile_photo_url": file_url}
+        )
+        
+        if not update_result:
+            print(f"Warning: Failed to update profile photo URL in database for user {user_id}")
+            # Don't fail the entire operation, just log the warning
         
         return create_standardized_response(
             message="Profile photo uploaded successfully",
