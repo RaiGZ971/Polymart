@@ -1,7 +1,23 @@
-import { Textfield, Dropdown, Textarea, ToggleButton, Checkbox, CalendarPicker } from "../components";
+import {
+  Textfield,
+  Dropdown,
+  Textarea,
+  ToggleButton,
+  Checkbox,
+  CalendarPicker,
+} from "../components";
 
-export const useListingFieldRenderer = (listingData, listingFieldConfig, handlers) => {
-  const { handleChange, handleDropdownChange, handleBooleanToggle, handleArraySelection } = handlers;
+export const useListingFieldRenderer = (
+  listingData,
+  listingFieldConfig,
+  handlers
+) => {
+  const {
+    handleChange,
+    handleDropdownChange,
+    handleBooleanToggle,
+    handleArraySelection,
+  } = handlers;
 
   // Helper function to get field value
   const getFieldValue = (fieldName) => {
@@ -77,7 +93,9 @@ export const useListingFieldRenderer = (listingData, listingFieldConfig, handler
             id="isSingleItem"
             label="Single-item product"
             checked={listingData.isSingleItem}
-            onChange={(e) => handleBooleanToggle("isSingleItem", e.target.checked)}
+            onChange={(e) =>
+              handleBooleanToggle("isSingleItem", e.target.checked)
+            }
           />
         </div>
       );
@@ -87,11 +105,11 @@ export const useListingFieldRenderer = (listingData, listingFieldConfig, handler
       label: config.label,
       value: getFieldValue(fieldName),
       required: config.required,
-      disabled: config.disabled
+      disabled: config.disabled,
     };
 
     switch (config.component) {
-      case 'textfield':
+      case "textfield":
         return (
           <Textfield
             key={fieldName}
@@ -101,8 +119,8 @@ export const useListingFieldRenderer = (listingData, listingFieldConfig, handler
             maxLength={config.maxLength}
           />
         );
-      
-      case 'dropdown':
+
+      case "dropdown":
         return (
           <Dropdown
             key={fieldName}
@@ -112,7 +130,7 @@ export const useListingFieldRenderer = (listingData, listingFieldConfig, handler
           />
         );
 
-      case 'textarea':
+      case "textarea":
         return (
           <Textarea
             key={fieldName}
@@ -123,17 +141,25 @@ export const useListingFieldRenderer = (listingData, listingFieldConfig, handler
           />
         );
 
-      case 'checkbox':
+      case "checkbox":
         // Handle multiple checkbox options (like meetup locations)
         if (config.options && config.options.length > 0) {
+          // Add numbers to each option label
+          const numberedOptions = config.options.map((opt, idx) => ({
+            ...opt,
+            label: `${idx + 1}. ${opt.label}`,
+          }));
           return (
             <Checkbox
               key={fieldName}
               id={fieldName}
               label={config.label}
               checked={listingData[fieldName] || []}
-              onChange={(e) => handleArraySelection && handleArraySelection(fieldName, e.target.value)}
-              options={config.options}
+              onChange={(e) =>
+                handleArraySelection &&
+                handleArraySelection(fieldName, e.target.value)
+              }
+              options={numberedOptions}
               disabled={config.disabled}
             />
           );
@@ -145,12 +171,15 @@ export const useListingFieldRenderer = (listingData, listingFieldConfig, handler
             id={fieldName}
             label={config.label}
             checked={Boolean(getFieldValue(fieldName))}
-            onChange={(e) => handleBooleanToggle && handleBooleanToggle(fieldName, e.target.checked)}
+            onChange={(e) =>
+              handleBooleanToggle &&
+              handleBooleanToggle(fieldName, e.target.checked)
+            }
             disabled={config.disabled}
           />
         );
 
-      case 'toggle':
+      case "toggle":
         // Support multiple selections (array) for toggles
         const value = getFieldValue(fieldName);
         const isArray = Array.isArray(value);
@@ -172,12 +201,20 @@ export const useListingFieldRenderer = (listingData, listingFieldConfig, handler
                         ? value.filter((v) => v !== option.value)
                         : [...value, option.value];
                       // Respect maxSelections if set
-                      if (config.maxSelections && newValue.length > config.maxSelections) {
+                      if (
+                        config.maxSelections &&
+                        newValue.length > config.maxSelections
+                      ) {
                         return;
                       }
-                      handleArraySelection(fieldName, newValue, config.maxSelections);
+                      handleArraySelection(
+                        fieldName,
+                        newValue,
+                        config.maxSelections
+                      );
                     } else {
-                      handleBooleanToggle && handleBooleanToggle(fieldName, option.value);
+                      handleBooleanToggle &&
+                        handleBooleanToggle(fieldName, option.value);
                     }
                   }}
                 />
@@ -186,7 +223,7 @@ export const useListingFieldRenderer = (listingData, listingFieldConfig, handler
           </div>
         );
 
-      case 'calendar':
+      case "calendar":
         return (
           <CalendarPicker
             key={fieldName}
@@ -194,7 +231,12 @@ export const useListingFieldRenderer = (listingData, listingFieldConfig, handler
             value={listingData[fieldName] || []}
             onChange={(e) => {
               // Handle calendar's direct array update
-              const { handleChange, handleDropdownChange, handleBooleanToggle, handleArraySelection } = handlers;
+              const {
+                handleChange,
+                handleDropdownChange,
+                handleBooleanToggle,
+                handleArraySelection,
+              } = handlers;
               if (handleArraySelection) {
                 handleArraySelection(fieldName, e.target.value);
               }
@@ -203,7 +245,7 @@ export const useListingFieldRenderer = (listingData, listingFieldConfig, handler
             disabled={config.disabled}
           />
         );
-      
+
       default:
         return null;
     }
@@ -212,6 +254,6 @@ export const useListingFieldRenderer = (listingData, listingFieldConfig, handler
   return {
     renderListingField,
     getFieldValue,
-    getFieldOptions
+    getFieldOptions,
   };
 };
