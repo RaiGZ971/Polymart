@@ -3,12 +3,14 @@ import { useState, useRef, useEffect } from "react";
 
 export default function ProductCard({ order }) {
   const {
-    productImage = "https://picsum.photos/247/245",
-    productName = "Crocheted Photocard Holder",
-    productPrice = 300,
-    username = "backburnerngbayan",
-    itemsOrdered = 5,
-    userAvatar = "https://picsum.photos/18/18",
+    productImage,
+    productName,
+    productPrice,
+    priceRange,
+    hasPriceRange,
+    username,
+    itemsOrdered,
+    userAvatar,
   } = order || {};
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -46,13 +48,21 @@ export default function ProductCard({ order }) {
           </button>
           <div className="relative" ref={dropdownRef}>
             <button
-              className={`bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors ${dropdownOpen ? "text-[#950000]" : ""}`}
-              onClick={() => setDropdownOpen((v) => !v)}
+              className={`bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors ${
+                dropdownOpen ? "text-[#950000]" : ""
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDropdownOpen((v) => !v);
+              }}
             >
               <MoreVertical size={20} />
             </button>
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+              <div
+                className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-20"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <button className="block w-full text-left px-4 py-2 text-sm hover:bg-[#950000]/10 hover:text-[#950000] transition-colors">
                   Report listing
                 </button>
@@ -71,7 +81,9 @@ export default function ProductCard({ order }) {
             {productName}
           </div>
           <div className="text-[18px] font-bold text-primary-red leading-tight">
-            PHP {productPrice}
+            {hasPriceRange && priceRange
+              ? `PHP ${priceRange.min} - PHP ${priceRange.max}`
+              : `PHP ${productPrice}`}
           </div>
         </div>
         <div className="flex items-center justify-between mt-3 gap-2">

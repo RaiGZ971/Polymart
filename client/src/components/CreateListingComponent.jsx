@@ -28,7 +28,7 @@ export default function CreateListingComponent({ onClose }) {
       handleDropdownChange,
       handleBooleanToggle,
       handleArraySelection,
-    },
+    }
   );
 
   const [showConfirm, setShowConfirm] = useState(false);
@@ -139,7 +139,7 @@ export default function CreateListingComponent({ onClose }) {
               <img
                 src={PUPMap}
                 alt="PUP Campus Map"
-                className="w-full h-auto rounded-lg shadow-md"
+                className="w-full h-auto rounded-2xl shadow-md"
               />
             </div>
             <div className="w-1/2">

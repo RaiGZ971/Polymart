@@ -13,17 +13,18 @@ const ordersSampleData = [
     remark: "None",
     role: "user",
     category: "creative",
-    productDescription: "This handmade crocheted photocard holder is crafted with premium yarn and attention to detail, making it the perfect accessory for K-pop fans and collectors. Its durable construction ensures your photocards are protected from wear and tear, while the cute and colorful design adds a personal touch to your collection. Each holder is unique and can fit standard photocard sizes, making it both functional and stylish for everyday use or as a thoughtful gift.",
+    productDescription:
+      "This handmade crocheted photocard holder is crafted with premium yarn and attention to detail, making it the perfect accessory for K-pop fans and collectors. Its durable construction ensures your photocards are protected from wear and tear, while the cute and colorful design adds a personal touch to your collection. Each holder is unique and can fit standard photocard sizes, making it both functional and stylish for everyday use or as a thoughtful gift.",
     stock: 10,
     sold: 18, // <-- added
     transactionMethods: ["meet-up"],
-    paymentMethods: ["gcash"],
-    meetupLocations: ["Lagoon"],
-    availableDates: ["2023-10-01"],
+    paymentMethods: ["Gcash", "Paymaya", "Cash"],
+    meetupLocations: ["Lagoon", "Gate Exit", "Souvenir Shop", "Chappel"],
+    availableDates: ["2025-07-23", "2025-07-25", "2025-08-02"],
     productTags: "crochet, photocard, kpop",
     hasPrice: true,
-    hasPriceRange: false,
-    priceRange: { min: "", max: "" },
+    hasPriceRange: true,
+    priceRange: { min: "100", max: "450" },
     isSingleItem: false,
     reviews: [
       {
@@ -32,11 +33,12 @@ const ordersSampleData = [
           avatar: "https://picsum.photos/201/150",
         },
         date: "2025/04/25 at 11:59 AM",
-        content: "Beautifully made and fits my photocards perfectly. Will order again!",
+        content:
+          "Beautifully made and fits my photocards perfectly. Will order again!",
         rating: 5,
         images: [
           "https://picsum.photos/201/101",
-          "https://picsum.photos/201/102"
+          "https://picsum.photos/201/102",
         ],
         helpfulCount: 22,
       },
@@ -78,7 +80,8 @@ const ordersSampleData = [
     remark: "Please bring exact amount.",
     role: "other",
     category: "fashion",
-    productDescription: "Carry your essentials in style with this eco-friendly handmade tote bag. Each bag is carefully sewn using sustainable materials, offering both durability and a fashionable look. The spacious interior is perfect for books, groceries, or daily necessities, while the sturdy handles ensure comfortable carrying. Its minimalist yet chic design makes it suitable for any occasion, whether you're heading to class, the market, or a casual outing.",
+    productDescription:
+      "Carry your essentials in style with this eco-friendly handmade tote bag. Each bag is carefully sewn using sustainable materials, offering both durability and a fashionable look. The spacious interior is perfect for books, groceries, or daily necessities, while the sturdy handles ensure comfortable carrying. Its minimalist yet chic design makes it suitable for any occasion, whether you're heading to class, the market, or a casual outing.",
     stock: 5,
     sold: 7, // <-- added
     transactionMethods: ["meet-up"],
@@ -97,11 +100,10 @@ const ordersSampleData = [
           avatar: "https://picsum.photos/202/150",
         },
         date: "2025/05/01 at 09:30 AM",
-        content: "Great product! Fast shipping and excellent customer service. Will buy again.",
+        content:
+          "Great product! Fast shipping and excellent customer service. Will buy again.",
         rating: 5,
-        images: [
-          "https://picsum.photos/202/101"
-        ],
+        images: ["https://picsum.photos/202/101"],
         helpfulCount: 15,
       },
       {
@@ -142,7 +144,8 @@ const ordersSampleData = [
     remark: "",
     role: "user",
     category: "anik",
-    productDescription: "Brighten up your belongings with this pack of 10 cute and waterproof stickers! Each sticker is printed on high-quality vinyl, making them resistant to water, fading, and scratches. Perfect for decorating laptops, water bottles, notebooks, phone cases, and more. The designs are original and exclusive, ensuring your items stand out with a touch of personality and fun. Great for gifting or personalizing your everyday essentials.",
+    productDescription:
+      "Brighten up your belongings with this pack of 10 cute and waterproof stickers! Each sticker is printed on high-quality vinyl, making them resistant to water, fading, and scratches. Perfect for decorating laptops, water bottles, notebooks, phone cases, and more. The designs are original and exclusive, ensuring your items stand out with a touch of personality and fun. Great for gifting or personalizing your everyday essentials.",
     stock: 30,
     sold: 25, // <-- added
     transactionMethods: ["meet-up", "online"],
@@ -161,11 +164,10 @@ const ordersSampleData = [
           avatar: "https://picsum.photos/203/150",
         },
         date: "2025/05/10 at 03:45 PM",
-        content: "Item arrived as described. Satisfied with the purchase, but packaging could be improved.",
+        content:
+          "Item arrived as described. Satisfied with the purchase, but packaging could be improved.",
         rating: 4,
-        images: [
-          "https://picsum.photos/203/101",
-        ],
+        images: ["https://picsum.photos/203/101"],
         helpfulCount: 8,
       },
       {
@@ -194,7 +196,7 @@ const ordersSampleData = [
   },
   {
     status: "Completed",
-    productName: "Math Notebook Set",
+    productName: "Math Notebook Set For Back To School",
     productImage: "https://picsum.photos/204/101",
     productPrice: 200,
     itemsOrdered: 3,
@@ -206,7 +208,8 @@ const ordersSampleData = [
     remark: "",
     role: "user",
     category: "academic",
-    productDescription: "Stay organized and excel in your studies with this set of 3 math notebooks. Each notebook features grid pages that are ideal for solving equations, drawing graphs, and taking detailed notes. The durable covers protect your notes from damage, while the compact size makes them easy to carry in your bag. Perfect for students of all levels who want to keep their math work neat and accessible.",
+    productDescription:
+      "Stay organized and excel in your studies with this set of 3 math notebooks. Each notebook features grid pages that are ideal for solving equations, drawing graphs, and taking detailed notes. The durable covers protect your notes from damage, while the compact size makes them easy to carry in your bag. Perfect for students of all levels who want to keep their math work neat and accessible.",
     stock: 15,
     sold: 12, // <-- added
     transactionMethods: ["meet-up"],
@@ -268,7 +271,8 @@ const ordersSampleData = [
     remark: "Screen replacement",
     role: "other",
     category: "services",
-    productDescription: "Get your laptop back in top shape with our professional repair service. We offer screen, battery, and keyboard replacements, as well as diagnostics and troubleshooting for various issues. Our experienced technicians use quality parts and provide quick turnaround times, ensuring minimal disruption to your work or studies. Trust us to handle your device with care and expertise.",
+    productDescription:
+      "Get your laptop back in top shape with our professional repair service. We offer screen, battery, and keyboard replacements, as well as diagnostics and troubleshooting for various issues. Our experienced technicians use quality parts and provide quick turnaround times, ensuring minimal disruption to your work or studies. Trust us to handle your device with care and expertise.",
     stock: 20,
     sold: 9, // <-- added
     transactionMethods: ["meet-up"],
@@ -330,7 +334,8 @@ const ordersSampleData = [
     remark: "",
     role: "user",
     category: "technology",
-    productDescription: "Upgrade your workspace with this ergonomic wireless mouse, designed for comfort and efficiency. Featuring a sleek design and long battery life, this mouse is perfect for both work and play. The responsive buttons and smooth tracking make navigation effortless, while the compact size fits easily in your bag for on-the-go use. Compatible with most devices via USB or Bluetooth.",
+    productDescription:
+      "Upgrade your workspace with this ergonomic wireless mouse, designed for comfort and efficiency. Featuring a sleek design and long battery life, this mouse is perfect for both work and play. The responsive buttons and smooth tracking make navigation effortless, while the compact size fits easily in your bag for on-the-go use. Compatible with most devices via USB or Bluetooth.",
     stock: 12,
     sold: 15, // <-- added
     transactionMethods: ["meet-up", "online"],
@@ -351,9 +356,7 @@ const ordersSampleData = [
         date: "2025/07/01 at 1:00 PM",
         content: "Works perfectly with my laptop. Good battery life.",
         rating: 4,
-        images: [
-          "https://picsum.photos/206/102",
-        ],
+        images: ["https://picsum.photos/206/102"],
         helpfulCount: 3,
       },
       {
@@ -394,7 +397,8 @@ const ordersSampleData = [
     remark: "Please add initials.",
     role: "user",
     category: "other",
-    productDescription: "Personalize your keys or bags with this custom keychain, handcrafted to your specifications. Choose your preferred color, shape, and add your initials or a short name for a unique accessory. Made from durable materials, this keychain is both stylish and practical, making it a great gift for friends, family, or yourself. Perfect for adding a personal touch to your everyday items.",
+    productDescription:
+      "Personalize your keys or bags with this custom keychain, handcrafted to your specifications. Choose your preferred color, shape, and add your initials or a short name for a unique accessory. Made from durable materials, this keychain is both stylish and practical, making it a great gift for friends, family, or yourself. Perfect for adding a personal touch to your everyday items.",
     stock: 50,
     sold: 30, // <-- added
     transactionMethods: ["meet-up"],
@@ -415,9 +419,7 @@ const ordersSampleData = [
         date: "2025/07/10 at 8:00 AM",
         content: "Cute and well-made. Seller was very accommodating.",
         rating: 5,
-        images: [
-          "https://picsum.photos/207/102",
-        ],
+        images: ["https://picsum.photos/207/102"],
         helpfulCount: 2,
       },
       {

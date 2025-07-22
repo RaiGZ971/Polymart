@@ -48,3 +48,6 @@ export { default as QuantityPicker } from "./form-elements/QuantityPicker";
 export { default as ProductCard } from "./dashboard/ProductCard";
 export { default as StaticRatingStars } from "./shared/StaticRatingStars";
 export { default as PlaceOrder } from "./listing/PlaceOrder";
+export { default as ImageCarousel } from "./shared/ImageCarousel";
+export { default as GrayTag } from "./form-elements/GrayTag";
+export { default as CalendarViewer } from "./form-elements/CalendarViewer";
