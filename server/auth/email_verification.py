@@ -29,8 +29,9 @@ async def create_email_verification_request(email: str) -> Optional[Dict[str, An
         # Generate verification token
         token = generate_verification_token()
         
-        # Set expiration (15 minutes from now)
-        expires_at = datetime.utcnow() + timedelta(minutes=15)
+        # Set expiration (configurable via environment variable)
+        expire_minutes = int(os.getenv("EMAIL_VERIFICATION_EXPIRE_MINUTES", "15"))
+        expires_at = datetime.utcnow() + timedelta(minutes=expire_minutes)
         
                 # Get unauthenticated client (anyone can create verification requests)
         supabase = get_unauthenticated_supabase_client()
@@ -42,8 +43,7 @@ async def create_email_verification_request(email: str) -> Optional[Dict[str, An
         print(f"Token: {token}")
         print(f"Expires at: {expires_at.isoformat()}")
         
-        # For now, just create a new verification request
-        # (Skip checking for existing tokens to simplify)
+        # Use UPSERT pattern to handle existing emails
         verification_data = {
             "email": email,
             "token": token,
@@ -52,10 +52,11 @@ async def create_email_verification_request(email: str) -> Optional[Dict[str, An
         }
         
         try:
+            # Use upsert to insert new or update existing email verification request
             result = supabase.table("email_verification_requests")\
-                .insert(verification_data)\
+                .upsert(verification_data, on_conflict="email")\
                 .execute()
-            print(f"Insert result: {result}")
+            print(f"Upsert result: {result}")
         except Exception as e:
             print(f"Error inserting new token: {e}")
             return None
@@ -96,20 +97,14 @@ async def send_verification_email(email: str, token: str) -> bool:
             print("Email configuration missing")
             return False
         
-        # FOR TESTING: Print the verification link to console for debugging
-        print(f"=== EMAIL VERIFICATION LINK ===")
-        print(f"Email: {email}")
-        print(f"Verification URL: {verification_url}")
-        print(f"=== SENDING EMAIL NOW ===")
-        
-        # Now attempt to send the actual email
+        # Send verification email
         # Create message
         message = MIMEMultipart("related")
         message["Subject"] = "Welcome to Polymart - Verify Your Email to Get Started"
         message["From"] = sender_email
         message["To"] = email
 
-        # Create alternative container for text and HTML parts
+        # Create alternative container for HTML content
         msg_alternative = MIMEMultipart("alternative")
         
         # Read HTML template
@@ -124,37 +119,10 @@ async def send_verification_email(email: str, token: str) -> bool:
         # Replace template variables
         html_content = html_template.replace("{{ verification_url }}", verification_url)
         
-        # Plain text fallback
-        text_content = f"""
-Welcome to Polymart
-
-Sa Polymart, lahat ng isko may pwesto!
-
-Salamat for joining our community! To complete your registration and start exploring what Polymart has to offer, please verify your email address by clicking the link below:
-
-{verification_url}
-
-What awaits you:
-• Buy and sell within your campus community
-• Connect with fellow students  
-• Verified and safe transactions
-• Find textbooks, gadgets, and more
-
-This verification link expires in 15 minutes.
-
-Hindi mo naman ni-request? Just ignore this email.
-
----
-Polymart - Your trusted campus marketplace
-This email was sent automatically. Please do not reply.
-        """
-        
-        # Create MIMEText objects
-        text_part = MIMEText(text_content, "plain")
+        # Create HTML part
         html_part = MIMEText(html_content, "html")
         
-        # Add parts to alternative container
-        msg_alternative.attach(text_part)
+        # Add HTML part to alternative container
         msg_alternative.attach(html_part)
         
         # Attach the alternative container to main message
@@ -318,7 +286,7 @@ def create_email_verification_response(success: bool, message: str, email: str =
         data["email"] = email
     if token_sent:
         data["token_sent"] = token_sent
-        data["expires_in_minutes"] = 15
+        data["expires_in_minutes"] = int(os.getenv("EMAIL_VERIFICATION_EXPIRE_MINUTES", "15"))
     
     status = "success" if success else "error"
     return create_standardized_response(
