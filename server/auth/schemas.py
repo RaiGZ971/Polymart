@@ -9,14 +9,14 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: str
 
-class LoginForm(BaseModel):
+class Login(BaseModel):
     student_number: str
     password: str
 
-class SignUpForm(BaseModel):
+class SignUp(BaseModel):
     username: str
     first_name: str
-    middle_name: str
+    middle_name: Optional[str] = None
     last_name: str
     email: str
     password: str
