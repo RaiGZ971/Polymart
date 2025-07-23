@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 import boto3
-import os
+from s3 import utils
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
+import os
 
-from s3 import utils
+from urllib.parse import urlparse
 from auth.utils import get_current_user
 from core.utils import create_standardized_response
 from core.config import generate_private_url, convert_s3_key_to_public_url
@@ -29,17 +30,14 @@ async def upload_review_images(reviewee_id: str, images: list[UploadFile] = File
                 ExtraArgs={"ContentType": file.content_type}
             )
 
-        return {"images": processed_images}
+        return{"images": processed_images}
 
     except ClientError as e:
-        raise HTTPException(
-            status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], 
-            detail=f"Failed to upload review images: {e.response['Error']['Message']}"
-        )
+        raise HTTPException(status_code=e.response["responseMetadata"]["HTTPStatusCode"], detail=f"Failed to upload array images in {os.getenv("S3_PUBLIC_BUCKET")}/user_documents/reviews/{reviewee_id}")
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to upload review images: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload array images: {str(e)}")
     
 @router.post("/message/{room_id}")
 async def upload_message_image(room_id: str, image: UploadFile = File(...)):
@@ -56,10 +54,7 @@ async def upload_message_image(room_id: str, image: UploadFile = File(...)):
         return {"image": processed_image}
 
     except ClientError as e:
-        raise HTTPException(
-            status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], 
-            detail=f"Failed to upload message image: {e.response['Error']['Message']}"
-        )
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to upload image in {os.getenv("S3_PRIVATE_BUCKET")}/user_documents/messages/{room_id}")
     except HTTPException:
         raise
     except Exception as e:
@@ -440,6 +435,62 @@ async def migrate_image_urls(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to migrate image URLs: {str(e)}")
 
-        
+@router.delete("/message")
+async def delete_message_image(image: str):
+    try:
+        parsedImage = urlparse(image)
+        key = parsedImage.path.lstrip("/")
 
+        s3_client.delete_object(
+            Bucket=os.getenv("S3_PRIVATE_BUCKET"),
+            Key=key
+        )
 
+        return{"image deleted": key}
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete image meesage in {os.getenv("S3_PRIVATE_BUCKET")}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete image message: {str(e)}")
+    
+@router.delete("/review-images")
+async def delete_review_images(images: list[str]):
+    try:
+        parsedImages = [urlparse(image) for image in images]
+        keys = [parsedImage.path.lstrip("/") for parsedImage in parsedImages]
+    
+        s3_client.delete_objects(
+            Bucket=os.getenv("S3_PUBLIC_BUCKET"), 
+            Delete={"Objects": [{"Key": key} for key in keys]}
+        )
+
+        return {"images deleted": keys}
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete images review in {os.getenv("S3_PUBLIC_BUCKET")}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete images in review: {str(e)}")
+
+@router.delete("/review-image")
+async def delete_review_image(image: str):
+    try:
+        parsedImage = urlparse(image)
+        key = parsedImage.path.lstrip("/")
+
+        s3_client.delete_object(
+            Bucket=os.getenv("S3_PUBLIC_BUCKET"),
+            Key=key
+        )
+
+        return {"image deleted": key}
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete image review in {os.getenv("S3_PUBLIC_BUCKET")}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete image review: {str(e)}")
