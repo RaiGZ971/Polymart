@@ -1,136 +1,377 @@
 import { useState } from "react";
-import { MainDashboard } from "../../components";
-import ReviewComponent from "../../components/ratings/ReviewComponent";
-import { QuantityPicker } from "../../components";
+import {
+  MainDashboard,
+  PlaceOrder,
+  QuantityPicker,
+  GrayTag,
+  CalendarViewer,
+  StaticRatingStars,
+  ImageCarousel,
+  ReviewComponent,
+  ChatApp,
+} from "../../components";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Flag, Heart, ShoppingBag } from "lucide-react";
 import productCategories from "../../data/productCategories";
-import StaticRatingStars from "../../components/shared/StaticRatingStars";
+import { stallbanner, pupmap } from "../../assets";
+import meetUpLocations from "../../data/meetUpLocations";
+import timeSlots from "../../data/timeSlots";
 
 const getCategoryLabel = (value) => {
-    const found = productCategories.find(cat => cat.value === value);
-    return found ? found.label : value;
+  const found = productCategories.find((cat) => cat.value === value);
+  return found ? found.label : value;
 };
 
+// Helper to generate sample value for CalendarViewer from order.availableDates
+function getCalendarValue(order) {
+  if (!order?.availableDates) return [];
+  return order.availableDates.flatMap((date) =>
+    timeSlots.map((slot) => [date, slot.value])
+  );
+}
+
 export default function ViewProductDetails() {
-    const location = useLocation();
-    const navigate = useNavigate();
-    const order = location.state?.order;
-    const [quantity, setQuantity] = useState(1);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const order = location.state?.order;
+  const [quantity, setQuantity] = useState(1);
+  const [showPlaceOrder, setShowPlaceOrder] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [showChat, setShowChat] = useState(false); // <-- state for chat
 
-    // Calculate average rating from reviews
-const averageRating =
-  order.reviews && order.reviews.length > 0
-    ? Math.round(
-        order.reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
-          order.reviews.length
-      )
-    : 0;
+  const averageRating =
+    order.reviews && order.reviews.length > 0
+      ? Math.round(
+          order.reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
+            order.reviews.length
+        )
+      : 0;
 
-    if (!order) {
-        return (
-            <MainDashboard>
-                <div className="w-full flex justify-center items-center min-h-screen">
-                    <p className="text-lg text-gray-500">No product data found.</p>
-                </div>
-            </MainDashboard>
-        );
-    }
-
+  if (!order) {
     return (
-        <MainDashboard>
-            {/* Back Button */}
-            <div className="w-[80%] mt-10 flex cursor-pointer select-none" onClick={() => navigate(-1)}>
-                <ChevronLeft size={24} className="text-primary-red" />
-                <span className="ml-2 text-primary-red font-semibold hover:underline">Back</span>
-            </div>
-            {/*Main Container*/}
-            <div className="flex flex-col w-[80%] min-h-screen mt-5">
-                <div className="flex flex-row gap-10">
-                    {/*Left Column*/}
-                    <div className="w-1/2">
-                        <img
-                            src={order.productImage}
-                            alt={order.productName}
-                            className="w-full h-[480px] rounded-xl object-cover"
-                        />
-
-                        <div className="flex flex-row items-end justify-between mt-4">
-                            <h1 className="font-bold text-3xl text-primary-red text-left">Reviews:</h1>
-                            <p className="text-gray-500 text-sm">{order.reviews ? order.reviews.length : 0} reviews | {order.sold} items sold</p>
-                        </div>
-                        <div className="mt-4 space-y-4">
-                            {order.reviews && order.reviews.length > 0 ? (
-                                order.reviews.map((review, idx) => (
-                                    <ReviewComponent key={idx} review={review} />
-                                ))
-                            ) : (
-                                <p className="text-gray-500">No reviews yet.</p>
-                            )}
-                        </div>
-                    </div>
-                    {/*Right Column*/}
-                    <div className="w-1/2 text-left space-y-5">
-                        <div className="flex flex-col gap-2">
-                            {/* Title & Category */}
-                            <div>
-                                <div className="flex flex-row justify-between">
-                                    <p className="text-primary-red text-base">{getCategoryLabel(order.category)}</p>
-                                    <button className="text-sm group hover:text-primary-red hover:underline">
-                                        <Flag size={20} className="inline pr-1 group-hover:text-primary-red"/>
-                                        Report
-                                    </button>
-                                </div>
-                                <h1 className="text-4xl flex flex-wrap font-bold">{order.productName}</h1>
-                            </div>
-                            {/* Price & Average Rating */}
-                            <div className="flex flex-row items-center justify-between">
-                                <h2 className="text-3xl font-bold text-primary-red">PHP {order.productPrice}</h2>
-                                <div className="flex flex-col items-end">
-                                    <StaticRatingStars value={averageRating} />
-                                    <p className="text-sm font-semibold text-gray-800 mt-0.5">{averageRating} stars | {order.sold} reviews</p>
-                                </div>
-                            </div>
-                            {/* Product Description */}
-                            <div className="flex flex-col gap-1">
-                                <p className="text-base font-semibold text-primary-red">Product Description</p>
-                                <p className="text-sm text-gray-800">
-                                    {order.productDescription ||
-                                        "No description provided."}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                        {/* User Actions */}
-                        <div className="flex flex-row gap-1 text-base">
-                            <p className="font-semibold text-primary-red">Availability:</p> 
-                            <p className=" text-gray-800">{order.stock ?? 20} in stock</p>
-                        </div>
-                            <div className="flex flex-row gap-2 text-base">
-                                <p className="font-semibold text-primary-red">Item Quantity: </p>
-                                <QuantityPicker value={quantity} min={1} max={order.stock ?? 20} onChange={setQuantity} />
-                            </div>
-                        </div>
-                        <button className="hover:bg-primary-red hover:text-white px-4 py-2 rounded-full bg-white border-2 
-                        border-primary-red transition-colors text-primary-red font-bold w-full">
-                            Place Order
-                        </button>
-                        <div className="flex flex-row gap-4 items-center">
-                            <button className="text-sm group hover:text-primary-red hover:underline">
-                                <Heart size={20} className="inline pr-1 group-hover:text-primary-red"/>
-                                Add to Favorites
-                            </button>
-
-                            <button className="text-sm group hover:text-primary-red hover:underline">
-                                <ShoppingBag size={20} className="inline pr-1 group-hover:text-primary-red"/>
-                                Add to Bag
-                            </button>
-                            {/* User Actions End */}
-                            
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </MainDashboard>
+      <MainDashboard>
+        <div className="w-full flex justify-center items-center min-h-screen">
+          <p className="text-lg text-gray-500">No product data found.</p>
+        </div>
+      </MainDashboard>
     );
+  }
+
+  return (
+    <MainDashboard>
+      {/* Back Button */}
+      <div
+        className="w-[80%] mt-10 flex cursor-pointer select-none"
+        onClick={() => navigate(-1)}
+      >
+        <ChevronLeft size={24} className="text-primary-red" />
+        <span className="ml-2 text-primary-red font-semibold hover:underline">
+          Back
+        </span>
+      </div>
+      {/* Main Container */}
+      <div className="flex flex-col w-[80%] min-h-screen mt-5">
+        {/* First Row: Image Carousel + Product Details/User Actions */}
+        <div className="flex flex-row gap-12 items-center">
+          {/* Left: Image Carousel */}
+          <div className="w-1/2">
+            <ImageCarousel />
+          </div>
+          {/* Right: Product Details & User Actions */}
+          <div className="w-1/2 text-left space-y-5">
+            <div className="flex flex-col gap-2">
+              {/* Title & Category */}
+              <div>
+                <div className="flex flex-row justify-between">
+                  <p className="text-primary-red text-base">
+                    {getCategoryLabel(order.category)}
+                  </p>
+                  <button className="text-sm group hover:text-primary-red hover:underline">
+                    <Flag
+                      size={20}
+                      className="inline pr-1 group-hover:text-primary-red"
+                    />
+                    Report
+                  </button>
+                </div>
+                <h1 className="text-4xl flex flex-wrap font-bold">
+                  {order.productName}
+                </h1>
+              </div>
+              {/* Price & Average Rating */}
+              <div className="flex flex-row items-center justify-between">
+                <h2 className="text-3xl font-bold text-primary-red">
+                  {order.hasPriceRange && order.priceRange
+                    ? `PHP ${order.priceRange.min} - PHP ${order.priceRange.max}`
+                    : `PHP ${order.productPrice}`}
+                </h2>
+                <div className="flex flex-col items-end">
+                  <StaticRatingStars value={averageRating} />
+                  <p className="text-sm font-semibold text-gray-800 mt-0.5">
+                    {averageRating} stars | {order.sold} reviews
+                  </p>
+                </div>
+              </div>
+              {/* Product Description */}
+              <div className="flex flex-col gap-1">
+                <p className="text-base font-semibold text-primary-red">
+                  Product Description
+                </p>
+                <p className="text-sm text-gray-800">
+                  {order.productDescription || "No description provided."}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {/* User Actions */}
+              <div className="flex flex-row gap-1 text-base">
+                <p className="font-semibold text-primary-red">Availability:</p>
+                <p className=" text-gray-800">{order.stock ?? 20} in stock</p>
+              </div>
+              <div className="flex flex-row gap-2 text-base">
+                <p className="font-semibold text-primary-red">
+                  Item Quantity:{" "}
+                </p>
+                <QuantityPicker
+                  value={quantity}
+                  min={1}
+                  max={order.stock ?? 1}
+                  onChange={(val) => {
+                    if (val > (order.stock ?? 1)) {
+                      setQuantity(order.stock ?? 1);
+                    } else {
+                      setQuantity(val);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            {/* Place Order Button */}
+            <button
+              className="hover:bg-primary-red hover:text-white px-4 py-2 rounded-full bg-white border-2 
+                        border-primary-red transition-colors text-primary-red font-bold w-full"
+              onClick={() => setShowPlaceOrder(true)}
+            >
+              Place Order
+            </button>
+
+            <div className="flex flex-row gap-4 items-center">
+              <button className="text-sm group hover:text-primary-red hover:underline">
+                <Heart
+                  size={20}
+                  className="inline pr-1 group-hover:text-primary-red"
+                />
+                Add to Favorites
+              </button>
+              {/* User Actions End */}
+            </div>
+          </div>
+        </div>
+        {/* Second Row: Reviews + Seller Details */}
+        <div className="flex flex-row gap-12 mt-10">
+          {/* Left: Reviews */}
+          <div className="w-1/2">
+            <div className="flex flex-row items-end justify-between">
+              <h1 className="font-bold text-3xl text-primary-red text-left">
+                Reviews:
+              </h1>
+              <p className="text-gray-500 text-sm">
+                {order.reviews ? order.reviews.length : 0} reviews |{" "}
+                {order.sold} items sold
+              </p>
+            </div>
+
+            {/* Review Section */}
+            <div className="mt-4 space-y-4">
+              {order.reviews && order.reviews.length > 0 ? (
+                <>
+                  {(showAllReviews
+                    ? order.reviews
+                    : order.reviews.slice(0, 5)
+                  ).map((review, idx) => (
+                    <ReviewComponent key={idx} review={review} />
+                  ))}
+                  {!showAllReviews && order.reviews.length > 5 && (
+                    <button
+                      className="text-primary-red font-semibold hover:underline mt-2"
+                      onClick={() => setShowAllReviews(true)}
+                    >
+                      See All
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p className="text-gray-500">No reviews yet.</p>
+              )}
+            </div>
+          </div>
+          {/* Right: Seller Details */}
+          <div className="w-1/2">
+            {/* Seller */}
+            <div className="flex flex-row items-start justify-between">
+              <div className="flex flex-row items-center gap-4">
+                <div className="relative flex flex-col items-center w-20 h-20">
+                  {/* Stall Banner Overlay */}
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-32 h-12 overflow-hidden z-10 flex justify-center">
+                    <img
+                      src={stallbanner}
+                      alt="Stall Banner"
+                      className="w-full h-full object-cover"
+                      style={{ pointerEvents: "none" }}
+                    />
+                  </div>
+                  {/* User Image */}
+                  <img
+                    src="https://picsum.photos/247/245"
+                    alt="User Image"
+                    className="w-full h-full rounded-full object-cover z-0"
+                  />
+                </div>
+                <div className="text-left pl-3">
+                  <p className="font-bold text-lg">{order.username}</p>
+                  <p className="text-gray-500 text-sm">PUP Sta Mesa | CCIS</p>
+                  <p className="text-xs text-gray-800 mt-2">
+                    5 Listings | <span className="text-yellow-400">★</span> 4.5
+                    stars
+                  </p>
+                </div>
+              </div>
+              <div>
+                <button
+                  className="bg-primary-red font-semibold text-white px-4 py-2 rounded-lg hover:bg-hover-red transition-colors text-sm"
+                  onClick={() => setShowChat(true)}
+                >
+                  Message
+                </button>
+              </div>
+            </div>
+            {/* Map */}
+            <div className="flex flex-col text-left mt-10">
+              <h1 className="text-2xl font-bold text-primary-red">
+                Meet Up Details
+              </h1>
+              <button
+                className="focus:outline-none"
+                onClick={() => setShowMapModal(true)}
+                aria-label="View PUP Map"
+              >
+                <img
+                  src={pupmap}
+                  alt="PUP Map"
+                  className="w-full h-full rounded-2xl object-cover mt-4 hover:brightness-90 transition"
+                />
+              </button>
+            </div>
+            {/* Meet Up Locations */}
+            <div className="flex flex-col text-left mt-10">
+              <h1 className="text-primary-red font-semibold text-base">
+                Available Meet Up Locations
+              </h1>
+              <p className="text-sm text-gray-500">
+                Seller’s available meet-up locations are listed below
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {order.meetupLocations && order.meetupLocations.length > 0 ? (
+                  order.meetupLocations.map((loc, idx) => (
+                    <GrayTag key={idx} text={loc} />
+                  ))
+                ) : (
+                  <GrayTag text="No locations listed" />
+                )}
+              </div>
+            </div>
+            {/* Schedule */}
+            <div className="flex flex-col text-left mt-10">
+              <h1 className="text-primary-red font-semibold text-base">
+                Available Meet Up Schedules
+              </h1>
+              <p className="text-sm text-gray-500">
+                Seller’s available time and dates for meet-ups are listed below
+              </p>
+              <div className="mt-4">
+                <CalendarViewer
+                  label="Meet-up Schedule"
+                  value={getCalendarValue(order)}
+                  timeSlots={timeSlots}
+                />
+              </div>
+            </div>
+            {/* Payment Method */}
+            <div className="flex flex-col text-left mt-10">
+              <h1 className="text-primary-red font-semibold text-base">
+                Available Payment Methods{" "}
+              </h1>
+              <p className="text-sm text-gray-500">
+                All payment transactions are made during meet ups
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {order.meetupLocations && order.meetupLocations.length > 0 ? (
+                  order.paymentMethods.map((loc, idx) => (
+                    <GrayTag key={idx} text={loc} />
+                  ))
+                ) : (
+                  <GrayTag text="No locations listed" />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* PlaceOrder modal */}
+        {showPlaceOrder && (
+          <PlaceOrder
+            order={order}
+            quantity={quantity}
+            onClose={() => {
+              setShowPlaceOrder(false);
+            }}
+          />
+        )}
+      </div>
+      {/* Map Modal */}
+      {showMapModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 ">
+          <div className="bg-white rounded-xl p-10 max-w-2xl w-full relative">
+            <button
+              className="absolute top-2 right-2 text-primary-red font-bold text-lg"
+              onClick={() => setShowMapModal(false)}
+              aria-label="Close Map"
+            >
+              ×
+            </button>
+            <div className="relative w-full">
+              <img
+                src={pupmap}
+                alt="PUP Map Large"
+                className="w-full rounded-2xl h-auto object-contain"
+              />
+            </div>
+            {/* Normal mapping below the map */}
+            <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-6">
+              {meetUpLocations.slice(0, 6).map((loc, idx) => (
+                <div key={loc.value} className="flex items-center gap-2">
+                  <span className="font-bold text-primary-red">{idx + 1}.</span>
+                  <span className="text-gray-800">{loc.label}</span>
+                </div>
+              ))}
+              {meetUpLocations.slice(6, 12).map((loc, idx) => (
+                <div key={loc.value} className="flex items-center gap-2">
+                  <span className="font-bold text-primary-red">{idx + 7}.</span>
+                  <span className="text-gray-800">{loc.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Chat Modal */}
+      {showChat && (
+        <div className="fixed inset-0 z-50 shadow-glow flex items-start justify-end">
+          <div className="h-screen w-[30%] bg-white rounded-l-xl shadow-lg relative">
+            <ChatApp onClose={() => setShowChat(false)} />
+          </div>
+        </div>
+      )}
+    </MainDashboard>
+  );
 }

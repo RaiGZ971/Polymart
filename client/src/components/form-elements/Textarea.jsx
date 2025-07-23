@@ -1,19 +1,19 @@
 import { useState } from "react";
 
-export default function Textarea({ 
-    label="Label", 
-    required=false,
-    error: externalError = "",
-    onBlur,
-    onChange,
-    value = "",
-    rows = 4,
-    maxLength,
-    ...props
+export default function Textarea({
+  label = "Label",
+  required = false,
+  error: externalError = "",
+  onBlur,
+  onChange,
+  value = "",
+  rows = 4,
+  maxLength,
+  ...props
 }) {
   const [isFocused, setIsFocused] = useState(false);
   const [internalError, setInternalError] = useState("");
-  
+
   const displayError = externalError || internalError;
   const hasError = Boolean(displayError);
   const hasValue = Boolean(value);
@@ -22,17 +22,15 @@ export default function Textarea({
   const handleBlur = (e) => {
     const inputValue = e.target.value;
     setIsFocused(inputValue !== "");
-    
+
     if (required && !inputValue.trim()) {
       setInternalError(`${label} is required.`);
-    }
-    else if (maxLength && inputValue.length > maxLength) {
+    } else if (maxLength && inputValue.length > maxLength) {
       setInternalError(`${label} must be ${maxLength} characters or less.`);
-    } 
-    else {
+    } else {
       setInternalError("");
     }
-    
+
     if (onBlur) {
       onBlur(e);
     }
@@ -40,22 +38,22 @@ export default function Textarea({
 
   const handleChange = (e) => {
     let inputValue = e.target.value;
-    
+
     if (maxLength && inputValue.length > maxLength) {
       inputValue = inputValue.slice(0, maxLength);
       e = {
         ...e,
         target: {
           ...e.target,
-          value: inputValue
-        }
+          value: inputValue,
+        },
       };
     }
-    
+
     if (internalError) {
       setInternalError("");
     }
-    
+
     if (onChange) {
       onChange(e);
     }
@@ -66,14 +64,13 @@ export default function Textarea({
       {/*Textarea Container*/}
       <div
         className={`border py-3 px-6 rounded-[20px] relative w-full flex-1 flex transition-all duration-200 ease-in-out ${
-          hasError 
-            ? "border-error-red" 
-            : isFocused 
-              ? "border-black" 
+          hasError
+            ? "border-error-red"
+            : isFocused
+              ? "border-black"
               : "border-gray-400"
         }`}
       >
-
         {/*Textarea Input*/}
         <textarea
           className="text-black outline-none bg-transparent w-full font-poppins resize-none flex-1"
@@ -94,21 +91,24 @@ export default function Textarea({
               : `top-3 text-base ${hasError ? "text-error-red" : "text-gray-400"}`
           }`}
         >
-          {label}{required && <span className="text-error-red ml-1">*</span>}
+          {label}
+          {required && <span className="text-error-red ml-1">*</span>}
         </span>
       </div>
-      
+
       {/*Character Counter*/}
       {maxLength && (
         <div className="w-full flex justify-start mt-1 px-2">
-          <span className={`text-xs font-poppins ${
-            characterCount > maxLength ? 'text-error-red' : 'text-gray-400'
-          }`}>
+          <span
+            className={`text-xs font-poppins ${
+              characterCount > maxLength ? "text-error-red" : "text-gray-400"
+            }`}
+          >
             {characterCount}/{maxLength} characters
           </span>
         </div>
       )}
-      
+
       {/*Error Message*/}
       {hasError && (
         <span className="text-error-red text-xs mt-2 px-2 max-w-full text-left italic w-full pl-4 font-poppins">

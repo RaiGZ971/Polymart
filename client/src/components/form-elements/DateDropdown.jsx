@@ -1,17 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, ChevronUp, Calendar } from "lucide-react";
 
-export default function DateDropdown({ 
-    label = "Date", 
-    required = false,
-    error: externalError = "",
-    onBlur,
-    onChange,
-    value = "",
-    minDate = null,
-    maxDate = null,
-    placeholder = "Select date",
-    ...props
+export default function DateDropdown({
+  label = "Date",
+  required = false,
+  error: externalError = "",
+  onBlur,
+  onChange,
+  value = "",
+  minDate = null,
+  maxDate = null,
+  placeholder = "Select date",
+  ...props
 }) {
   const [isFocused, setIsFocused] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -19,7 +19,7 @@ export default function DateDropdown({
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const dropdownRef = useRef(null);
-  
+
   // Use external error if provided, otherwise use internal error
   const displayError = externalError || internalError;
   const hasError = Boolean(displayError);
@@ -34,9 +34,9 @@ export default function DateDropdown({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [hasValue]);
 
@@ -56,19 +56,19 @@ export default function DateDropdown({
 
   const handleDateSelect = (day) => {
     const selectedDate = new Date(selectedYear, selectedMonth, day);
-    const dateString = selectedDate.toISOString().split('T')[0]; 
-    
+    const dateString = selectedDate.toISOString().split("T")[0];
+
     if (onChange) {
       onChange({
         target: {
-          value: dateString 
-        }
+          value: dateString,
+        },
       });
     }
-    
+
     setIsOpen(false);
     setIsFocused(true);
-    
+
     // Clear error when user makes selection
     if (internalError) {
       setInternalError("");
@@ -78,14 +78,14 @@ export default function DateDropdown({
   const handleBlur = () => {
     if (!isOpen) {
       setIsFocused(hasValue);
-      
+
       // Validate required field
       if (required && !value) {
         setInternalError(`${label} is required.`);
       } else {
         setInternalError("");
       }
-      
+
       // Call external onBlur if provided
       if (onBlur) {
         onBlur({ target: { value } });
@@ -98,8 +98,8 @@ export default function DateDropdown({
     if (!dateValue) return "";
     const date = new Date(dateValue);
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Add 1 because getMonth() is 0-indexed
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0"); // Add 1 because getMonth() is 0-indexed
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}/${month}/${day}`;
   };
 
@@ -111,32 +111,42 @@ export default function DateDropdown({
     const daysInMonth = lastDay.getDate();
 
     const days = [];
-    
+
     // Add empty cells for days before month starts
     for (let i = 0; i < firstDayOfWeek; i++) {
       days.push(null);
     }
-    
+
     // Add days of month
     for (let day = 1; day <= daysInMonth; day++) {
       const currentDate = new Date(selectedYear, selectedMonth, day);
-      const isDisabled = 
+      const isDisabled =
         (minDate && currentDate < new Date(minDate)) ||
         (maxDate && currentDate > new Date(maxDate));
-      
+
       days.push({
         day,
         date: currentDate,
-        isDisabled
+        isDisabled,
       });
     }
-    
+
     return days;
   };
 
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   // Generate year options (current year ± 50 years)
@@ -151,10 +161,10 @@ export default function DateDropdown({
       {/*Date Dropdown Container*/}
       <div
         className={`border py-3 px-6 rounded-[30px] relative w-64 transition-all duration-200 ease-in-out cursor-pointer ${
-          hasError 
-            ? "border-error-red" 
+          hasError
+            ? "border-error-red"
             : isFocused || isOpen
-              ? "border-black" 
+              ? "border-black"
               : "border-gray-400"
         }`}
         onClick={handleToggle}
@@ -165,7 +175,7 @@ export default function DateDropdown({
           <span className={hasValue ? "text-black" : "text-transparent"}>
             {formatDisplayValue(value) || placeholder}
           </span>
-          
+
           {/* Calendar Icon */}
           <Calendar className="w-4 h-4 text-gray-600" />
         </div>
@@ -178,7 +188,8 @@ export default function DateDropdown({
               : `top-3 text-base ${hasError ? "text-error-red" : "text-gray-400"}`
           }`}
         >
-          {label}{required && <span className="text-error-red ml-1">*</span>}
+          {label}
+          {required && <span className="text-error-red ml-1">*</span>}
         </span>
 
         {/*Calendar Dropdown*/}
@@ -197,13 +208,13 @@ export default function DateDropdown({
                   </option>
                 ))}
               </select>
-              
+
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                 className="px-2 py-1 border rounded text-sm font-poppins"
               >
-                {years.map(year => (
+                {years.map((year) => (
                   <option key={year} value={year}>
                     {year}
                   </option>
@@ -215,8 +226,11 @@ export default function DateDropdown({
             <div className="p-4">
               {/* Days of week header */}
               <div className="grid grid-cols-7 gap-1 mb-2">
-                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                  <div key={day} className="text-center text-xs font-semibold text-gray-500 p-2">
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
+                  <div
+                    key={day}
+                    className="text-center text-xs font-semibold text-gray-500 p-2"
+                  >
                     {day}
                   </div>
                 ))}
@@ -229,9 +243,11 @@ export default function DateDropdown({
                     return <div key={index} className="p-2"></div>;
                   }
 
-                  const isSelected = selectedDate && 
+                  const isSelected =
+                    selectedDate &&
                     dayObj.date.getTime() === selectedDate.getTime();
-                  const isToday = dayObj.date.toDateString() === new Date().toDateString();
+                  const isToday =
+                    dayObj.date.toDateString() === new Date().toDateString();
 
                   return (
                     <button
@@ -241,13 +257,14 @@ export default function DateDropdown({
                       onClick={() => handleDateSelect(dayObj.day)}
                       className={`
                         p-2 text-sm rounded transition-colors duration-150 font-poppins
-                        ${isSelected 
-                          ? 'bg-black text-white' 
-                          : isToday
-                            ? 'bg-gray-200 text-black font-bold'
-                            : dayObj.isDisabled
-                              ? 'text-gray-300 cursor-not-allowed'
-                              : 'text-black hover:bg-gray-100'
+                        ${
+                          isSelected
+                            ? "bg-black text-white"
+                            : isToday
+                              ? "bg-gray-200 text-black font-bold"
+                              : dayObj.isDisabled
+                                ? "text-gray-300 cursor-not-allowed"
+                                : "text-black hover:bg-gray-100"
                         }
                       `}
                     >
@@ -260,7 +277,7 @@ export default function DateDropdown({
           </div>
         )}
       </div>
-      
+
       {/*Error Message*/}
       {hasError && (
         <span className="text-error-red text-xs mt-2 px-2 max-w-64 text-left italic w-full pl-6 font-poppins">
