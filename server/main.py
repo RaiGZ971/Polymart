@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
 from supabase_client.routes import router as supabase_router
-# from dynamodb.routes import router as dynamodb_router
+from dynamodb.routes import router as dynamodb_router
 from auth.routes import router as auth_router
 from s3.routes import router as s3_router
 import os
@@ -28,7 +28,6 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
-
 )
 
 # Mount static files for templates
@@ -49,7 +48,7 @@ async def email_verified(request: Request):
         "backend_url": backend_url
     })
 
-app.include_router(supabase_router, prefix="/supabase", tags=["Supabase"])
-# app.include_router(dynamodb_router, prefix="/dynamodb", tags=["DyanamoDB"])
+# app.include_router(supabase_router, prefix="/supabase", tags=["Supabase"])
+app.include_router(dynamodb_router, prefix="/dynamodb", tags=["DyanamoDB"])
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(s3_router, prefix="/s3", tags=["S3 File Uploads"])

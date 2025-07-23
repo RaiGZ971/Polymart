@@ -94,7 +94,7 @@ async def upload_file_with_metadata(
         file_content = await file.read()
         
         # Get file extension
-        file_ext = get_file_extension(file.filename, default_ext)
+        file_ext = get_file_extension(str(file.filename), default_ext)
         
         # Upload to S3
         file_url = await upload_file_to_s3(

@@ -58,7 +58,7 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
             raise ValueError("SECRET_KEY environment variable not found")
         
         return jwt.decode(token, secret_key, algorithms=["HS256"])
-    except (jwt.ExpiredSignatureError, jwt.JWTError):
+    except (jwt.ExpiredSignatureError, jwt.PyJWTError):
         return None
 
 def prepare_user_profile_data(
