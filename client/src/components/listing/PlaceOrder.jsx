@@ -217,8 +217,9 @@ export default function PlaceOrder({ order, quantity = 1, onClose }) {
           Cancel
         </button>
         <button
-          className="bg-primary-red text-white px-6 py-2 rounded-full font-semibold hover:bg-hover-red"
+          className="bg-primary-red text-white px-6 py-2 rounded-full font-semibold hover:bg-hover-red disabled:bg-gray-300 disabled:text-gray-500"
           onClick={() => setShowModal(true)}
+          disabled={currentUser?.role === "user"}
         >
           Place Order
         </button>

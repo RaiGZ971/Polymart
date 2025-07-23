@@ -35,6 +35,7 @@ export default function ViewProductDetails() {
   const location = useLocation();
   const navigate = useNavigate();
   const order = location.state?.order;
+  const currentUser = location.state?.currentUser; // <-- get currentUser from location state
   const [quantity, setQuantity] = useState(1);
   const [showPlaceOrder, setShowPlaceOrder] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
@@ -331,7 +332,8 @@ export default function ViewProductDetails() {
         {/* PlaceOrder modal */}
         {showPlaceOrder && (
           <PlaceOrder
-            order={customOrder ? customOrder : order}
+            order={order} // <-- pass order directly
+            currentUser={currentUser} // <-- pass currentUser
             quantity={quantity}
             onClose={() => {
               setShowPlaceOrder(false);
