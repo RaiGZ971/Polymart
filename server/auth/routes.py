@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import JSONResponse, RedirectResponse
 from auth import utils
+from auth.schemas import SignUp, Login
 from auth.email_verification import (
     create_email_verification_request, 
     send_verification_email, 
@@ -99,48 +100,33 @@ async def verify_email_link(token: str = Query(..., description="Verification to
 # =============================================
 
 @router.post("/signup")
-async def signup(
-    username: str = Form(...),
-    first_name: str = Form(...),
-    middle_name: Optional[str] = Form(None),
-    last_name: str = Form(...),
-    email: str = Form(...),
-    password: str = Form(...),
-    birthdate: str = Form(...),
-    pronouns: Optional[str] = Form(None),
-    contact_number: str = Form(...),
-    course: str = Form(...),
-    university_branch: str = Form(...),
-    college: str = Form(...),
-    student_number: str = Form(...),
-    bio: Optional[str] = Form(None)
-):
+async def signup(signup_data: SignUp):
     """
     Sign up route that creates a new user. Verification documents should be uploaded separately using /s3/user-documents/submit-verification.
     """
     try:
         # Hash the password
-        password_hash = utils.get_hashed_password(password)
+        password_hash = utils.get_hashed_password(signup_data.password)
         
         # Convert None values to empty strings for optional fields
-        pronouns = pronouns or ""
-        bio = bio or ""
-        middle_name = middle_name or ""
+        pronouns = signup_data.pronouns or ""
+        bio = signup_data.bio or ""
+        middle_name = signup_data.middle_name or ""
         
         # Prepare user profile data (without verification documents or profile photo)
         user_profile_data = utils.prepare_user_profile_data(
-            username=username,
-            first_name=first_name,
+            username=signup_data.username,
+            first_name=signup_data.first_name,
             middle_name=middle_name,
-            last_name=last_name,
-            email=email,
+            last_name=signup_data.last_name,
+            email=signup_data.email,
             password_hash=password_hash,
-            birthdate=birthdate,
-            contact_number=contact_number,
-            course=course,
-            university_branch=university_branch,
-            college=college,
-            student_number=student_number,
+            birthdate=signup_data.birthdate.isoformat(),  # Convert date to string
+            contact_number=signup_data.contact_number,
+            course=signup_data.course,
+            university_branch=signup_data.university_branch,
+            college=signup_data.college,
+            student_number=signup_data.student_number,
             pronouns=pronouns,
             bio=bio,
             profile_photo_url=None
@@ -157,7 +143,7 @@ async def signup(
         
         # Create and return success response
         response_data = utils.create_signup_response(
-            user_id, username, email, first_name, last_name
+            user_id, signup_data.username, signup_data.email, signup_data.first_name, signup_data.last_name
         )
         
         # Add verification status to response
@@ -174,16 +160,13 @@ async def signup(
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.post("/login")
-async def login(
-    student_number: str = Form(...),
-    password: str = Form(...)
-):
+async def login(login_data: Login):
     """
     Login route using student number and password
     """
     try:
         # Find user by student number
-        user = await get_user_by_student_number(student_number)
+        user = await get_user_by_student_number(login_data.student_number)
         if not user:
             raise HTTPException(
                 status_code=401, 
@@ -191,7 +174,7 @@ async def login(
             )
         
         # Verify password
-        if not utils.verify_password(password, user["password_hash"]):
+        if not utils.verify_password(login_data.password, user["password_hash"]):
             raise HTTPException(
                 status_code=401, 
                 detail="Invalid student number or password"
@@ -202,7 +185,8 @@ async def login(
             "user_id": user["user_id"],
             "username": user["username"],
             "email": user["email"],
-            "student_number": user["student_number"]
+            "student_number": user["student_number"],
+            "is_verified_student": user.get("is_verified_student", False)
         }
         
         access_token = utils.create_access_token(token_data)
