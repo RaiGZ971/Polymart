@@ -1,10 +1,10 @@
 const orderStatus = [
   { label: "All", value: "all" },
   { label: "Ongoing", value: "ongoing" },
-  { label: "Processing", value: "processing" },
+  { label: "Order Placed", value: "placed" },
   { label: "Completed", value: "completed" },
   { label: "Cancelled", value: "cancelled" },
-  { label: "Rescheduled", value: "rescheduled" }
+  { label: "Rescheduled", value: "rescheduled" },
 ];
 
 export default orderStatus;

@@ -7,7 +7,9 @@ export const EmailExpiredState = ({ email, onResend, onChangeEmail }) => {
         <Clock className="w-20 h-20 text-primary-red" />
       </div>
       <div>
-        <h3 className="text-3xl font-bold text-primary-red mb-5">Verification link expired</h3>
+        <h3 className="text-3xl font-bold text-primary-red mb-5">
+          Verification link expired
+        </h3>
         <p className="text-gray-800 mb-4">
           The verification link for <strong>{email}</strong> has expired.
         </p>

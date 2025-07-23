@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 
-export default function SearchBar({ 
-    searchTerm = "", 
-    setSearchTerm,
-    placeholder = "Got something in mind?",
-    ...props 
+export default function SearchBar({
+  searchTerm = "",
+  setSearchTerm,
+  placeholder = "Got something in mind?",
+  ...props
 }) {
   const [isFocused, setIsFocused] = useState(false);
   const hasValue = Boolean(searchTerm);
@@ -17,7 +17,7 @@ export default function SearchBar({
   };
 
   const handleFocus = () => setIsFocused(true);
-  
+
   const handleBlur = () => {
     setIsFocused(searchTerm !== "");
   };
@@ -31,9 +31,9 @@ export default function SearchBar({
         }`}
       >
         {/* Search Icon */}
-        <Search 
-          size={16} 
-          className="absolute right-4 text-gray-300 pointer-events-none" 
+        <Search
+          size={16}
+          className="absolute right-4 text-gray-300 pointer-events-none"
         />
 
         {/* Search Input */}
@@ -48,7 +48,6 @@ export default function SearchBar({
           onKeyDown={props.onKeyDown}
           {...props}
         />
-
       </div>
     </div>
   );
