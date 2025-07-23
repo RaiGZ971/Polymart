@@ -5,13 +5,13 @@ import { Flag, ChevronLeft, Send } from "lucide-react";
 import { useChat } from "../../hooks/useChat";
 import { useProductInfo } from "../../hooks/useProductInfo";
 
-const ChatContainer = ({ chatData, onBack }) => {
+const ChatContainer = ({ userID, chatData, onBack }) => {
     const username = chatData?.username || "nintendocicc";
     const avatarUrl = chatData?.avatarUrl || "/path/to/avatar.jpg";
     const productImageUrl = chatData?.productImage || "/path/to/product-image.jpg";
     const chatId = chatData?.id;
   
-    const { messages, addMessage, addBotResponse, selectChat } = useChat();
+    const { messages, addMessage, addBotResponse, selectChat } = useChat(userID);
     const productInfo = useProductInfo(chatId);
     const { productName, productPrice, meetUpPlace, meetUpDay, meetUpTime } = productInfo;
     const productImage = productImageUrl;

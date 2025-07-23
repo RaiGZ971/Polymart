@@ -219,7 +219,7 @@ export default function NavigationDashboard() {
                 <div className={`absolute right-0 top-0 h-full w-[30%] bg-white shadow-2xl transition-transform duration-500 ease-in-out rounded-tl-2xl rounded-bl-2xl ${
                     showChat ? 'translate-x-0' : 'translate-x-full'
                 }`}>
-                    <ChatApp onClose={handleCloseChat} />
+                    <ChatApp initialChatId="6l5j431j3456h845" onClose={handleCloseChat} />
                 </div>
             </div>
 
