@@ -3,7 +3,6 @@ const ordersSampleData = [
     status: "Processing",
     productName: "Crocheted Photocard Holder",
     productImage: "https://picsum.photos/201/101",
-    productPrice: 350,
     itemsOrdered: 2,
     username: "backburnerngbayan",
     userAvatar: "https://picsum.photos/201/150",
@@ -36,7 +35,8 @@ const ordersSampleData = [
     ],
     productTags: "crochet, photocard, kpop",
     hasPrice: true,
-    hasPriceRange: false,
+    hasPriceRange: true,
+    priceRange: { min: 300, max: 400 },
     isSingleItem: false,
     reviews: [
       {

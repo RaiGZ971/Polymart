@@ -44,13 +44,14 @@ export default function ProductDetail({ order, onBack, role }) {
     setShowConfirm,
     setShowReceivedConfirm,
     showMarkCompleteConfirm,
-    showMarkCompleteAlert,
+    showMarkCompleteAlert, // NEW
     setShowMarkCompleteConfirm,
     handleMarkCompleteClick,
     handleConfirmMarkComplete,
-    handleMarkCompleteAlertClose,
+    handleMarkCompleteAlertClose, // NEW
   } = useOrderModals();
 
+  // Add state for LeaveReview modal
   const [showLeaveReview, setShowLeaveReview] = useState(false);
   const [confirmType, setConfirmType] = useState("");
 
@@ -67,14 +68,16 @@ export default function ProductDetail({ order, onBack, role }) {
     setShowLeaveReview(true);
   };
 
+  // Handler for closing the LeaveReviewComponent
   const handleCloseLeaveReview = () => setShowLeaveReview(false);
 
+  // Optionally, pass user profile info for review
   const userProfile = {
     username: order.username,
     campus: "PUP Sta Mesa",
     department: "CCIS",
     profileImage: order.userAvatar || "https://picsum.photos/247/245",
-    id: order.userId,
+    id: order.userId, // adjust as needed
   };
 
   return (
@@ -138,7 +141,6 @@ export default function ProductDetail({ order, onBack, role }) {
             onCancelClick={handleCancelClick}
             onItemReceivedClick={handleItemReceivedClick}
             onMarkCompleteClick={handleMarkCompleteClick}
-            onLeaveReviewClick={handleOpenLeaveReview}
           />
         </div>
         {/* Modals */}
@@ -207,7 +209,7 @@ export default function ProductDetail({ order, onBack, role }) {
           onConfirm={handleConfirmMarkComplete}
         />
         <Modal
-          isOpen={showMarkCompleteAlert}
+          isOpen={showMarkCompleteAlert} // NEW
           onClose={handleMarkCompleteAlertClose}
           title="Marked as Complete"
           description="Order has been marked as complete."

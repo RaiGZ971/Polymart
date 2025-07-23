@@ -9,6 +9,7 @@ import {
   ImageCarousel,
   ReviewComponent,
   ChatApp,
+  Modal,
 } from "../../components";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Flag, Heart, ShoppingBag } from "lucide-react";
@@ -39,6 +40,10 @@ export default function ViewProductDetails() {
   const [showMapModal, setShowMapModal] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showChat, setShowChat] = useState(false); // <-- state for chat
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [offerPrice, setOfferPrice] = useState("");
+  const [offerMessage, setOfferMessage] = useState("");
+  const [customOrder, setCustomOrder] = useState(null); // for passing custom price
 
   const averageRating =
     order.reviews && order.reviews.length > 0
@@ -150,8 +155,14 @@ export default function ViewProductDetails() {
             {/* Place Order Button */}
             <button
               className="hover:bg-primary-red hover:text-white px-4 py-2 rounded-full bg-white border-2 
-                        border-primary-red transition-colors text-primary-red font-bold w-full"
-              onClick={() => setShowPlaceOrder(true)}
+                  border-primary-red transition-colors text-primary-red font-bold w-full"
+              onClick={() => {
+                if (order.hasPriceRange) {
+                  setShowOfferModal(true);
+                } else {
+                  setShowPlaceOrder(true);
+                }
+              }}
             >
               Place Order
             </button>
@@ -320,10 +331,11 @@ export default function ViewProductDetails() {
         {/* PlaceOrder modal */}
         {showPlaceOrder && (
           <PlaceOrder
-            order={order}
+            order={customOrder ? customOrder : order}
             quantity={quantity}
             onClose={() => {
               setShowPlaceOrder(false);
+              setCustomOrder(null);
             }}
           />
         )}
@@ -372,6 +384,49 @@ export default function ViewProductDetails() {
           </div>
         </div>
       )}
+      {/* Offer Modal */}
+      <Modal
+        isOpen={showOfferModal}
+        onClose={() => setShowOfferModal(false)}
+        title="Make an Offer"
+        description={
+          <>
+            This listing has a flexible price range of{" "}
+            <strong>
+              ₱{order.priceRange?.min}–₱{order.priceRange?.max}
+            </strong>
+            .<br />
+            The final price may depend on the service details such as size,
+            length, time, or workload.
+            <br />
+            <br />
+            Make an offer below and tell the seller what you need so they can
+            give you an exact price.
+          </>
+        }
+        type="offer"
+        offerPrice={offerPrice}
+        setOfferPrice={setOfferPrice}
+        offerMessage={offerMessage}
+        setOfferMessage={setOfferMessage}
+        onConfirm={() => {
+          const min = Number(order.priceRange?.min) || 0;
+          const max = Number(order.priceRange?.max) || 0;
+          const num = Number(offerPrice);
+          if (isNaN(num) || offerPrice === "" || num < min || num > max) {
+            alert(`Offer price must be between ₱${min} and ₱${max}.`);
+            return;
+          }
+          // Pass the custom price and message to PlaceOrder
+          setCustomOrder({
+            ...order,
+            productPriceOffer: num,
+            offerMessage,
+          });
+          setShowOfferModal(false);
+          setShowPlaceOrder(true);
+        }}
+      />
     </MainDashboard>
   );
 }
