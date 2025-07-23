@@ -42,6 +42,7 @@ export default function ChatApp({ initialChatId = null, onClose }) {
         />
       ) : (
         <ChatContainer
+          userID={initialChatId}
           chatData={selectedChat} // Pass the selected chat data
           onBack={handleBack}
         />
