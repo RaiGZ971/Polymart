@@ -288,7 +288,7 @@ export default function NavigationDashboard() {
             showChat ? "translate-x-0" : "translate-x-full"
           }`}
         >
-          <ChatApp onClose={handleCloseChat} />
+          <ChatApp initialChatId="6l5j431j3456h845" onClose={handleCloseChat} />
         </div>
       </div>
 

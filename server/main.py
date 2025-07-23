@@ -8,7 +8,9 @@ from s3.routes import router as s3_router
 app = FastAPI()
 
 origin = [
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
 ]
 
 app.add_middleware(

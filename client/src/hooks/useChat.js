@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { WebSocketService } from '../services/websocketService';
+import { ChatService } from '../services';
+import { formattedMessages } from '../utils/formattedMessages';
 
-export function useChat() {
-    // Chat list data
+export function useChat(userID) {
+    //Chat list data
     const [chats] = useState([
         {
-            id: 1,
+            id: "655b74fe4ea14086",
             username: "nintendocicc",
             sent: "2 hours ago",
             productImage: "https://picsum.photos/200/300",
@@ -37,7 +40,7 @@ export function useChat() {
         }
     ]);
 
-    // All chat messages storage
+    //All chat messages storage
     const [allChatMessages] = useState({
         1: [
             { text: "san na po kayo?", sender: "other" },
@@ -61,19 +64,54 @@ export function useChat() {
         ]
     });
 
-    // Current chat messages state
+    const [contactIDs, setContactIDs] = useState([]);
     const [currentChatId, setCurrentChatId] = useState(null);
     const [messages, setMessages] = useState([]);
+    //const [chats, setChats] = useState([]);
+    const [error, setError] = useState([]);
+    const [loading, setLoading] = useState([]);
+
+    
+    const wsService = useRef(new WebSocketService());
+
+    const fetchContacts = async () => {
+        setLoading(true);
+        setError(null);
+        try{
+            const data = await ChatService.getContacts(userID);
+            setContactIDs(data.contacts);
+        }catch (error){
+            setError(error.message);
+            console.error('Failed to fetch contacts: ', error);
+        }finally{
+            setLoading(false);
+        }
+    }
+
+    const fetchMessages = async (senderID, receiverID) => {
+        try{
+            const data = await ChatService.getMessages(senderID, receiverID);
+            return await formattedMessages(data, senderID);
+        }catch(error){
+            setError(error.message);
+            console.error('Failed to fetch messages: ', error);
+        }
+    };
 
     // Load messages when chat changes
     useEffect(() => {
-        if (currentChatId) {
-            const chatMessages = allChatMessages[currentChatId] || [
-                { text: "Hello! How can I help you?", sender: "other" }
-            ];
-            setMessages(chatMessages);
-        }
-    }, [currentChatId, allChatMessages]);
+        const loadMessages = async () => {
+            if (currentChatId) {
+                const chatMessages = await fetchMessages(userID, currentChatId) || [
+                    { text: "Hello! How can I help you?", sender: "other" }
+                ];
+                setMessages(chatMessages);
+                console.log(chatMessages)
+            }
+        };
+
+        loadMessages();
+    }, [currentChatId]);
 
     // Get latest message for each chat
     const getLatestMessage = (chatId) => {
@@ -143,6 +181,6 @@ export function useChat() {
         messages,
         addMessage,
         addBotResponse,
-        selectChat
+        selectChat,
     };
 }
