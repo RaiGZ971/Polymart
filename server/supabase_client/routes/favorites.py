@@ -30,7 +30,21 @@ async def toggle_favorite(
     try:
         # Get authenticated client
         supabase = get_supabase_client(current_user["user_id"])
-        
+
+        # Fetch listing details to get seller_id
+        listing_query = supabase.table("listings").select("listing_id,seller_id").eq("listing_id", favorite_data.listing_id).single()
+        listing_result = listing_query.execute()
+        if not listing_result.data or "seller_id" not in listing_result.data:
+            raise HTTPException(status_code=404, detail="Listing not found")
+        seller_id = listing_result.data["seller_id"]
+        if str(seller_id) == str(current_user["user_id"]):
+            return create_standardized_response(
+                success=False,
+                message="You cannot favorite your own listing.",
+                data=None,
+                status_code=400
+            )
+
         # Check if listing exists and is active
         await check_listing_exists_and_active(supabase, favorite_data.listing_id)
         
