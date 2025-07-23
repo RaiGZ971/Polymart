@@ -56,3 +56,23 @@ class ProductListingsResponse(BaseModel):
     total_count: int
     page: int
     page_size: int
+
+class FavoriteRequest(BaseModel):
+    listing_id: int = Field(..., description="ID of the listing to favorite/unfavorite")
+
+class FavoriteResponse(BaseModel):
+    success: bool
+    message: str
+    is_favorited: bool
+    listing_id: int
+
+class UserFavorite(BaseModel):
+    listing_id: int
+    favorited_at: datetime
+    listing: Optional[ProductListing] = None
+
+class UserFavoritesResponse(BaseModel):
+    favorites: List[UserFavorite]
+    total_count: int
+    page: int
+    page_size: int
