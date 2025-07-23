@@ -1,8 +1,8 @@
-import meetUpLocations from './meetUpLocations';
-import transactionMethods from './transactionMethods';
-import paymentMethods from './paymentMethods';
-import productCategories from './productCategories';
-import timeSlots from './timeSlots';
+import meetUpLocations from "./meetUpLocations";
+import transactionMethods from "./transactionMethods";
+import paymentMethods from "./paymentMethods";
+import productCategories from "./productCategories";
+import timeSlots from "./timeSlots";
 
 export const initialListingData = {
   // Product Details
@@ -11,66 +11,66 @@ export const initialListingData = {
   productDescription: "",
   productCategory: "",
   productTags: "",
-  
+
   // Pricing
   hasPrice: true, // boolean: true = fixed price, false = price range
   hasPriceRange: false,
   price: "",
   priceRange: {
     min: "",
-    max: ""
+    max: "",
   },
-  
+
   // Stock
   isSingleItem: true, // boolean: true = selling one item, false = multiple
   stock: 1,
-  
+
   // Transaction Details
   transactionMethods: [], // max 2 items: ['online', 'meet-up']
   paymentMethods: [], // multiple: ['cash', 'gcash', 'maya', 'bank_transfer', 'remittance']
   meetupLocations: [], // array of selected locations: lagoon, grandstand, etc.
-  availableDates: [], // array of date objects
-  
+  availableSchedules: [], // array of date objects
+
   // Additional
-  remark: ""
+  remark: "",
 };
 
 export const listingFieldConfig = {
   productTitle: {
     label: "Product Title",
     required: true,
-    component: 'textfield',
-    maxLength: 100
+    component: "textfield",
+    maxLength: 100,
   },
   productDescription: {
     label: "Product Description",
     required: true,
-    component: 'textarea',
+    component: "textarea",
     maxLength: 500,
-    rows: 4
+    rows: 4,
   },
   productCategory: {
     label: "Category",
     required: true,
-    component: 'dropdown',
-    options: productCategories
+    component: "dropdown",
+    options: productCategories,
   },
   productTags: {
     label: "Tags (Optional)",
     required: false,
-    component: 'textfield',
+    component: "textfield",
   },
   hasPriceRange: {
     label: "Include price range",
     required: false,
-    component: "checkbox"
+    component: "checkbox",
   },
   price: {
     label: "Price",
     required: true,
     component: "textfield",
     type: "number",
-    min: 1
+    min: 1,
   },
   priceRange: {
     min: {
@@ -78,60 +78,60 @@ export const listingFieldConfig = {
       required: true,
       component: "textfield",
       type: "number",
-      min: 1
+      min: 1,
     },
     max: {
       label: "Maximum Price",
       required: true,
       component: "textfield",
       type: "number",
-      min: 1
-    }
+      min: 1,
+    },
   },
   isSingleItem: {
     label: "I'm selling a single-item product",
     required: false,
-    component: "checkbox"
+    component: "checkbox",
   },
   stock: {
     label: "Stock Quantity",
     required: true,
     component: "textfield",
     type: "number",
-    min: 1
+    min: 1,
   },
   transactionMethods: {
     label: "Transaction Methods",
     required: true,
-    component: 'toggle',
+    component: "toggle",
     maxSelections: 2,
-    options: transactionMethods
+    options: transactionMethods,
   },
   paymentMethods: {
     label: "Payment Methods",
     required: true,
-    component: 'toggle',
-    options: paymentMethods
+    component: "toggle",
+    options: paymentMethods,
   },
   meetupLocations: {
     label: "Meet-up Locations",
     required: false,
-    component: 'checkbox',
-    options: meetUpLocations
+    component: "checkbox",
+    options: meetUpLocations,
   },
-  availableDates: {
-    label: "Available Dates",
+  availableSchedules: {
+    label: "Available Schedules",
     required: false,
-    component: 'calendar',
-    timeSlots: timeSlots
+    component: "calendar",
+    timeSlots: timeSlots,
   },
   remark: {
     label: "Remarks (Optional)",
     required: false,
-    component: 'textarea',
+    component: "textarea",
     maxLength: 200,
-    rows: 3
-  }
+    rows: 3,
+  },
 };
 
 export default initialListingData;
