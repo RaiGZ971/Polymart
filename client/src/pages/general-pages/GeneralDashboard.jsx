@@ -5,10 +5,11 @@ import {
   DropdownFilter,
   SmallButton,
   ProductCard,
+  Add,
+  CreateListingComponent,
+  MainDashboard,
 } from "../../components";
-import { ShoppingBag } from "lucide-react";
 import { sortByPriceOptions } from "../../data";
-import MainDashboard from "../../components/layout/MainDashboard";
 import ordersSampleData from "../../data/ordersSampleData";
 import { useNavigate } from "react-router-dom";
 
@@ -17,6 +18,7 @@ export default function GeneralDashboard() {
   const [sortBy, setSortBy] = useState("newest");
   const [searchTerm, setSearchTerm] = useState("");
   const [pendingSearch, setPendingSearch] = useState("");
+  const [showCreateListing, setShowCreateListing] = useState(false);
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("all-listings");
@@ -31,21 +33,30 @@ export default function GeneralDashboard() {
     setSortBy(newSortBy);
   };
 
-  const filteredOrders = ordersSampleData.filter((order) => {
+  // Separate data for All Listings and Your Listings
+  const allListings = ordersSampleData.filter((order) => {
     const matchesCategory =
       activeCategory === "all" || order.category === activeCategory;
     const matchesSearch = order.productName
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    // Tab filtering
-    if (activeTab === "your-listings") {
-      return (
-        matchesCategory && matchesSearch && order.sellerId === currentUser.id
-      );
-    }
-    // all-listings
     return matchesCategory && matchesSearch;
   });
+
+  const yourListings = ordersSampleData.filter((order) => {
+    const matchesCategory =
+      activeCategory === "all" || order.category === activeCategory;
+    const matchesSearch = order.productName
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    return (
+      matchesCategory && matchesSearch && order.seller_id === currentUser.id // Make sure your data has sellerId
+    );
+  });
+
+  // Choose which data to display based on activeTab
+  const filteredOrders =
+    activeTab === "your-listings" ? yourListings : allListings;
 
   const sortedOrders = [...filteredOrders].sort((a, b) => {
     if (sortBy === "low-to-high") {
@@ -131,17 +142,47 @@ export default function GeneralDashboard() {
             </span>
           </div>
         ) : (
-          sortedOrders.map((order, idx) => (
-            <div
-              key={idx}
-              onClick={() => handleProductClick(order)}
-              className="cursor-pointer h-full"
-            >
-              <ProductCard order={order} />
-            </div>
-          ))
+          <>
+            {activeTab === "your-listings" && (
+              <div className="h-full">
+                <Add
+                  text="Add a new listing"
+                  className="w-[268px] h-[346px] min-w-[247px] min-h-[346px]"
+                  onClick={() => setShowCreateListing(true)}
+                />
+              </div>
+            )}
+            {sortedOrders.map((order, idx) => (
+              <div
+                key={idx}
+                onClick={() => handleProductClick(order)}
+                className="cursor-pointer h-full"
+              >
+                <ProductCard order={order} />
+              </div>
+            ))}
+          </>
         )}
       </div>
+      {/* Overlay for CreateListingComponent */}
+      {showCreateListing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div
+            className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-lg
+                            transition-all duration-300
+                            animate-in
+                            animate-fade-in
+                            animate-scale-in"
+            style={{
+              animation: "fadeScaleIn 0.3s cubic-bezier(0.4,0,0.2,1)",
+            }}
+          >
+            <CreateListingComponent
+              onClose={() => setShowCreateListing(false)}
+            />
+          </div>
+        </div>
+      )}
     </MainDashboard>
   );
 }

@@ -6,6 +6,17 @@ export default function Items({ order }) {
     0
   );
 
+  // Check if productPriceOffer exists on the order
+  const isPendingOffer = !!order?.productPriceOffer;
+
+  // Use quantity from order or from first item (fallback)
+  const quantity = order?.quantity || (items[0]?.quantity ?? 1);
+
+  // Calculate offer total if pending offer
+  const offerTotal = isPendingOffer
+    ? Number(order.productPriceOffer) * Number(quantity)
+    : 0;
+
   return (
     <div className="w-full flex flex-col space-y-4 justify-between">
       <div className="w-full flex flex-row justify-between items-center">
@@ -29,7 +40,9 @@ export default function Items({ order }) {
             <div className="flex flex-col">
               <p className="text-gray-800 font-semibold">{item.name}</p>
               <p className="text-primary-red text-lg font-bold">
-                PHP {item.price}
+                {isPendingOffer
+                  ? `PHP ${order.productPriceOffer} x ${quantity}`
+                  : `PHP ${item.price}`}
               </p>
             </div>
             <div className="items-center flex flex-row">x {item.quantity}</div>
@@ -37,8 +50,12 @@ export default function Items({ order }) {
         </div>
       ))}
       <div className="w-full flex flex-row justify-between items-center mt-2">
-        <h1 className="text-2xl font-semibold">Total</h1>
-        <h1 className="text-2xl font-bold text-primary-red">PHP {total}</h1>
+        <h1 className="text-2xl font-semibold">
+          {isPendingOffer ? "Pending Offer" : "Total"}
+        </h1>
+        <h1 className="text-2xl font-bold text-primary-red">
+          {isPendingOffer ? `PHP ${offerTotal}` : `PHP ${total}`}
+        </h1>
       </div>
     </div>
   );
