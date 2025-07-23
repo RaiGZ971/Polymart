@@ -156,7 +156,7 @@ export default function NavigationDashboard() {
   return (
     <div>
       {/* Red Navigation Bar */}
-      <div className="bg-secondary-red">
+      <div className="bg-secondary-red z-40">
         <div className="text-white text-xs py-2 px-12 flex justify-between">
           {/* Left side - Customer Service and Help */}
           <div className="flex items-center">

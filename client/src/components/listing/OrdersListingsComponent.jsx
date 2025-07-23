@@ -2,11 +2,25 @@ import { ChevronRight } from "lucide-react";
 
 const statusColor = {
   completed: "#34A853",
-  processing: "#FBBC04",
+  placed: "#FBBC04",
+  "order placed": "#FBBC04", // Add this line for consistency
   cancelled: "#FF0000",
   ongoing: "#2670F9",
   rescheduled: "#F97B26",
 };
+
+function getStatusLabel(status) {
+  if (!status) return "";
+  const map = {
+    completed: "Completed",
+    "order placed": "Order Placed",
+    placed: "Order Placed",
+    cancelled: "Cancelled",
+    ongoing: "Ongoing",
+    rescheduled: "Rescheduled",
+  };
+  return map[status.toLowerCase()] || status;
+}
 
 export default function OrdersListingsComponent({
   status,
@@ -23,8 +37,8 @@ export default function OrdersListingsComponent({
   role,
 }) {
   const isUser = role === "user";
-  const barBg = isUser ? "bg-[#B7DBFF80]" : "bg-[#FFE38799]";
-  const barHover = isUser ? "hover:bg-[#B7DBFF]" : "hover:bg-[#FFE387EB]";
+  const barBg = isUser ? "bg-[#FFE38799]" : "bg-[#B7DBFF80]";
+  const barHover = isUser ? "hover:bg-[#FFE387EB]" : " hover:bg-[#B7DBFF]";
 
   const statusKey = status?.toLowerCase();
   const statusTextColor = statusColor[statusKey] || "#333";
@@ -49,7 +63,7 @@ export default function OrdersListingsComponent({
               className="text-sm font-semibold"
               style={{ color: statusTextColor }}
             >
-              {status}
+              {getStatusLabel(status)}
             </p>
             <h1 className="text-lg text-gray-800 font-bold">{productName}</h1>
             <h2 className="text-lg text-primary-red font-bold -mt-2">

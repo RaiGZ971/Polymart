@@ -22,11 +22,11 @@ const getCategoryLabel = (value) => {
   return found ? found.label : value;
 };
 
-// Helper to generate sample value for CalendarViewer from order.availableDates
+// Helper to generate value for CalendarViewer from order.availableSchedules
 function getCalendarValue(order) {
-  if (!order?.availableDates) return [];
-  return order.availableDates.flatMap((date) =>
-    timeSlots.map((slot) => [date, slot.value])
+  if (!order?.availableSchedules) return [];
+  return order.availableSchedules.flatMap((sched) =>
+    (sched.times || []).map((time) => [sched.date, time])
   );
 }
 

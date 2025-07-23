@@ -17,10 +17,9 @@ const EMOJI_MAP = {
 const NotificationItem = ({ notif, index }) => (
   <div key={index} className="relative flex justify-center px-4">
     {/* Hover shadow effect */}
-    <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-[245px] h-[calc(100%+12px)] rounded-[16px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-0 shadow-[0_0_16px_4px_rgba(149,0,0,0.18)]" />
 
     {/* Notification card */}
-    <div className="group bg-white shadow-md rounded-lg p-4 flex flex-col cursor-pointer transition-shadow relative w-full mx-auto z-10 hover:shadow-[0_2px_5px_0_rgba(115,12,12,0.5)]">
+    <div className="group bg-white shadow-light rounded-lg p-4 flex flex-col cursor-pointer transition-shadow relative w-full mx-auto z-10 hover:shadow-glow">
       {/* Header with emoji, title and chevron */}
       <div className="flex items-center justify-between w-full text-left">
         <span className="font-semibold">
@@ -52,7 +51,7 @@ const NotificationItem = ({ notif, index }) => (
 
 // Main overlay component
 const NotificationOverlay = ({ notifications, onClose }) => (
-  <div className="bg-white rounded-[10px] shadow-lg w-full h-screen py-6 flex flex-col font-montserrat">
+  <div className="bg-white rounded-[10px] shadow-light w-full h-screen py-6 flex flex-col font-montserrat">
     {/* Header */}
     <div className="bg-white py-6 relative items-center">
       <div className="flex items-center justify-center px-10">
