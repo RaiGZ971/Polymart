@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
@@ -13,6 +13,26 @@ class ListingImage(BaseModel):
     image_url: str
     is_primary: bool
 
+class MeetupTimeSlot(BaseModel):
+    start_time: datetime = Field(..., description="Start time for meetup availability")
+    end_time: datetime = Field(..., description="End time for meetup availability")
+
+class CreateListingRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100, description="Product name")
+    description: Optional[str] = Field(None, description="Product description")
+    category: str = Field(..., description="Product category")
+    tags: Optional[str] = Field(None, description="Product tags")
+    price_min: Optional[float] = Field(None, ge=0, description="Minimum price or fixed price")
+    price_max: Optional[float] = Field(None, ge=0, description="Maximum price (optional for price ranges)")
+    total_stock: Optional[int] = Field(None, ge=0, description="Total stock available")
+    seller_meetup_locations: Optional[List[str]] = Field(None, description="Available meetup locations")
+    meetup_time_slots: Optional[List[MeetupTimeSlot]] = Field(None, description="Available meetup time slots")
+
+class CreateListingResponse(BaseModel):
+    success: bool
+    message: str
+    data: dict
+
 class ProductListing(BaseModel):
     listing_id: int
     seller_id: int
@@ -20,6 +40,7 @@ class ProductListing(BaseModel):
     name: str
     description: Optional[str]
     category: str
+    tags: Optional[str]
     price_min: Optional[float]
     price_max: Optional[float]
     total_stock: Optional[int]
@@ -27,6 +48,7 @@ class ProductListing(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+    seller_meetup_locations: Optional[List[str]]
     images: List[ListingImage] = []
 
 class ProductListingsResponse(BaseModel):
