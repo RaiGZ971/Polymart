@@ -10,7 +10,8 @@ const MessageList = ({ messages, avatarUrl }) => {
       (prevMessage && prevMessage.sender === currentMessage.sender) ||
       (nextMessage && nextMessage.sender === currentMessage.sender);
 
-    const isFirst = !prevMessage || prevMessage.sender !== currentMessage.sender;
+    const isFirst =
+      !prevMessage || prevMessage.sender !== currentMessage.sender;
     const isLast = !nextMessage || nextMessage.sender !== currentMessage.sender;
 
     return { isFirst, isLast, isConsecutive };

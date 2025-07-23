@@ -1,6 +1,12 @@
-import { useState } from 'react';
+import { useState } from "react";
 
-export default function ImageUploader({ images = [], onImageUpload, onRemoveImage, maxImages = 5, error }) {
+export default function ImageUploader({
+  images = [],
+  onImageUpload,
+  onRemoveImage,
+  maxImages = 5,
+  error,
+}) {
   const [dragActive, setDragActive] = useState(false);
 
   const handleDrag = (e) => {
@@ -17,7 +23,7 @@ export default function ImageUploader({ images = [], onImageUpload, onRemoveImag
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       onImageUpload(e.dataTransfer.files);
     }
@@ -35,9 +41,10 @@ export default function ImageUploader({ images = [], onImageUpload, onRemoveImag
   return (
     <div className="w-full">
       <p className="text-gray-800 font-bold text-base mb-4">
-        Upload Images ({images.length}/{maxImages}) <span className="text-red-500">*</span>
+        Upload Images ({images.length}/{maxImages}){" "}
+        <span className="text-red-500">*</span>
       </p>
-      
+
       <div className="grid grid-cols-5 gap-4">
         {/* Display uploaded images */}
         {images.map((image, index) => (
@@ -55,21 +62,22 @@ export default function ImageUploader({ images = [], onImageUpload, onRemoveImag
             </button>
           </div>
         ))}
-        
+
         {/* Add new image button */}
         {canAddMore && (
           <div
             className={`aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors
-              ${dragActive 
-                ? 'border-primary-red bg-red-50' 
-                : 'border-gray-300 hover:border-gray-400'
+              ${
+                dragActive
+                  ? "border-primary-red bg-red-50"
+                  : "border-gray-300 hover:border-gray-400"
               }
             `}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
-            onClick={() => document.getElementById('imageInput').click()}
+            onClick={() => document.getElementById("imageInput").click()}
           >
             <div className="text-center">
               <div className="text-2xl text-gray-400 mb-2">+</div>
@@ -77,13 +85,19 @@ export default function ImageUploader({ images = [], onImageUpload, onRemoveImag
             </div>
           </div>
         )}
-        
+
         {/* Fill remaining slots with empty placeholders */}
-        {Array.from({ length: maxImages - images.length - (canAddMore ? 1 : 0) }, (_, index) => (
-          <div key={`empty-${index}`} className="aspect-square border-2 border-gray-200 rounded-lg bg-gray-50"></div>
-        ))}
+        {Array.from(
+          { length: maxImages - images.length - (canAddMore ? 1 : 0) },
+          (_, index) => (
+            <div
+              key={`empty-${index}`}
+              className="aspect-square border-2 border-gray-200 rounded-lg bg-gray-50"
+            ></div>
+          ),
+        )}
       </div>
-      
+
       <input
         id="imageInput"
         type="file"
@@ -92,13 +106,13 @@ export default function ImageUploader({ images = [], onImageUpload, onRemoveImag
         onChange={handleChange}
         className="hidden"
       />
-      
-      {error && (
-        <p className="text-red-500 text-sm mt-2">{error}</p>
-      )}
-      
+
+      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+
       {!canAddMore && (
-        <p className="text-sm text-gray-500 mt-2">Maximum {maxImages} images reached</p>
+        <p className="text-sm text-gray-500 mt-2">
+          Maximum {maxImages} images reached
+        </p>
       )}
     </div>
   );

@@ -85,8 +85,8 @@ const ChatInput = ({ onSend }) => {
           onClick={handleSend}
           disabled={!text.trim() && !selectedImage}
         >
-          <Send className="inline pr-2 rotate-45 mt-1"/>
-          </button>
+          <Send className="inline pr-2 rotate-45 mt-1" />
+        </button>
       </div>
     </div>
   );

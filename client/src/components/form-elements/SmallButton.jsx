@@ -1,12 +1,12 @@
-export default function SmallButton({ 
-    label = "Click Me", 
-    onClick, 
-    className = "",
-    bgColor = "hover:bg-secondary-red",
-    textColor = "text-hover-red",
-    borderColor = "border-hover-red",
-    hoverTextColor = "group-hover:text-white",
-    ...props 
+export default function SmallButton({
+  label = "Click Me",
+  onClick,
+  className = "",
+  bgColor = "hover:bg-secondary-red",
+  textColor = "text-hover-red",
+  borderColor = "border-hover-red",
+  hoverTextColor = "group-hover:text-white",
+  ...props
 }) {
   return (
     <div className="relative inline-block font-montserrat">
