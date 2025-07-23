@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification - Polymart</title>
+</head>
+<body>
+    <div id="content">
+        <h1 id="title">Verifying Email...</h1>
+        <p id="message">Please wait while we verify your email address.</p>
+        <div id="actions"></div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const success = urlParams.get('success');
+        const email = urlParams.get('email');
+        const error = urlParams.get('error');
+        
+        const title = document.getElementById('title');
+        const message = document.getElementById('message');
+        const actions = document.getElementById('actions');
+        
+        if (success === 'true') {
+            // Success case
+            title.textContent = 'Email Verified Successfully!';
+            message.innerHTML = `
+                Your email address has been verified successfully.
+                ${email ? `<div>${email}</div>` : ''}
+                You can now continue with your registration.
+            `;
+            actions.innerHTML = '<a href="{{ frontend_url }}/signup">Continue Registration</a>';
+        } else {
+            // Error case
+            title.textContent = 'Email Verification Failed';
+            message.innerHTML = `
+                ${error || 'There was an error verifying your email address.'}
+                <br><br>
+                Please try requesting a new verification email.
+            `;
+            actions.innerHTML = '<a href="{{ backend_url }}/auth/verify-email/send">Request New Verification</a>';
+        }
+        
+        // Auto-redirect to main app after successful verification
+        if (success === 'true') {
+            setTimeout(() => {
+                // Try to redirect to the main app or signup page
+                window.location.href = '{{ frontend_url }}/signup';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
