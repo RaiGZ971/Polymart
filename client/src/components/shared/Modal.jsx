@@ -1,3 +1,5 @@
+import { createPortal } from "react-dom";
+
 export default function Modal({
   isOpen,
   onClose,
@@ -9,10 +11,10 @@ export default function Modal({
 }) {
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+  return createPortal(
+    <div className="fixed inset-0 top-0 left-0 z-[100000] flex items-center justify-center bg-black bg-opacity-40 m-0 p-0">
       <div className="bg-white rounded-xl p-8 max-w-md w-full relative text-left">
-        <h2 className="text-xl font-bold mb-4">{title}</h2>
+        <h2 className="text-xl font-bold mb-4 text-primary-red">{title}</h2>
         <p className="mb-6">{description}</p>
         {children}
         <div className="flex justify-end gap-2">
@@ -22,13 +24,13 @@ export default function Modal({
                 className="border border-primary-red text-primary-red px-6 py-2 rounded-full"
                 onClick={onClose}
               >
-                Cancel
+                CANCEL
               </button>
               <button
                 className="bg-primary-red text-white px-6 py-2 rounded-full"
                 onClick={onConfirm}
               >
-                Confirm
+                CONFIRM
               </button>
             </>
           )}
@@ -42,6 +44,7 @@ export default function Modal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

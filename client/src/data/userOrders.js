@@ -3,7 +3,7 @@ const userOrders = [
   {
     id: 1,
     role: "user",
-    status: "Completed",
+    status: "Order Placed",
     location: "Souvenir Shop",
     product: "Vintage Camera",
     date: "2025-07-01",
@@ -58,7 +58,7 @@ const userOrders = [
   },
   {
     id: 3,
-    role: "user",
+    role: "owner",
     status: "Cancelled",
     location: "Lagoon",
     product: "Bluetooth Speaker",
@@ -84,8 +84,8 @@ const userOrders = [
   // 1 ongoing order from user's own listing (user is the seller)
   {
     id: 4,
-    role: "owner", // or "seller"
-    status: "Ongoing",
+    role: "owner",
+    status: "Order Placed",
     location: "Gate Exit",
     product: "Polaroid Film",
     date: "2025-07-20",
@@ -110,6 +110,32 @@ const userOrders = [
         image: "https://picsum.photos/201/101?44",
         price: 350,
         quantity: 1,
+      },
+    ],
+  },
+
+  {
+    id: 5,
+    role: "user",
+    status: "Completed",
+    location: "Gate Exit",
+    product: "Polaroid Camera",
+    date: "2025-07-20",
+    productName: "Polaroid Camera",
+    productImage: "https://picsum.photos/201/101?4",
+    productPrice: 900,
+    itemsOrdered: 3,
+    username: "buyer_lisa",
+    userAvatar: "https://picsum.photos/201/150?4",
+    paymentMethod: "GCash",
+    schedule: "2025-07-21 11:00 AM",
+    remark: "",
+    productsOrdered: [
+      {
+        name: "Polaroid Camera",
+        image: "https://picsum.photos/201/101?4",
+        price: 900,
+        quantity: 2,
       },
     ],
   },
