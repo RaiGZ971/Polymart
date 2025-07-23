@@ -1,19 +1,84 @@
+import React, { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { Items, MeetUpDetails } from "../../components";
+import Modal from "../shared/Modal";
+import { useOrderModals } from "../../hooks";
+import { ActionButtons, LeaveReviewComponent } from "../../components";
 
 const statusColor = {
   completed: "#34A853",
-  processing: "#FBBC04",
+  placed: "#FBBC04",
+  "order placed": "#FBBC04",
   cancelled: "#FF0000",
   ongoing: "#2670F9",
   rescheduled: "#F97B26",
 };
 
-export default function ProductDetail({ order, onBack }) {
+// Helper to translate status to label
+function getStatusLabel(status) {
+  if (!status) return "";
+  const map = {
+    completed: "Completed",
+    "order placed": "Order Placed",
+    placed: "Order Placed",
+    cancelled: "Cancelled",
+    ongoing: "Ongoing",
+    rescheduled: "Rescheduled",
+  };
+  return map[status.toLowerCase()] || status;
+}
+
+export default function ProductDetail({ order, onBack, role }) {
+  const {
+    showConfirm,
+    showAlert,
+    showReceivedConfirm,
+    showReceivedAlert,
+    handleCancelClick,
+    handleConfirmCancel,
+    handleAlertClose,
+    handleItemReceivedClick,
+    handleConfirmReceived,
+    handleLeaveReview,
+    handleNoThanks,
+    setShowConfirm,
+    setShowReceivedConfirm,
+    showMarkCompleteConfirm,
+    showMarkCompleteAlert, // NEW
+    setShowMarkCompleteConfirm,
+    handleMarkCompleteClick,
+    handleConfirmMarkComplete,
+    handleMarkCompleteAlertClose, // NEW
+  } = useOrderModals();
+
+  // Add state for LeaveReview modal
+  const [showLeaveReview, setShowLeaveReview] = useState(false);
+  const [confirmType, setConfirmType] = useState("");
+
   if (!order) return null;
 
-  // Use the productsOrdered array if available, fallback to items
   const items = order.productsOrdered || order.items || [];
+  const isUserPlaced =
+    role === "user" &&
+    (order.status?.toLowerCase() === "placed" ||
+      order.status?.toLowerCase() === "order placed");
+
+  const handleOpenLeaveReview = () => {
+    handleLeaveReview();
+    setShowLeaveReview(true);
+  };
+
+  // Handler for closing the LeaveReviewComponent
+  const handleCloseLeaveReview = () => setShowLeaveReview(false);
+
+  // Optionally, pass user profile info for review
+  const userProfile = {
+    username: order.username,
+    campus: "PUP Sta Mesa",
+    department: "CCIS",
+    profileImage: order.userAvatar || "https://picsum.photos/247/245",
+    id: order.userId, // adjust as needed
+  };
 
   return (
     <>
@@ -35,7 +100,7 @@ export default function ProductDetail({ order, onBack }) {
               textTransform: "capitalize",
             }}
           >
-            {order.status}
+            {getStatusLabel(order.status)}
           </p>
         </div>
         {/* Buyer Details */}
@@ -69,13 +134,88 @@ export default function ProductDetail({ order, onBack }) {
           </Container>
         </div>
         <div className="w-full px-24 py-4 flex flex-row justify-between items-center bg-white shadow-light rounded-b-xl">
-          <button className="text-gray-800 hover:text-primary-red hover:font-semibold">
-            Report Bogus
-          </button>
-          <button className="bg-primary-red text-white px-5 py-1.5 rounded-full hover:bg-red-600 transition-colors">
-            Order Completed
-          </button>
+          <ActionButtons
+            order={order}
+            role={role}
+            isUserPlaced={isUserPlaced}
+            onCancelClick={handleCancelClick}
+            onItemReceivedClick={handleItemReceivedClick}
+            onMarkCompleteClick={handleMarkCompleteClick}
+          />
         </div>
+        {/* Modals */}
+        <Modal
+          isOpen={showConfirm}
+          onClose={() => setShowConfirm(false)}
+          title="Cancel Order"
+          description="Are you sure you want to cancel this order?"
+          type="confirm"
+          onConfirm={handleConfirmCancel}
+        />
+        <Modal
+          isOpen={showAlert}
+          onClose={handleAlertClose}
+          title="Order Cancelled"
+          description="Your order has been cancelled."
+          type="alert"
+          onConfirm={handleAlertClose}
+        />
+        <Modal
+          isOpen={showReceivedConfirm}
+          onClose={() => setShowReceivedConfirm(false)}
+          title="Confirm Item Received"
+          description="Are you sure you have received your item?"
+          type="confirm"
+          onConfirm={handleConfirmReceived}
+        />
+        <Modal
+          isOpen={showReceivedAlert}
+          onClose={handleNoThanks}
+          title="Item Received"
+          description="You’ve marked the item as received. Thank you for confirming! Would you like to leave a review?"
+          type="custom"
+        >
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              className="border border-primary-red text-primary-red px-6 py-2 rounded-full"
+              onClick={handleNoThanks}
+            >
+              NO THANKS
+            </button>
+            <button
+              className="bg-primary-red text-white px-6 py-2 rounded-full"
+              onClick={handleOpenLeaveReview}
+            >
+              LEAVE A REVIEW
+            </button>
+          </div>
+        </Modal>
+        {/* LeaveReviewComponent Modal */}
+        <LeaveReviewComponent
+          isOpen={showLeaveReview}
+          onClose={handleCloseLeaveReview}
+          userProfile={userProfile}
+          onSubmitReview={(reviewData) => {
+            // TODO: handle review submission (API call)
+            setShowLeaveReview(false);
+          }}
+        />
+        <Modal
+          isOpen={showMarkCompleteConfirm}
+          onClose={() => setShowMarkCompleteConfirm(false)}
+          title="Mark as Complete?"
+          description="Are you sure you want to mark this order as complete?"
+          type="confirm"
+          onConfirm={handleConfirmMarkComplete}
+        />
+        <Modal
+          isOpen={showMarkCompleteAlert} // NEW
+          onClose={handleMarkCompleteAlertClose}
+          title="Marked as Complete"
+          description="Order has been marked as complete."
+          type="alert"
+          onConfirm={handleMarkCompleteAlertClose}
+        />
       </div>
     </>
   );

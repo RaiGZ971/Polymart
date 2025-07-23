@@ -105,7 +105,11 @@ export default function OrdersMeetups() {
             </div>
           </nav>
           {selectedOrder ? (
-            <ProductDetail order={selectedOrder} onBack={handleBack} />
+            <ProductDetail
+              order={selectedOrder}
+              onBack={handleBack}
+              role={selectedOrder.role} // <-- pass the role prop
+            />
           ) : filteredData.length > 0 ? (
             filteredData.map((order, idx) => (
               <div key={idx} onClick={() => setSelectedOrder(order)}>
