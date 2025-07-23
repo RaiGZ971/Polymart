@@ -8,14 +8,14 @@ import {
   StaticRatingStars,
   ImageCarousel,
   ReviewComponent,
+  ChatApp,
 } from "../../components";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Flag, Heart, ShoppingBag } from "lucide-react";
 import productCategories from "../../data/productCategories";
 import { stallbanner, pupmap } from "../../assets";
 import meetUpLocations from "../../data/meetUpLocations";
-import ordersSampleData from "../../data/ordersSampleData";
-import timeSlots from "../../data/timeSlots"; // <-- import your sample time slots
+import timeSlots from "../../data/timeSlots";
 
 const getCategoryLabel = (value) => {
   const found = productCategories.find((cat) => cat.value === value);
@@ -35,9 +35,10 @@ export default function ViewProductDetails() {
   const navigate = useNavigate();
   const order = location.state?.order;
   const [quantity, setQuantity] = useState(1);
-  const [showPlaceOrder, setShowPlaceOrder] = useState(false); // Add this line
+  const [showPlaceOrder, setShowPlaceOrder] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
+  const [showChat, setShowChat] = useState(false); // <-- state for chat
 
   const averageRating =
     order.reviews && order.reviews.length > 0
@@ -135,8 +136,14 @@ export default function ViewProductDetails() {
                 <QuantityPicker
                   value={quantity}
                   min={1}
-                  max={order.stock ?? 20}
-                  onChange={setQuantity}
+                  max={order.stock ?? 1}
+                  onChange={(val) => {
+                    if (val > (order.stock ?? 1)) {
+                      setQuantity(order.stock ?? 1);
+                    } else {
+                      setQuantity(val);
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -156,14 +163,6 @@ export default function ViewProductDetails() {
                   className="inline pr-1 group-hover:text-primary-red"
                 />
                 Add to Favorites
-              </button>
-
-              <button className="text-sm group hover:text-primary-red hover:underline">
-                <ShoppingBag
-                  size={20}
-                  className="inline pr-1 group-hover:text-primary-red"
-                />
-                Add to Bag
               </button>
               {/* User Actions End */}
             </div>
@@ -239,7 +238,10 @@ export default function ViewProductDetails() {
                 </div>
               </div>
               <div>
-                <button className="bg-primary-red font-semibold text-white px-4 py-2 rounded-lg hover:bg-hover-red transition-colors text-sm">
+                <button
+                  className="bg-primary-red font-semibold text-white px-4 py-2 rounded-lg hover:bg-hover-red transition-colors text-sm"
+                  onClick={() => setShowChat(true)}
+                >
                   Message
                 </button>
               </div>
@@ -320,7 +322,9 @@ export default function ViewProductDetails() {
           <PlaceOrder
             order={order}
             quantity={quantity}
-            onClose={() => setShowPlaceOrder(false)}
+            onClose={() => {
+              setShowPlaceOrder(false);
+            }}
           />
         )}
       </div>
@@ -357,6 +361,14 @@ export default function ViewProductDetails() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+      {/* Chat Modal */}
+      {showChat && (
+        <div className="fixed inset-0 z-50 shadow-glow flex items-start justify-end">
+          <div className="h-screen w-[30%] bg-white rounded-l-xl shadow-lg relative">
+            <ChatApp onClose={() => setShowChat(false)} />
           </div>
         </div>
       )}

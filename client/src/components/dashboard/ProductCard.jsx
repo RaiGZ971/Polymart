@@ -43,9 +43,6 @@ export default function ProductCard({ order }) {
           <button className="bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors">
             <Heart size={20} />
           </button>
-          <button className="bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors">
-            <ShoppingBag size={20} />
-          </button>
           <div className="relative" ref={dropdownRef}>
             <button
               className={`bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors ${

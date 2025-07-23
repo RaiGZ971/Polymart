@@ -5,7 +5,7 @@ import { ImageUploader } from "../components";
 import { listingFieldConfig } from "../data/listingSchema";
 import PUPMap from "../assets/pupmap.png";
 import { ChevronLeft } from "lucide-react";
-import Modal from "./shared/Modal"; // Adjust the path if needed
+import Modal from "./shared/Modal";
 
 export default function CreateListingComponent({ onClose }) {
   const {
@@ -135,14 +135,14 @@ export default function CreateListingComponent({ onClose }) {
             meeting at:
           </h1>
           <div className="w-full gap-12 flex flex-row justify-between">
-            <div className="w-1/2">
+            <div className="w-2/3">
               <img
                 src={PUPMap}
                 alt="PUP Campus Map"
                 className="w-full h-auto rounded-2xl shadow-md"
               />
             </div>
-            <div className="w-1/2">
+            <div className="w-1/3">
               <h1 className="text-xl text-primary-red font-semibold mb-3">
                 Meet Up Locations
               </h1>
@@ -158,7 +158,7 @@ export default function CreateListingComponent({ onClose }) {
             Select the date and time that best fits your schedule for the
             meet-ups.
           </h1>
-          {renderListingField("availableDates")}
+          {renderListingField("availableSchedules")}
         </Container>
         <Container>
           <h1 className="text-xl text-primary-red font-semibold -mb-6">

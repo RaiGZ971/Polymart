@@ -9,6 +9,7 @@ import {
   CircleUserRound,
   Bell,
   MessageCircle,
+  Heart,
 } from "lucide-react";
 import Logo from "../../assets/PolymartLogo.png";
 import { useState } from "react";
@@ -59,6 +60,7 @@ export default function NavigationDashboard() {
     map: MapPinned,
     bell: Bell,
     message: MessageCircle,
+    heart: Heart,
   };
 
   const leftNavItems = [
@@ -85,6 +87,12 @@ export default function NavigationDashboard() {
       path: "/orders-meetups",
       icon: "map",
       hasText: true,
+    },
+    {
+      name: "Liked Items",
+      path: "/liked-items",
+      icon: "heart",
+      hasText: false,
     },
     {
       name: "Notifications",
@@ -228,7 +236,9 @@ export default function NavigationDashboard() {
               >
                 <IconComponent
                   size={28}
-                  className={`group-hover:text-hover-red transition-colors duration-200 ${active ? "text-primary-red" : "text-gray-800"}`}
+                  className={`group-hover:text-hover-red transition-colors duration-200 ${
+                    active ? "text-primary-red" : "text-gray-800"
+                  }`}
                 />
                 {item.hasText && item.name}
               </div>
@@ -263,7 +273,11 @@ export default function NavigationDashboard() {
 
       {/* Chat Slide-in Overlay */}
       <div
-        className={`fixed inset-0 z-50 transition-opacity duration-300 ${showChat ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+          showChat
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        }`}
       >
         {/* Background overlay */}
         <div className="absolute inset-0" onClick={handleCloseChat} />
@@ -280,7 +294,11 @@ export default function NavigationDashboard() {
 
       {/* Notifications Slide-in Overlay */}
       <div
-        className={`fixed inset-0 z-50 transition-opacity duration-300 ${showNotifications ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+          showNotifications
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        }`}
       >
         {/* Background overlay */}
         <div className="absolute inset-0 " onClick={handleCloseNotifications} />
