@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, Request
+from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from auth import utils
 from auth.models import SignUp, Login
 from auth.email_verification import (
@@ -16,6 +17,9 @@ from pydantic import BaseModel, EmailStr
 import os
 
 router = APIRouter()
+
+# Initialize Jinja2 templates
+templates = Jinja2Templates(directory="templates")
 
 # Pydantic models for request validation
 class EmailVerificationRequest(BaseModel):
@@ -99,23 +103,38 @@ async def verify_email_link(token: str = Query(..., description="Verification to
             existing_user = await get_user_by_email(email)
             if existing_user:
                 # User already has a profile, redirect with already verified message
-                success_url = f"{base_url}/email-verified?success=true&email={email}&already_verified=true&message=Email already verified"
+                success_url = f"{base_url}/auth/email-verified?success=true&email={email}&already_verified=true&message=Email already verified"
                 return RedirectResponse(url=success_url, status_code=302)
             else:
                 # Redirect to success page with email parameter
-                success_url = f"{base_url}/email-verified?success=true&email={email}"
+                success_url = f"{base_url}/auth/email-verified?success=true&email={email}"
                 return RedirectResponse(url=success_url, status_code=302)
         else:
             # Redirect to error page with error message
             error_message = verification_result.get("message", "Verification failed")
-            error_url = f"{base_url}/email-verified?success=false&error={error_message}"
+            error_url = f"{base_url}/auth/email-verified?success=false&error={error_message}"
             return RedirectResponse(url=error_url, status_code=302)
             
     except Exception as e:
         # Redirect to error page with generic error
         base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
-        error_url = f"{base_url}/email-verified?success=false&error=Server error occurred"
+        error_url = f"{base_url}/auth/email-verified?success=false&error=Server error occurred"
         return RedirectResponse(url=error_url, status_code=302)
+
+@router.get("/email-verified", response_class=HTMLResponse)
+async def email_verified(request: Request):
+    """
+    Serves the email verification result page.
+    This page displays success/error messages after email verification and redirects users to continue registration.
+    """
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")
+    
+    return templates.TemplateResponse("email-verified.html", {
+        "request": request,
+        "frontend_url": frontend_url,
+        "backend_url": backend_url
+    })
 
 # =============================================
 # USER REGISTRATION ENDPOINTS (STEP 2-5)
