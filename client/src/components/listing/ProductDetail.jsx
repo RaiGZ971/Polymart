@@ -4,6 +4,8 @@ import { Items, MeetUpDetails } from "../../components";
 import Modal from "../shared/Modal";
 import { useOrderModals } from "../../hooks";
 import { ActionButtons, LeaveReviewComponent } from "../../components";
+import ChatApp from "../chat/ChatApp";
+import { createPortal } from "react-dom";
 
 const statusColor = {
   completed: "#34A853",
@@ -54,6 +56,33 @@ export default function ProductDetail({ order, onBack, role }) {
   // Add state for LeaveReview modal
   const [showLeaveReview, setShowLeaveReview] = useState(false);
   const [confirmType, setConfirmType] = useState("");
+
+  // Chat modal state
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [chatData, setChatData] = useState(null);
+  const [chatInitialView, setChatInitialView] = useState("preview");
+
+  const handleOpenChat = (targetUserId) => {
+    // Create mock chat data for demonstration
+    const mockChat = {
+      id: targetUserId,
+      username:
+        role === "user"
+          ? order.sellerUsername || "Seller"
+          : order.username || "Buyer",
+      avatarUrl:
+        role === "user"
+          ? order.sellerAvatar || "https://picsum.photos/247/245"
+          : order.userAvatar || "https://picsum.photos/247/245",
+      productImage: order.productImage || "https://picsum.photos/200",
+      message: "This is a mock chat message.",
+      sent: true,
+      isUnread: false,
+    };
+    setChatData(mockChat);
+    setChatInitialView("chat");
+    setShowChatModal(true);
+  };
 
   if (!order) return null;
 
@@ -116,8 +145,15 @@ export default function ProductDetail({ order, onBack, role }) {
               <p className="text-gray-500">PUP Sta Mesa | CCIS</p>
             </div>
           </div>
-          <button className="bg-primary-red text-white px-4 py-1  max-h-10 rounded-lg hover:bg-hover-red transition-colors text-sm">
-            Message Seller
+          <button
+            className="bg-primary-red text-white px-4 py-1 max-h-10 rounded-lg hover:bg-hover-red transition-colors text-sm"
+            onClick={() =>
+              handleOpenChat(
+                role === "user" ? order.sellerId : order.buyerId
+              )
+            }
+          >
+            {role === "user" ? "Message Seller" : "Message Buyer"}
           </button>
         </div>
 
@@ -141,6 +177,7 @@ export default function ProductDetail({ order, onBack, role }) {
             onCancelClick={handleCancelClick}
             onItemReceivedClick={handleItemReceivedClick}
             onMarkCompleteClick={handleMarkCompleteClick}
+            onLeaveReviewClick={handleOpenLeaveReview}
           />
         </div>
         {/* Modals */}
@@ -216,6 +253,22 @@ export default function ProductDetail({ order, onBack, role }) {
           type="alert"
           onConfirm={handleMarkCompleteAlertClose}
         />
+        {/* Chat Modal - Add this section */}
+        {showChatModal &&
+          createPortal(
+            <div className="fixed inset-0 z-50 shadow-glow flex items-start justify-end">
+              <div className="h-screen w-[30%] bg-white rounded-l-xl shadow-lg relative">
+                <ChatApp
+                  initialChatId={chatData?.id}
+                  initialView={chatInitialView}
+                  initialChatData={chatData}
+                  onClose={() => setShowChatModal(false)}
+                  fromOrderDetails={true}
+                />
+              </div>
+            </div>,
+            document.body
+          )}
       </div>
     </>
   );
