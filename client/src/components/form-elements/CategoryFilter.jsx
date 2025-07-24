@@ -25,7 +25,7 @@ export default function CategoryFilter({
   };
 
   return (
-    <div className="flex flex-wrap gap-3 items-center justify-center mt-4">
+    <div className="flex flex-wrap items-center justify-center mt-4">
       {categories.map((category, index) => (
         <span
           key={index}
