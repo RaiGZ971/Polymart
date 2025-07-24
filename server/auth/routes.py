@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import JSONResponse, RedirectResponse
 from auth import utils
-from auth.schemas import SignUp, Login
+from auth.models import SignUp, Login
 from auth.email_verification import (
     create_email_verification_request, 
     send_verification_email, 
     verify_email_token_by_link,
     create_email_verification_response
 )
-from supabase_client.database import create_user_profile, get_user_by_student_number, create_user_verification_documents
+from supabase_client.database import create_user_profile, get_user_by_student_number, get_user_by_email, create_user_verification_documents
 from core.utils import create_standardized_response
 from typing import Optional
 from pydantic import BaseModel, EmailStr
@@ -32,6 +32,19 @@ async def send_email_verification(request: EmailVerificationRequest):
     """
     try:
         email = request.email.lower().strip()
+        
+        # Check if user already exists and is verified
+        existing_user = await get_user_by_email(email)
+        if existing_user:
+            # User already has a profile, check if they have an associated email verification
+            # Since they have a profile, their email was already verified during signup
+            response_data = create_email_verification_response(
+                success=False,
+                message="This email address is already verified and associated with an existing account. Please log in instead.",
+                email=email,
+                token_sent=False
+            )
+            return JSONResponse(content=response_data, status_code=400)
         
         # Create verification request in database
         verification_data = await create_email_verification_request(email)
@@ -79,10 +92,18 @@ async def verify_email_link(token: str = Query(..., description="Verification to
         base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
         
         if verification_result.get("status") == "success":
-            # Redirect to success page with email parameter
-            email = verification_result.get("email", "")
-            success_url = f"{base_url}/email-verified?success=true&email={email}"
-            return RedirectResponse(url=success_url, status_code=302)
+            email = verification_result.get("data", {}).get("email", "")
+            
+            # Check if user already exists with this email
+            existing_user = await get_user_by_email(email)
+            if existing_user:
+                # User already has a profile, redirect with already verified message
+                success_url = f"{base_url}/email-verified?success=true&email={email}&already_verified=true&message=Email already verified"
+                return RedirectResponse(url=success_url, status_code=302)
+            else:
+                # Redirect to success page with email parameter
+                success_url = f"{base_url}/email-verified?success=true&email={email}"
+                return RedirectResponse(url=success_url, status_code=302)
         else:
             # Redirect to error page with error message
             error_message = verification_result.get("message", "Verification failed")
