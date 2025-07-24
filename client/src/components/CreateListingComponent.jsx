@@ -51,6 +51,15 @@ export default function CreateListingComponent({ onClose }) {
     onClose?.();
   };
 
+  // Only allow one transaction method
+  // (Make sure listingSchema.js has maxSelections: 1 for transactionMethods)
+
+  // Disable meet-up related fields if transaction method is 'online'
+  const isOnlineOnly =
+    Array.isArray(listingData.transactionMethods) &&
+    listingData.transactionMethods.length === 1 &&
+    listingData.transactionMethods[0] === "online";
+
   return (
     <div className="w-full max-w-4xl bg-white rounded-xl shadow-glow p-8 relative">
       <div className="space-y-6">
@@ -116,50 +125,54 @@ export default function CreateListingComponent({ onClose }) {
         <Container>
           <div>
             <h1 className="text-xl text-primary-red font-semibold">
-              Choose your preferred payment method/s
+              Choose your preferred payment method
             </h1>
             <h1 className="text-sm text-gray-800 -mb-3">
-              Please take note that all payment transactions are made during
-              meet ups.
+              All payments happen outside the app (either during meet-ups or through chat arrangements).
             </h1>
           </div>
           {renderListingField("paymentMethods")}
         </Container>
-        <Container>
-          <h1 className="text-xl text-primary-red font-semibold -mb-6">
-            Choose your preferred meet-up location/s
-          </h1>
-          <h1 className="text-sm text-gray-800 ">
-            Here are the common campus locations where meet-ups usually happen.
-            <br /> <br /> Please select all the places you're comfortable
-            meeting at:
-          </h1>
-          <div className="w-full gap-12 flex flex-row justify-between">
-            <div className="w-2/3">
-              <img
-                src={PUPMap}
-                alt="PUP Campus Map"
-                className="w-full h-auto rounded-2xl shadow-md"
-              />
-            </div>
-            <div className="w-1/3">
-              <h1 className="text-xl text-primary-red font-semibold mb-3">
-                Meet Up Locations
+        {/* Only show meet-up sections if transaction method is NOT online */}
+        {!isOnlineOnly && (
+          <>
+            <Container>
+              <h1 className="text-xl text-primary-red font-semibold -mb-6">
+                Choose your preferred meet-up location/s
               </h1>
-              {renderListingField("meetupLocations")}
-            </div>
-          </div>
-        </Container>
-        <Container>
-          <h1 className="text-xl text-primary-red font-semibold -mb-6">
-            Choose available dates for meet-up/s
-          </h1>
-          <h1 className="text-sm text-gray-800 ">
-            Select the date and time that best fits your schedule for the
-            meet-ups.
-          </h1>
-          {renderListingField("availableSchedules")}
-        </Container>
+              <h1 className="text-sm text-gray-800 ">
+                Here are the common campus locations where meet-ups usually happen.
+                <br /> <br /> Please select all the places you're comfortable
+                meeting at:
+              </h1>
+              <div className="w-full gap-12 flex flex-row justify-between">
+                <div className="w-2/3">
+                  <img
+                    src={PUPMap}
+                    alt="PUP Campus Map"
+                    className="w-full h-auto rounded-2xl shadow-md"
+                  />
+                </div>
+                <div className="w-1/3">
+                  <h1 className="text-xl text-primary-red font-semibold mb-3">
+                    Meet Up Locations
+                  </h1>
+                  {renderListingField("meetupLocations")}
+                </div>
+              </div>
+            </Container>
+            <Container>
+              <h1 className="text-xl text-primary-red font-semibold -mb-6">
+                Choose available dates for meet-up/s
+              </h1>
+              <h1 className="text-sm text-gray-800 ">
+                Select the date and time that best fits your schedule for the
+                meet-ups.
+              </h1>
+              {renderListingField("availableSchedules")}
+            </Container>
+          </>
+        )}
         <Container>
           <h1 className="text-xl text-primary-red font-semibold -mb-6">
             Remark (Optional)
