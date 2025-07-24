@@ -1,16 +1,18 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 from dynamodb import client, utils, models
 from core import config
 from s3 import utils as s3Utlis
-from dotenv import load_dotenv
 import os
 import json
 
-load_dotenv()
 
 router = APIRouter()
 manager = client.ConnectionManager()

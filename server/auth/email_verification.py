@@ -33,7 +33,7 @@ async def create_email_verification_request(email: str) -> Optional[Dict[str, An
         expire_minutes = int(os.getenv("EMAIL_VERIFICATION_EXPIRE_MINUTES", "15"))
         expires_at = datetime.utcnow() + timedelta(minutes=expire_minutes)
         
-                # Get unauthenticated client (anyone can create verification requests)
+        # Get unauthenticated client (anyone can create verification requests)
         supabase = get_unauthenticated_supabase_client()
         if not supabase:
             print("Failed to get Supabase client")
@@ -69,6 +69,12 @@ async def create_email_verification_request(email: str) -> Optional[Dict[str, An
             }
         
         print("No result data returned")
+        return None
+        
+    except Exception as e:
+        print(f"Error creating email verification request: {e}")
+        import traceback
+        traceback.print_exc()
         return None
         
     except Exception as e:
@@ -198,6 +204,32 @@ async def verify_email_token_backend(email: str, token: str) -> Dict[str, Any]:
             data={"email": email, "verified": False},
             status="error"
         )
+
+async def check_email_verification_status(email: str) -> bool:
+    """
+    Check if an email address has been verified.
+    Returns True if email is verified, False otherwise.
+    """
+    try:
+        # Get unauthenticated client for checking verification status
+        supabase = get_unauthenticated_supabase_client()
+        if not supabase:
+            print("Failed to get Supabase client")
+            return False
+        
+        # Check if there's a verified email verification request
+        result = supabase.table("email_verification_requests")\
+            .select("email, is_used")\
+            .eq("email", email.lower().strip())\
+            .eq("is_used", True)\
+            .execute()
+        
+        # Return True if there's at least one verified request for this email
+        return bool(result.data and len(result.data) > 0)
+        
+    except Exception as e:
+        print(f"Error checking email verification status: {e}")
+        return False
 
 async def verify_email_token_by_link(token: str) -> Dict[str, Any]:
     """

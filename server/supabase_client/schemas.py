@@ -33,6 +33,14 @@ class CreateListingResponse(BaseModel):
     message: str
     data: dict
 
+class UpdateListingStatusRequest(BaseModel):
+    status: str = Field(..., description="New status for the listing (active, inactive, sold_out, archived)")
+
+class UpdateListingStatusResponse(BaseModel):
+    success: bool
+    message: str
+    data: dict
+
 class ProductListing(BaseModel):
     listing_id: int
     seller_id: int
@@ -53,6 +61,26 @@ class ProductListing(BaseModel):
 
 class ProductListingsResponse(BaseModel):
     products: List[ProductListing]
+    total_count: int
+    page: int
+    page_size: int
+
+class FavoriteRequest(BaseModel):
+    listing_id: int = Field(..., description="ID of the listing to favorite/unfavorite")
+
+class FavoriteResponse(BaseModel):
+    success: bool
+    message: str
+    is_favorited: bool
+    listing_id: int
+
+class UserFavorite(BaseModel):
+    listing_id: int
+    favorited_at: datetime
+    listing: Optional[ProductListing] = None
+
+class UserFavoritesResponse(BaseModel):
+    favorites: List[UserFavorite]
     total_count: int
     page: int
     page_size: int
