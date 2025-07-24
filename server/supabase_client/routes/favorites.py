@@ -18,14 +18,14 @@ from core.utils import create_standardized_response
 
 router = APIRouter()
 
-@router.post("/favorites", response_model=FavoriteResponse)
-async def toggle_favorite(
+@router.post("/favorite-listings", response_model=FavoriteResponse)
+async def toggle_favorite_listing(
     favorite_data: FavoriteRequest,
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Toggle favorite status for a listing. If already favorited, remove from favorites.
-    If not favorited, add to favorites.
+    Toggle favorite status for a listing. If already favorited, remove from favorite listings.
+    If not favorited, add to favorite listings.
     """
     try:
         # Get authenticated client
@@ -51,7 +51,7 @@ async def toggle_favorite(
             supabase.table("user_favorites").delete().eq("user_id", current_user["user_id"]).eq("listing_id", favorite_data.listing_id).execute()
             return FavoriteResponse(
                 success=True,
-                message="Listing removed from favorites",
+                message="Listing removed from favorite listings",
                 is_favorited=False,
                 listing_id=favorite_data.listing_id
             )
@@ -62,21 +62,21 @@ async def toggle_favorite(
                 "listing_id": favorite_data.listing_id
             }).execute()
             if not insert_result.data or len(insert_result.data) == 0:
-                raise HTTPException(status_code=500, detail="Failed to add to favorites")
+                raise HTTPException(status_code=500, detail="Failed to add to favorite listings")
             return FavoriteResponse(
                 success=True,
-                message="Listing added to favorites",
+                message="Listing added to favorite listings",
                 is_favorited=True,
                 listing_id=favorite_data.listing_id
             )
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error toggling favorite: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to toggle favorite: {str(e)}")
+        print(f"Error toggling favorite listing: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to toggle favorite listing: {str(e)}")
 
-@router.get("/favorites", response_model=UserFavoritesResponse)
-async def get_user_favorites(
+@router.get("/favorite-listings", response_model=UserFavoritesResponse)
+async def get_user_favorite_listings(
     include_listing_details: bool = Query(True, description="Include full listing details in response"),
     current_user: dict = Depends(get_current_user)
 ):
@@ -127,16 +127,16 @@ async def get_user_favorites(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error fetching user favorites: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch user favorites: {str(e)}")
+        print(f"Error fetching user favorite listings: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch user favorite listings: {str(e)}")
 
-@router.get("/favorites/check/{listing_id}")
-async def check_favorite_status(
+@router.get("/favorite-listings/check/{listing_id}")
+async def check_favorite_listing_status(
     listing_id: int,
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Check if a specific listing is favorited by the current user.
+    Check if a specific listing is in the current user's favorite listings.
     """
     try:
         # Get authenticated client
@@ -153,7 +153,7 @@ async def check_favorite_status(
                 favorited_at = favorite_result.data[0]["favorited_at"]
         
         return create_standardized_response(
-            message="Favorite status retrieved",
+            message="Favorite listing status retrieved",
             data={
                 "listing_id": listing_id,
                 "is_favorited": is_favorited,
@@ -164,5 +164,5 @@ async def check_favorite_status(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error checking favorite status: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to check favorite status: {str(e)}")
+        print(f"Error checking favorite listing status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to check favorite listing status: {str(e)}")
