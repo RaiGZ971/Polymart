@@ -172,3 +172,23 @@ async def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         print(f"Error getting user by email: {e}")
         return None
+
+async def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
+    """
+    Get a user profile by username
+    """
+    try:
+        # Use unauthenticated client for public lookup
+        supabase = get_unauthenticated_supabase_client()
+        if not supabase:
+            print("Failed to get Supabase client")
+            return None
+        
+        result = supabase.table("user_profile").select("*").eq("username", username).execute()
+        
+        if result.data and len(result.data) > 0:
+            return result.data[0]
+        return None
+    except Exception as e:
+        print(f"Error getting user by username: {e}")
+        return None

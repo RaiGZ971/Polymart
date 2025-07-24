@@ -6,9 +6,10 @@ from auth.email_verification import (
     create_email_verification_request, 
     send_verification_email, 
     verify_email_token_by_link,
-    create_email_verification_response
+    create_email_verification_response,
+    check_email_verification_status
 )
-from supabase_client.database import create_user_profile, get_user_by_student_number, get_user_by_email, create_user_verification_documents
+from supabase_client.database import create_user_profile, get_user_by_student_number, get_user_by_email, get_user_by_username, create_user_verification_documents
 from core.utils import create_standardized_response
 from typing import Optional
 from pydantic import BaseModel, EmailStr
@@ -126,6 +127,22 @@ async def signup(signup_data: SignUp):
     Sign up route that creates a new user. Verification documents should be uploaded separately using /s3/user-documents/submit-verification.
     """
     try:
+        # Check if email has been verified
+        email_verified = await check_email_verification_status(signup_data.email)
+        if not email_verified:
+            raise HTTPException(
+                status_code=400, 
+                detail="Email must be verified before creating an account. Please verify your email first by using the /auth/verify-email/send endpoint."
+            )
+        
+        # Check if user already exists with this email
+        existing_user = await get_user_by_email(signup_data.email)
+        if existing_user:
+            raise HTTPException(
+                status_code=409,
+                detail="An account with this email address already exists. Please log in instead."
+            )
+        
         # Hash the password
         password_hash = utils.get_hashed_password(signup_data.password)
         
@@ -158,7 +175,25 @@ async def signup(signup_data: SignUp):
         # Create user profile
         user_result = await create_user_profile(user_profile_data)
         if not user_result:
-            raise HTTPException(status_code=400, detail="Failed to create user profile")
+            # Check for specific conflicts by trying to find existing data
+            existing_username = await get_user_by_username(signup_data.username)
+            existing_student_number = await get_user_by_student_number(signup_data.student_number)
+            
+            if existing_username:
+                raise HTTPException(
+                    status_code=409, 
+                    detail="Username already exists. Please choose a different username."
+                )
+            elif existing_student_number:
+                raise HTTPException(
+                    status_code=409, 
+                    detail="Student number already registered. Please check your student number or contact support."
+                )
+            else:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Failed to create user profile. Please check your data and try again."
+                )
 
         user_id = user_result["user_id"]
         

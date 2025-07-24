@@ -205,6 +205,32 @@ async def verify_email_token_backend(email: str, token: str) -> Dict[str, Any]:
             status="error"
         )
 
+async def check_email_verification_status(email: str) -> bool:
+    """
+    Check if an email address has been verified.
+    Returns True if email is verified, False otherwise.
+    """
+    try:
+        # Get unauthenticated client for checking verification status
+        supabase = get_unauthenticated_supabase_client()
+        if not supabase:
+            print("Failed to get Supabase client")
+            return False
+        
+        # Check if there's a verified email verification request
+        result = supabase.table("email_verification_requests")\
+            .select("email, is_used")\
+            .eq("email", email.lower().strip())\
+            .eq("is_used", True)\
+            .execute()
+        
+        # Return True if there's at least one verified request for this email
+        return bool(result.data and len(result.data) > 0)
+        
+    except Exception as e:
+        print(f"Error checking email verification status: {e}")
+        return False
+
 async def verify_email_token_by_link(token: str) -> Dict[str, Any]:
     """
     Verify email token from a verification link (no email required).
