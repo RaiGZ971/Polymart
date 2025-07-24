@@ -7,12 +7,12 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
   const getFieldValue = (fieldName) => {
     const config = fieldConfig[fieldName] || {};
     const value = formData[fieldName] || "";
-    
+
     // Apply uppercase if configured
-    if (config.uppercase && typeof value === 'string') {
+    if (config.uppercase && typeof value === "string") {
       return value.toUpperCase();
     }
-    
+
     return value;
   };
 
@@ -23,41 +23,45 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
       required: config.required,
       integerOnly: config.integerOnly,
       studID: config.studID,
-      type: config.type === 'password' ? 'password' : undefined
+      type: config.type === "password" ? "password" : undefined,
     };
   };
 
   // Enhanced helper function to get dropdown options
   const getFieldOptions = (fieldName) => {
     const config = fieldConfig[fieldName] || {};
-    
+
     // Static options
     if (config.options) {
       return config.options;
     }
-    
+
     // Dynamic options (like courses based on college)
     if (config.dynamicOptions) {
       return config.dynamicOptions(formData);
     }
-    
+
     return [];
   };
 
   // Main render function using configuration
-  const renderField = (fieldName) => {
+  const renderField = (fieldName, extraProps = {}) => {
     const config = fieldConfig[fieldName];
     if (!config) return null;
 
     const commonProps = {
       label: config.label,
-      value: config.component === 'textfield' ? getFieldValue(fieldName) : formData[fieldName],
+      value:
+        config.component === "textfield"
+          ? getFieldValue(fieldName)
+          : formData[fieldName],
       required: config.required,
-      disabled: config.disabled
+      disabled: config.disabled,
+      ...extraProps, // <-- add this line to forward extra props like error
     };
 
     switch (config.component) {
-      case 'textfield':
+      case "textfield":
         return (
           <Textfield
             key={fieldName}
@@ -66,8 +70,8 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
             {...getFieldProps(fieldName)}
           />
         );
-      
-      case 'dropdown':
+
+      case "dropdown":
         return (
           <Dropdown
             key={fieldName}
@@ -76,8 +80,8 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
             options={getFieldOptions(fieldName)}
           />
         );
-      
-      case 'dateDropdown':
+
+      case "dateDropdown":
         return (
           <DateDropdown
             key={fieldName}
@@ -86,7 +90,7 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
           />
         );
 
-      case 'textarea':
+      case "textarea":
         return (
           <Textarea
             key={fieldName}
@@ -96,7 +100,7 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
             rows={config.rows}
           />
         );
-      
+
       default:
         return null;
     }
@@ -106,6 +110,6 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
     renderField,
     getFieldValue,
     getFieldProps,
-    getFieldOptions
+    getFieldOptions,
   };
 };
