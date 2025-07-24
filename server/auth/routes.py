@@ -1,20 +1,25 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, Request
+from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from auth import utils
-from auth.schemas import SignUp, Login
+from auth.models import SignUp, Login
 from auth.email_verification import (
     create_email_verification_request, 
     send_verification_email, 
     verify_email_token_by_link,
-    create_email_verification_response
+    create_email_verification_response,
+    check_email_verification_status
 )
-from supabase_client.database import create_user_profile, get_user_by_student_number, create_user_verification_documents
+from supabase_client.database import create_user_profile, get_user_by_student_number, get_user_by_email, get_user_by_username, create_user_verification_documents
 from core.utils import create_standardized_response
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 import os
 
 router = APIRouter()
+
+# Initialize Jinja2 templates
+templates = Jinja2Templates(directory="templates")
 
 # Pydantic models for request validation
 class EmailVerificationRequest(BaseModel):
@@ -32,6 +37,19 @@ async def send_email_verification(request: EmailVerificationRequest):
     """
     try:
         email = request.email.lower().strip()
+        
+        # Check if user already exists and is verified
+        existing_user = await get_user_by_email(email)
+        if existing_user:
+            # User already has a profile, check if they have an associated email verification
+            # Since they have a profile, their email was already verified during signup
+            response_data = create_email_verification_response(
+                success=False,
+                message="This email address is already verified and associated with an existing account. Please log in instead.",
+                email=email,
+                token_sent=False
+            )
+            return JSONResponse(content=response_data, status_code=400)
         
         # Create verification request in database
         verification_data = await create_email_verification_request(email)
@@ -79,21 +97,44 @@ async def verify_email_link(token: str = Query(..., description="Verification to
         base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
         
         if verification_result.get("status") == "success":
-            # Redirect to success page with email parameter
-            email = verification_result.get("email", "")
-            success_url = f"{base_url}/email-verified?success=true&email={email}"
-            return RedirectResponse(url=success_url, status_code=302)
+            email = verification_result.get("data", {}).get("email", "")
+            
+            # Check if user already exists with this email
+            existing_user = await get_user_by_email(email)
+            if existing_user:
+                # User already has a profile, redirect with already verified message
+                success_url = f"{base_url}/auth/email-verified?success=true&email={email}&already_verified=true&message=Email already verified"
+                return RedirectResponse(url=success_url, status_code=302)
+            else:
+                # Redirect to success page with email parameter
+                success_url = f"{base_url}/auth/email-verified?success=true&email={email}"
+                return RedirectResponse(url=success_url, status_code=302)
         else:
             # Redirect to error page with error message
             error_message = verification_result.get("message", "Verification failed")
-            error_url = f"{base_url}/email-verified?success=false&error={error_message}"
+            error_url = f"{base_url}/auth/email-verified?success=false&error={error_message}"
             return RedirectResponse(url=error_url, status_code=302)
             
     except Exception as e:
         # Redirect to error page with generic error
         base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
-        error_url = f"{base_url}/email-verified?success=false&error=Server error occurred"
+        error_url = f"{base_url}/auth/email-verified?success=false&error=Server error occurred"
         return RedirectResponse(url=error_url, status_code=302)
+
+@router.get("/email-verified", response_class=HTMLResponse)
+async def email_verified(request: Request):
+    """
+    Serves the email verification result page.
+    This page displays success/error messages after email verification and redirects users to continue registration.
+    """
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")
+    
+    return templates.TemplateResponse("email-verified.html", {
+        "request": request,
+        "frontend_url": frontend_url,
+        "backend_url": backend_url
+    })
 
 # =============================================
 # USER REGISTRATION ENDPOINTS (STEP 2-5)
@@ -105,6 +146,22 @@ async def signup(signup_data: SignUp):
     Sign up route that creates a new user. Verification documents should be uploaded separately using /s3/user-documents/submit-verification.
     """
     try:
+        # Check if email has been verified
+        email_verified = await check_email_verification_status(signup_data.email)
+        if not email_verified:
+            raise HTTPException(
+                status_code=400, 
+                detail="Email must be verified before creating an account. Please verify your email first by using the /auth/verify-email/send endpoint."
+            )
+        
+        # Check if user already exists with this email
+        existing_user = await get_user_by_email(signup_data.email)
+        if existing_user:
+            raise HTTPException(
+                status_code=409,
+                detail="An account with this email address already exists. Please log in instead."
+            )
+        
         # Hash the password
         password_hash = utils.get_hashed_password(signup_data.password)
         
@@ -137,7 +194,25 @@ async def signup(signup_data: SignUp):
         # Create user profile
         user_result = await create_user_profile(user_profile_data)
         if not user_result:
-            raise HTTPException(status_code=400, detail="Failed to create user profile")
+            # Check for specific conflicts by trying to find existing data
+            existing_username = await get_user_by_username(signup_data.username)
+            existing_student_number = await get_user_by_student_number(signup_data.student_number)
+            
+            if existing_username:
+                raise HTTPException(
+                    status_code=409, 
+                    detail="Username already exists. Please choose a different username."
+                )
+            elif existing_student_number:
+                raise HTTPException(
+                    status_code=409, 
+                    detail="Student number already registered. Please check your student number or contact support."
+                )
+            else:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Failed to create user profile. Please check your data and try again."
+                )
 
         user_id = user_result["user_id"]
         
