@@ -84,3 +84,33 @@ class UserFavoritesResponse(BaseModel):
     total_count: int
     page: int
     page_size: int
+
+class CreateOrderRequest(BaseModel):
+    listing_id: int = Field(..., description="ID of the listing to order")
+    quantity: int = Field(..., ge=1, description="Quantity to order")
+    transaction_method: str = Field(..., description="Transaction method: meet_up or online")
+    payment_method: str = Field(..., description="Payment method: cash, gcash, maya, bank_transfer, or remittance")
+
+class Order(BaseModel):
+    order_id: int
+    buyer_id: int
+    seller_id: int
+    listing_id: int
+    quantity: int
+    price_at_purchase: float
+    status: str
+    transaction_method: str
+    payment_method: str
+    placed_at: datetime
+    listing: Optional[ProductListing] = None
+
+class CreateOrderResponse(BaseModel):
+    success: bool
+    message: str
+    data: Order
+
+class OrdersResponse(BaseModel):
+    orders: List[Order]
+    total_count: int
+    page: int
+    page_size: int
