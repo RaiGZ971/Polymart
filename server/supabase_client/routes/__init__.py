@@ -11,5 +11,5 @@ from .favorites import router as favorites_router
 router = APIRouter()
 
 # Include sub-routers
-router.include_router(listings_router, prefix="", tags=["listings"])
-router.include_router(favorites_router, prefix="", tags=["favorites"])
+router.include_router(listings_router)
+router.include_router(favorites_router)
