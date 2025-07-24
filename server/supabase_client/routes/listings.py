@@ -78,56 +78,48 @@ async def get_product_listings(
 
 @router.get("/listings/my-listings", response_model=ProductListingsResponse)
 async def get_my_listings(
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(20, ge=1, le=100, description="Number of items per page"),
     category: Optional[str] = Query(None, description="Filter by category"),
     search: Optional[str] = Query(None, description="Search in product name and description"),
     status: Optional[str] = Query(None, description="Filter by status (active, inactive, sold_out, archived)"),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Get the current user's own product listings.
-    Supports pagination, filtering, and search. Includes all statuses by default.
+    Get the current user's own product listings. Returns all listings without pagination.
     """
     try:
         # Validate parameters
         validate_category(category)
         validate_status(status)
-        
+
         # Get authenticated client
         supabase = get_supabase_client(current_user["user_id"])
-        
+
         # Build base query
         query = build_user_listings_query(supabase, current_user["user_id"])
-        
+
         # Apply filters
         query = apply_listing_filters(query, category, search, status=status)
-        
-        # Get total count for pagination
-        total_count = get_total_count(query)
-        
-        # Apply pagination and execute
-        query = apply_pagination(query, page, page_size)
-        result = query.execute()
-        
+
+        # Get all listings (no pagination)
+        result = query.order("created_at", desc=True).execute()
+
         if not result.data:
             return ProductListingsResponse(
                 products=[],
                 total_count=0,
-                page=page,
-                page_size=page_size
+                page=1,
+                page_size=0
             )
-        
+
         # Convert listings to products
         products = await convert_listings_to_products(supabase, result.data)
-        
+
         return ProductListingsResponse(
             products=products,
-            total_count=total_count,
-            page=page,
-            page_size=page_size
+            total_count=len(products),
+            page=1,
+            page_size=len(products)
         )
-        
     except HTTPException:
         raise
     except Exception as e:
