@@ -1,4 +1,5 @@
-import Logo from "../../assets/PolymartLogo.png";
+import Logo from "@/assets/PolymartLogo.png";
+import { Button } from "@/components";
 
 export default function NavigationBar({
   variant = "landing",
@@ -14,7 +15,7 @@ export default function NavigationBar({
       { name: "ABOUT", id: "about" },
       { name: "FAQs", id: "faqs" },
     ],
-    signup: [{ name: "Having trouble?", href: "/" }],
+    signup: [{ name: "Having trouble?", href: "" }],
   };
 
   const handleNavClick = (item) => {
@@ -51,38 +52,16 @@ export default function NavigationBar({
 
   const items = navItems.length > 0 ? navItems : defaultNavItems[variant];
 
-  const renderRightSection = () => {
-    switch (variant) {
-      case "landing":
-        return (
-          showSignUpButton && (
-            <button
-              className="bg-[#950000] text-white px-8 py-2 rounded-[30px] shadow-sm hover:bg-[#730C0C] ml-8"
-              onClick={
-                onSignUpClick || (() => (window.location.href = "/signup"))
-              }
-            >
-              Sign Up
-            </button>
-          )
-        );
-
-      case "signup":
-        return (
-          <button
-            className="bg-[#950000] text-white px-8 py-2 rounded-[30px] shadow-sm hover:bg-[#730C0C] ml-8"
-            onClick={
-              onSignUpClick || (() => (window.location.href = "/signin"))
-            }
-          >
-            Sign In
-          </button>
-        );
-
-      default:
-        return null;
-    }
-  };
+  const renderRightSection = () =>
+    showSignUpButton && (
+      <Button
+        variant="darkred"
+        className="ml-10"
+        onClick={onSignUpClick || (() => (window.location.href = "/signin"))}
+      >
+        Sign In
+      </Button>
+    );
 
   return (
     <div className="pl-24 pr-24 w-full justify-between flex items-center bg-white">

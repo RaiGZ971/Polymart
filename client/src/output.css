@@ -1073,6 +1073,10 @@ video {
   min-height: 300px;
 }
 
+.min-h-\[346px\]{
+  min-height: 346px;
+}
+
 .min-h-\[350px\]{
   min-height: 350px;
 }
@@ -1222,6 +1226,10 @@ video {
   min-width: 148px;
 }
 
+.min-w-\[247px\]{
+  min-width: 247px;
+}
+
 .max-w-2xl{
   max-width: 42rem;
 }
@@ -1301,11 +1309,6 @@ video {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
-.rotate-0{
-  --tw-rotate: 0deg;
-  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
-}
-
 .rotate-180{
   --tw-rotate: 180deg;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
@@ -1374,6 +1377,10 @@ video {
 
 .flex-wrap{
   flex-wrap: wrap;
+}
+
+.flex-wrap-reverse{
+  flex-wrap: wrap-reverse;
 }
 
 .items-start{
@@ -1557,6 +1564,10 @@ video {
 
 .whitespace-pre-wrap{
   white-space: pre-wrap;
+}
+
+.text-wrap{
+  text-wrap: wrap;
 }
 
 .break-words{
@@ -2196,8 +2207,8 @@ video {
   font-size: 18px;
 }
 
-.text-\[55px\]{
-  font-size: 55px;
+.text-\[40px\]{
+  font-size: 40px;
 }
 
 .text-\[64px\]{
@@ -2678,9 +2689,19 @@ html, body {
   background-color: rgb(179 0 0 / var(--tw-bg-opacity, 1));
 }
 
+.disabled\:bg-gray-300:disabled{
+  --tw-bg-opacity: 1;
+  background-color: rgb(209 213 219 / var(--tw-bg-opacity, 1));
+}
+
 .disabled\:bg-gray-400:disabled{
   --tw-bg-opacity: 1;
   background-color: rgb(156 163 175 / var(--tw-bg-opacity, 1));
+}
+
+.disabled\:text-gray-500:disabled{
+  --tw-text-opacity: 1;
+  color: rgb(107 114 128 / var(--tw-text-opacity, 1));
 }
 
 .disabled\:opacity-50:disabled{
@@ -2722,12 +2743,28 @@ html, body {
 }
 
 @media (min-width: 768px){
+  .md\:max-w-\[420px\]{
+    max-width: 420px;
+  }
+
+  .md\:max-w-\[600px\]{
+    max-width: 600px;
+  }
+
   .md\:grid-cols-2{
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .md\:grid-cols-3{
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .md\:flex-nowrap{
+    flex-wrap: nowrap;
+  }
+
+  .md\:text-\[55px\]{
+    font-size: 55px;
   }
 
   .md\:text-sm{
