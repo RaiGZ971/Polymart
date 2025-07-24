@@ -130,38 +130,6 @@ async def get_user_favorites(
         print(f"Error fetching user favorites: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch user favorites: {str(e)}")
 
-@router.delete("/favorites/{listing_id}")
-async def remove_favorite(
-    listing_id: int,
-    current_user: dict = Depends(get_current_user)
-):
-    """
-    Remove a specific listing from user's favorites.
-    """
-    try:
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
-        
-        # Check if the favorite exists
-        is_favorited = await check_favorite_exists(supabase, current_user["user_id"], listing_id)
-        
-        if not is_favorited:
-            raise HTTPException(status_code=404, detail="Favorite not found")
-        
-        # Remove from favorites
-        supabase.table("user_favorites").delete().eq("user_id", current_user["user_id"]).eq("listing_id", listing_id).execute()
-        
-        return create_standardized_response(
-            message="Listing removed from favorites",
-            data={"listing_id": listing_id}
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error removing favorite: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to remove favorite: {str(e)}")
-
 @router.get("/favorites/check/{listing_id}")
 async def check_favorite_status(
     listing_id: int,
