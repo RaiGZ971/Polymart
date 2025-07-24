@@ -6,7 +6,8 @@ Handles product listing operations including CRUD and filtering.
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 from supabase_client.schemas import (
-    ProductListingsResponse, ProductListing, CreateListingRequest, CreateListingResponse
+    ProductListingsResponse, ProductListing, CreateListingRequest, CreateListingResponse,
+    UpdateListingStatusRequest, UpdateListingStatusResponse
 )
 from supabase_client.utils import (
     validate_category, validate_status, validate_price_range,
@@ -15,6 +16,7 @@ from supabase_client.utils import (
     build_public_listings_query, build_user_listings_query, build_listing_detail_query
 )
 from auth.utils import get_current_user
+from core.utils import create_standardized_response
 
 router = APIRouter()
 
@@ -240,3 +242,74 @@ async def create_listing(
     except Exception as e:
         print(f"Error creating listing: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create listing: {str(e)}")
+
+@router.patch("/listings/{listing_id}/status", response_model=UpdateListingStatusResponse)
+async def update_listing_status(
+    listing_id: int,
+    status_data: UpdateListingStatusRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Update the status of a specific listing. Only the owner can update their listing status.
+    Valid statuses: active, inactive, sold_out, archived
+    """
+    try:
+        # Validate the new status
+        validate_status(status_data.status)
+        
+        # Get authenticated client
+        supabase = get_supabase_client(current_user["user_id"])
+        
+        # First, check if the listing exists and belongs to the current user
+        listing_check = supabase.table("listings").select("listing_id,seller_id,name,status").eq("listing_id", listing_id).execute()
+        
+        if not listing_check.data or len(listing_check.data) == 0:
+            raise HTTPException(status_code=404, detail="Listing not found")
+        
+        listing = listing_check.data[0]
+        
+        # Check ownership
+        if listing["seller_id"] != current_user["user_id"]:
+            raise HTTPException(status_code=403, detail="You can only update your own listings")
+        
+        # Check if status is actually changing
+        if listing["status"] == status_data.status:
+            return UpdateListingStatusResponse(
+                success=True,
+                message=f"Listing status is already '{status_data.status}'",
+                data={
+                    "listing_id": listing_id,
+                    "name": listing["name"],
+                    "old_status": listing["status"],
+                    "new_status": status_data.status
+                }
+            )
+        
+        # Update the status
+        update_result = supabase.table("listings").update({
+            "status": status_data.status,
+            "updated_at": "now()"
+        }).eq("listing_id", listing_id).eq("seller_id", current_user["user_id"]).execute()
+        
+        if not update_result.data or len(update_result.data) == 0:
+            raise HTTPException(status_code=500, detail="Failed to update listing status")
+        
+        updated_listing = update_result.data[0]
+        
+        return UpdateListingStatusResponse(
+            success=True,
+            message=f"Listing status updated to '{status_data.status}' successfully",
+            data={
+                "listing_id": listing_id,
+                "name": updated_listing["name"],
+                "old_status": listing["status"],
+                "new_status": updated_listing["status"],
+                "updated_at": updated_listing["updated_at"]
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating listing status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update listing status: {str(e)}")

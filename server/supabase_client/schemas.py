@@ -33,6 +33,14 @@ class CreateListingResponse(BaseModel):
     message: str
     data: dict
 
+class UpdateListingStatusRequest(BaseModel):
+    status: str = Field(..., description="New status for the listing (active, inactive, sold_out, archived)")
+
+class UpdateListingStatusResponse(BaseModel):
+    success: bool
+    message: str
+    data: dict
+
 class ProductListing(BaseModel):
     listing_id: int
     seller_id: int
