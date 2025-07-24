@@ -33,7 +33,7 @@ async def create_email_verification_request(email: str) -> Optional[Dict[str, An
         expire_minutes = int(os.getenv("EMAIL_VERIFICATION_EXPIRE_MINUTES", "15"))
         expires_at = datetime.utcnow() + timedelta(minutes=expire_minutes)
         
-                # Get unauthenticated client (anyone can create verification requests)
+        # Get unauthenticated client (anyone can create verification requests)
         supabase = get_unauthenticated_supabase_client()
         if not supabase:
             print("Failed to get Supabase client")
@@ -69,6 +69,12 @@ async def create_email_verification_request(email: str) -> Optional[Dict[str, An
             }
         
         print("No result data returned")
+        return None
+        
+    except Exception as e:
+        print(f"Error creating email verification request: {e}")
+        import traceback
+        traceback.print_exc()
         return None
         
     except Exception as e:
