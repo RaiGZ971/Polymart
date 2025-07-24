@@ -38,23 +38,17 @@ async def toggle_favorite(
             raise HTTPException(status_code=404, detail="Listing not found")
         seller_id = listing_result.data["seller_id"]
         if str(seller_id) == str(current_user["user_id"]):
-            return create_standardized_response(
-                success=False,
-                message="You cannot favorite your own listing.",
-                data=None,
-                status_code=400
-            )
+            raise HTTPException(status_code=400, detail="You cannot favorite your own listing.")
 
         # Check if listing exists and is active
         await check_listing_exists_and_active(supabase, favorite_data.listing_id)
-        
+
         # Check if already favorited
         is_favorited = await check_favorite_exists(supabase, current_user["user_id"], favorite_data.listing_id)
-        
+
         if is_favorited:
             # Remove from favorites
             supabase.table("user_favorites").delete().eq("user_id", current_user["user_id"]).eq("listing_id", favorite_data.listing_id).execute()
-            
             return FavoriteResponse(
                 success=True,
                 message="Listing removed from favorites",
@@ -67,17 +61,14 @@ async def toggle_favorite(
                 "user_id": current_user["user_id"],
                 "listing_id": favorite_data.listing_id
             }).execute()
-            
             if not insert_result.data or len(insert_result.data) == 0:
                 raise HTTPException(status_code=500, detail="Failed to add to favorites")
-            
             return FavoriteResponse(
                 success=True,
                 message="Listing added to favorites",
                 is_favorited=True,
                 listing_id=favorite_data.listing_id
             )
-        
     except HTTPException:
         raise
     except Exception as e:
@@ -86,66 +77,53 @@ async def toggle_favorite(
 
 @router.get("/favorites", response_model=UserFavoritesResponse)
 async def get_user_favorites(
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(20, ge=1, le=100, description="Number of items per page"),
     include_listing_details: bool = Query(True, description="Include full listing details in response"),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Get the current user's favorite listings with pagination.
-    Optionally includes full listing details.
+    Get the current user's favorite listings. Optionally includes full listing details.
     """
     try:
         # Get authenticated client
         supabase = get_supabase_client(current_user["user_id"])
-        
-        # Build base query for favorites
+
+        # Build base query for favorites (no pagination)
         query = build_favorites_query(supabase, current_user["user_id"])
-        
-        # Get total count for pagination
-        total_count = get_total_count(query)
-        
-        # Apply pagination (favorites use different ordering)
-        offset = (page - 1) * page_size
-        query = query.order("favorited_at", desc=True).range(offset, offset + page_size - 1)
-        
+        query = query.order("favorited_at", desc=True)
+
         # Execute query
         result = query.execute()
-        
+
         if not result.data:
             return UserFavoritesResponse(
                 favorites=[],
                 total_count=0,
-                page=page,
-                page_size=page_size
+                page=1,
+                page_size=0
             )
-        
+
         favorites = []
         for favorite in result.data:
             listing_details = None
-            
             # If requested, fetch full listing details
             if include_listing_details:
                 listing_query = build_favorite_listing_detail_query(supabase, favorite["listing_id"])
                 listing_result = listing_query.execute()
-                
                 if listing_result.data and len(listing_result.data) > 0:
                     listing = listing_result.data[0]
                     listing_details = await convert_listing_to_product(supabase, listing)
-            
             favorites.append(UserFavorite(
                 listing_id=favorite["listing_id"],
                 favorited_at=favorite["favorited_at"],
                 listing=listing_details
             ))
-        
+
         return UserFavoritesResponse(
             favorites=favorites,
-            total_count=total_count,
-            page=page,
-            page_size=page_size
+            total_count=len(favorites),
+            page=1,
+            page_size=len(favorites)
         )
-        
     except HTTPException:
         raise
     except Exception as e:
@@ -174,7 +152,6 @@ async def remove_favorite(
         supabase.table("user_favorites").delete().eq("user_id", current_user["user_id"]).eq("listing_id", listing_id).execute()
         
         return create_standardized_response(
-            success=True,
             message="Listing removed from favorites",
             data={"listing_id": listing_id}
         )
@@ -208,7 +185,6 @@ async def check_favorite_status(
                 favorited_at = favorite_result.data[0]["favorited_at"]
         
         return create_standardized_response(
-            success=True,
             message="Favorite status retrieved",
             data={
                 "listing_id": listing_id,
