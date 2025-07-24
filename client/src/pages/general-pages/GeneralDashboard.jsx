@@ -94,7 +94,7 @@ export default function GeneralDashboard() {
         />
       </div>
 
-      <div className="w-[80%] mt-10 flex flex-row justify-between items-center gap-4">
+      <div className="w-[80%] mt-10 flex flex-row justify-between items-center">
         <SearchBar
           searchTerm={pendingSearch}
           setSearchTerm={handleSearchInputChange}
@@ -102,7 +102,7 @@ export default function GeneralDashboard() {
         />
       </div>
       {/* Products Filter Section */}
-      <div className="flex items-center justify-between gap-2 w-[80%] mt-10">
+      <div className="flex items-center justify-between w-[80%] mt-10">
         <div className="flex flex-row gap-4 justify-end ">
           <button
             className={`font-semibold ${
