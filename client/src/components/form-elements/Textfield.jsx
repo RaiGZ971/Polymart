@@ -91,13 +91,13 @@ export default function Textfield({
           hasError
             ? "border-error-red"
             : isFocused
-              ? "border-black"
-              : "border-gray-400"
+            ? "border-black"
+            : "border-gray-400"
         }`}
       >
         {/*Textfield Input*/}
         <input
-          type={integerOnly ? "text" : "text"} // Keep as text to handle filtering properly
+          type={integerOnly ? "text" : "text"}
           className="text-black outline-none bg-transparent w-full font-poppins"
           value={value}
           onFocus={() => setIsFocused(true)}
@@ -111,8 +111,12 @@ export default function Textfield({
         <span
           className={`absolute left-3 bg-white pointer-events-none px-2 transition-all duration-200 font-poppins ${
             isFocused || hasValue
-              ? `-top-2 text-xs px-2 ${hasError ? "text-error-red font-bold" : "text-black font-bold"}`
-              : `top-3 text-base ${hasError ? "text-error-red" : "text-gray-400"}`
+              ? `-top-2 text-xs px-2 ${
+                  hasError ? "text-error-red font-bold" : "text-black font-bold"
+                }`
+              : `top-3 text-base ${
+                  hasError ? "text-error-red" : "text-gray-400"
+                }`
           }`}
         >
           {label}

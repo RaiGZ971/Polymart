@@ -1,4 +1,5 @@
 import { Textfield } from "../index";
+import { Button } from "@/components";
 
 export const EmailInputState = ({ email, onChange, onSendVerification }) => {
   const isValidEmail = email.includes("@");
@@ -18,13 +19,13 @@ export const EmailInputState = ({ email, onChange, onSendVerification }) => {
         }
       />
       <div className="flex justify-end mt-6">
-        <button
+        <Button
+          variant="darkred"
           onClick={onSendVerification}
-          className="bg-hover-red text-white px-8 py-3 rounded-[30px] font-bold hover:bg-secondary-red transition-colors duration-200"
           disabled={!isValidEmail}
         >
           SEND VERIFICATION EMAIL
-        </button>
+        </Button>
       </div>
     </>
   );

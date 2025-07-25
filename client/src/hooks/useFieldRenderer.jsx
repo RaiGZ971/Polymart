@@ -1,7 +1,8 @@
 import { Textfield, Dropdown, DateDropdown, Textarea } from "../components";
 
 export const useFieldRenderer = (formData, fieldConfig, handlers) => {
-  const { handleChange, handleDropdownChange, handleFileChange } = handlers;
+  const { handleChange, handleDropdownChange, handleFileChange, setFormData } =
+    handlers;
 
   // Helper function to get field value with auto-formatting
   const getFieldValue = (fieldName) => {
@@ -44,6 +45,20 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
     return [];
   };
 
+  // Example: update formData directly in a custom change handler
+  const customHandleChange = (field) => (e) => {
+    const value = e.target.value;
+    if (setFormData) {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
+    if (handleChange) {
+      handleChange(field)(e);
+    }
+  };
+
   // Main render function using configuration
   const renderField = (fieldName, extraProps = {}) => {
     const config = fieldConfig[fieldName];
@@ -57,7 +72,7 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
           : formData[fieldName],
       required: config.required,
       disabled: config.disabled,
-      ...extraProps, // <-- add this line to forward extra props like error
+      ...extraProps,
     };
 
     switch (config.component) {
@@ -66,7 +81,8 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
           <Textfield
             key={fieldName}
             {...commonProps}
-            onChange={handleChange(fieldName)}
+            error={extraProps.error}
+            onChange={customHandleChange(fieldName)} // use custom handler
             {...getFieldProps(fieldName)}
           />
         );
