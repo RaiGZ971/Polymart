@@ -1,11 +1,18 @@
 import React, { useState } from "react";
-import { ChevronLeft } from "lucide-react";
-import { Items, MeetUpDetails } from "../../components";
-import Modal from "../shared/Modal";
-import { useOrderModals } from "../../hooks";
-import { ActionButtons, LeaveReviewComponent } from "../../components";
-import ChatApp from "../chat/ChatApp";
 import { createPortal } from "react-dom";
+
+import { ChevronLeft } from "lucide-react";
+import {
+  Items,
+  MeetUpDetails,
+  ActionButtons,
+  LeaveReviewComponent,
+  Modal,
+  ChatApp,
+  BackButton,
+} from "@/components";
+
+import { useOrderModals } from "@/hooks";
 
 const statusColor = {
   completed: "#34A853",
@@ -16,7 +23,6 @@ const statusColor = {
   rescheduled: "#F97B26",
 };
 
-// Helper to translate status to label
 function getStatusLabel(status) {
   if (!status) return "";
   const map = {
@@ -30,7 +36,13 @@ function getStatusLabel(status) {
   return map[status.toLowerCase()] || status;
 }
 
-export default function ProductDetail({ order, onBack, role, onAcceptOrder, onRejectOrder }) {
+export default function ProductDetail({
+  order,
+  onBack,
+  role,
+  onAcceptOrder,
+  onRejectOrder,
+}) {
   const {
     showConfirm,
     showAlert,
@@ -46,11 +58,11 @@ export default function ProductDetail({ order, onBack, role, onAcceptOrder, onRe
     setShowConfirm,
     setShowReceivedConfirm,
     showMarkCompleteConfirm,
-    showMarkCompleteAlert, // NEW
+    showMarkCompleteAlert,
     setShowMarkCompleteConfirm,
     handleMarkCompleteClick,
     handleConfirmMarkComplete,
-    handleMarkCompleteAlertClose, // NEW
+    handleMarkCompleteAlertClose,
   } = useOrderModals();
 
   // Add state for LeaveReview modal
@@ -112,13 +124,7 @@ export default function ProductDetail({ order, onBack, role, onAcceptOrder, onRe
   return (
     <>
       <div className="bg-white shadow-glow text-left space-y-8 flex flex-col rounded-xl">
-        <div
-          className="px-14 pt-10 text-gray-400 font-regular text-sm cursor-pointer hover:text-primary-red transition-colors"
-          onClick={onBack}
-        >
-          <ChevronLeft size={24} className="inline" />
-          Back
-        </div>
+        <BackButton onClick={onBack} className="pt-4" />
         {/* Header */}
         <div className="px-20 flex flex-row items-center justify-between">
           <h1 className="text-3xl font-bold text-primary-red">Order Details</h1>
@@ -148,9 +154,7 @@ export default function ProductDetail({ order, onBack, role, onAcceptOrder, onRe
           <button
             className="bg-primary-red text-white px-4 py-1 max-h-10 rounded-lg hover:bg-hover-red transition-colors text-sm"
             onClick={() =>
-              handleOpenChat(
-                role === "user" ? order.sellerId : order.buyerId
-              )
+              handleOpenChat(role === "user" ? order.sellerId : order.buyerId)
             }
           >
             {role === "user" ? "Message Seller" : "Message Buyer"}
