@@ -1053,6 +1053,10 @@ video {
   max-height: 50px;
 }
 
+.max-h-\[80vh\]{
+  max-height: 80vh;
+}
+
 .max-h-\[90vh\]{
   max-height: 90vh;
 }
@@ -2188,6 +2192,10 @@ video {
 
 .text-\[64px\]{
   font-size: 64px;
+}
+
+.text-\[9px\]{
+  font-size: 9px;
 }
 
 .text-base{
