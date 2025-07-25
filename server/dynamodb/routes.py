@@ -74,7 +74,7 @@ html = """
                 const formData = new FormData();
                 formData.append("image", file);
 
-                const response = await fetch(`/dynamodb/message/${room_id}`, {
+                const response = await fetch(`/dynamodb/message-image/${room_id}`, {
                     method: "POST",
                     body: formData
                 });
