@@ -84,6 +84,22 @@ const Modal = ({
               OK
             </button>
           )}
+          {type === "message" && (
+            <>
+              <button
+                className="border border-primary-red text-primary-red px-6 py-2 rounded-full"
+                onClick={onClose}
+              >
+                CANCEL
+              </button>
+              <button
+                className="bg-primary-red text-white px-6 py-2 rounded-full"
+                onClick={onConfirm}
+              >
+                {title.includes("Accept") ? "ACCEPT" : "REJECT"}
+              </button>
+            </>
+          )}
           {type === "offer" && (
             <>
               <button

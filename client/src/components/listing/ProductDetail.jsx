@@ -30,7 +30,7 @@ function getStatusLabel(status) {
   return map[status.toLowerCase()] || status;
 }
 
-export default function ProductDetail({ order, onBack, role }) {
+export default function ProductDetail({ order, onBack, role, onAcceptOrder, onRejectOrder }) {
   const {
     showConfirm,
     showAlert,
@@ -178,6 +178,8 @@ export default function ProductDetail({ order, onBack, role }) {
             onItemReceivedClick={handleItemReceivedClick}
             onMarkCompleteClick={handleMarkCompleteClick}
             onLeaveReviewClick={handleOpenLeaveReview}
+            onAcceptOrder={onAcceptOrder}
+            onRejectOrder={onRejectOrder}
           />
         </div>
         {/* Modals */}
