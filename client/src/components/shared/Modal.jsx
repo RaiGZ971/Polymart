@@ -1,20 +1,22 @@
 import { createPortal } from "react-dom";
 import { Textfield, Textarea } from "../../components";
 
-export default function Modal({
+const Modal = ({
   isOpen,
   onClose,
+  onConfirm,
+  type,
   title,
   description,
-  type = "alert",
-  onConfirm,
   children,
   offerPrice,
   setOfferPrice,
   offerMessage,
   setOfferMessage,
-}) {
-  if (!isOpen) return null;
+}) => {
+  if (!isOpen) {
+    return null;
+  }
 
   return createPortal(
     <div className="fixed inset-0 top-0 left-0 z-[100000] flex items-center justify-center bg-black bg-opacity-40 m-0 p-0">
@@ -58,6 +60,22 @@ export default function Modal({
               </button>
             </>
           )}
+          {type === "confirmation" && (
+            <>
+              <button
+                className="border border-primary-red text-primary-red px-6 py-2 rounded-full"
+                onClick={onClose}
+              >
+                Review Details
+              </button>
+              <button
+                className="bg-primary-red text-white px-6 py-2 rounded-full"
+                onClick={onConfirm}
+              >
+                Submit Listing
+              </button>
+            </>
+          )}
           {type === "alert" && (
             <button
               className="bg-primary-red text-white px-6 py-2 rounded-full"
@@ -87,4 +105,6 @@ export default function Modal({
     </div>,
     document.body
   );
-}
+};
+
+export default Modal;
