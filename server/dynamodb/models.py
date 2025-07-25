@@ -13,6 +13,12 @@ class message(BaseModel):
     updated_at: str
     read_status: bool = False
 
+class raw_message(BaseModel):
+    sender_id: str
+    receiver_id: str
+    content: str | None = None
+    image: str | None = None
+
 class notification(BaseModel):
     user_id: str                        #partition-key
     notification_id: str
