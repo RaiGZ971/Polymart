@@ -6,13 +6,13 @@ import {
   Textarea,
   ToggleButton,
   OrderCalendarPicker,
+  Modal,
 } from "../../components";
 import { placeOrderData } from "../../data";
-import timeSlots from "../../data/timeSlots";
-import Modal from "../shared/Modal"; // adjust path if needed
+import timeSlots from "@/data/timeSlots";
 
-export default function PlaceOrder({ order, quantity = 1, onClose }) {
-  // Initialize form state with placeOrderData and incoming order props
+export default function PlaceOrder({ order, quantity, onClose, currentUser }) {
+  console.log("PlaceOrder modal rendered", order, currentUser);
   const [form, setForm] = useState({
     ...placeOrderData,
     ...order,
@@ -21,24 +21,26 @@ export default function PlaceOrder({ order, quantity = 1, onClose }) {
       {
         name: order?.productName,
         image: order?.productImage,
-        price: order?.productPrice,
+        // Use offer price if present, else normal price
+        price: order?.productPriceOffer || order?.productPrice,
         quantity,
       },
     ],
     meetUpLocation: order?.meetupLocations?.[0] || "",
     meetUpDate: "",
     meetUpTime: "",
+    // Use offer note/message if present, else remarks
+    remarks: order?.offerMessage || order?.remarks || "",
   });
 
   const [showModal, setShowModal] = useState(false);
-  const [modalStep, setModalStep] = useState("confirm"); // "confirm" or "success"
+  const [modalStep, setModalStep] = useState("confirm");
 
-  // Handle date change
   const handleDateChange = (date) => {
     setForm((prev) => ({
       ...prev,
       meetUpDate: date,
-      meetUpTime: "", // reset time when date changes
+      meetUpTime: "",
     }));
   };
 
@@ -49,7 +51,6 @@ export default function PlaceOrder({ order, quantity = 1, onClose }) {
     }));
   };
 
-  // Handle remarks change
   const handleRemarksChange = (e) => {
     setForm((prev) => ({
       ...prev,
@@ -57,7 +58,6 @@ export default function PlaceOrder({ order, quantity = 1, onClose }) {
     }));
   };
 
-  // Handle meet up location change
   const handleLocationChange = (location) => {
     setForm((prev) => ({
       ...prev,
@@ -65,14 +65,12 @@ export default function PlaceOrder({ order, quantity = 1, onClose }) {
     }));
   };
 
-  // Add paymentMethods from order or fallback
   const paymentMethods = order?.paymentMethods || [
     "Cash",
     "GCash",
     "Bank Transfer",
   ];
 
-  // Handle payment method change
   const handlePaymentMethodChange = (method) => {
     setForm((prev) => ({
       ...prev,
@@ -97,7 +95,6 @@ export default function PlaceOrder({ order, quantity = 1, onClose }) {
           </h1>
           <p className="text-gray-800">Order Details</p>
         </div>
-        {/* Content */}
         <div className="w-full flex flex-col gap-4">
           <Container>
             <Items order={form} />
