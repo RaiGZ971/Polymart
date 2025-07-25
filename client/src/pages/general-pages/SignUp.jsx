@@ -9,13 +9,10 @@ import {
   Phase2Layout,
   Phase3Layout,
   Phase4Layout,
-  Phase5Layout
-} from "../../components";
+  Phase5Layout,
+} from "@/components";
 
-import { 
-  fieldConfig,
-  phaseConfig,
-} from "../../data";
+import { fieldConfig, phaseConfig } from "../../data";
 
 import { useSignUpNavigation } from "../../hooks/useSignUpNavigation";
 import { useEmailVerification } from "../../hooks/useEmailVerification";
@@ -27,11 +24,11 @@ import { useFormData } from "../../hooks/useFormData";
 export default function SignUp() {
   // Define steps array
   const steps = [
-    'Email Verification',
-    'Personal Details', 
-    'Student Details',
-    'Account Setup',
-    'Student Verification',
+    "Email Verification",
+    "Personal Details",
+    "Student Details",
+    "Account Setup",
+    "Student Verification",
   ];
 
   // Use the form data management hook
@@ -43,7 +40,7 @@ export default function SignUp() {
     updateField,
     updateFields,
     resetFormData,
-    resetFields
+    resetFields,
   } = useFormData();
 
   const handleSubmit = () => {
@@ -57,7 +54,7 @@ export default function SignUp() {
     handleResendVerification,
     handleChangeEmail,
     handleTestVerification,
-    getEmailVerificationTitle
+    getEmailVerificationTitle,
   } = useEmailVerification();
 
   // Use the navigation hook
@@ -68,17 +65,64 @@ export default function SignUp() {
     prevStep,
     canGoBack,
     canGoForward,
-    getNextButtonText
-  } = useSignUpNavigation(emailVerificationStep, handleSubmit, formData, fieldConfig, phaseConfig);
+    getNextButtonText,
+  } = useSignUpNavigation(
+    emailVerificationStep,
+    handleSubmit,
+    formData,
+    fieldConfig,
+    phaseConfig
+  );
 
   // Use the file upload hook
-  const { handleFileChange, removeFile, getFilePreviewURL } = useFileUpload(formData, setFormData);
+  const { handleFileChange, removeFile, getFilePreviewURL } = useFileUpload(
+    formData,
+    setFormData
+  );
+
+  // Passwords state
+  const [errors, setErrors] = useState({});
+
+  const validatePasswords = () => {
+    if (formData.password !== formData.confirmPassword) {
+      setErrors((prev) => ({
+        ...prev,
+        confirmPassword: "Password must be the same as Confirm Password",
+      }));
+    } else {
+      setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+    }
+  };
+
+  const handlePasswordChange = (field) => (e) => {
+    const value = e.target.value;
+    // Update formData first
+    handleChange(field)(e);
+
+    // Get the latest password and confirmPassword values
+    const password = field === "password" ? value : formData.password || "";
+    const confirmPassword =
+      field === "confirmPassword" ? value : formData.confirmPassword || "";
+
+    // Validate using the latest values
+    if (password && confirmPassword && password !== confirmPassword) {
+      setErrors((prev) => ({
+        ...prev,
+        confirmPassword: "Password must be the same as Confirm Password",
+      }));
+    } else {
+      setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+    }
+  };
 
   // Use the field renderer hook
   const { renderField } = useFieldRenderer(formData, fieldConfig, {
-    handleChange,
+    handleChange: (field) =>
+      field === "password" || field === "confirmPassword"
+        ? handlePasswordChange(field)
+        : handleChange(field),
     handleDropdownChange,
-    handleFileChange
+    handleFileChange,
   });
 
   // <--------- Email Verification Handlers ---------->
@@ -103,87 +147,67 @@ export default function SignUp() {
       handleSendVerificationWithEmail,
       handleResendVerificationWithEmail,
       handleChangeEmailWithReset,
-      handleTestVerification
+      handleTestVerification,
     }
   );
 
   // Simplified phase rendering using configuration
   const renderPhaseContent = () => {
-    const phase = phaseConfig[currentStep];
-    if (!phase) return null;
+    switch (currentStep) {
+      case 2:
+        return (
+          <Phase2Layout
+            formData={formData || {}} // ensures it's never undefined
+            errors={errors}
+            handleChange={handleChange}
+          />
+        );
 
-    // Special handling for email verification phase
-    if (currentStep === 1) {
-      return (
-        <PhaseContainer 
-          label={phase.label}
-          title={getEmailVerificationTitle()}
-        >
-          {renderEmailVerificationContent()}
-        </PhaseContainer>
-      );
+      case 3:
+        return <Phase3Layout renderField={renderField} />;
+
+      case 4:
+        return (
+          <Phase4Layout
+            formData={formData}
+            handleFileChange={handleFileChange}
+            removeFile={removeFile}
+            renderField={renderField}
+          />
+        );
+
+      case 5:
+        return (
+          <Phase5Layout
+            step5SubStep={step5SubStep}
+            formData={formData}
+            handleFileChange={handleFileChange}
+            removeFile={removeFile}
+          />
+        );
+
+      default:
+        return null;
     }
-
-  let phaseTitle = phase.title;
-    if (currentStep === 5 && step5SubStep === 3) {
-      phaseTitle = "You're in!"; // Or whatever title you want
-    }
-
-    return (
-      <PhaseContainer label={phase.label} title={phaseTitle}>
-        <div className="flex flex-col space-y-6">
-          {/* Phase 2 - Personal Details */}
-          {currentStep === 2 && (
-            <Phase2Layout renderField={renderField} />
-          )}
-
-          {/* Phase 3 - Student Details */}
-          {currentStep === 3 && (
-            <Phase3Layout renderField={renderField} />
-          )}
-
-          {/* Phase 4 - Account Setup */}
-          {currentStep === 4 && (
-            <Phase4Layout
-              formData={formData}
-              handleFileChange={handleFileChange}
-              removeFile={removeFile}
-              renderField={renderField}
-            />
-          )}
-
-          {/* Phase 5 - Document Upload */}
-          {currentStep === 5 && (
-            <Phase5Layout
-              step5SubStep={step5SubStep}
-              formData={formData}
-              handleFileChange={handleFileChange}
-              removeFile={removeFile}
-            />
-          )}
-        </div>
-        
-      </PhaseContainer>
-    );
   };
 
   // Main Content
   return (
     <>
-      <div className='w-full h-screen bg-white flex flex-col items-center'>
+      <div className="w-full h-screen bg-white flex flex-col items-center">
         <div className="w-full p-10 px-0 mx-0">
-          <NavigationBar variant="signup"/>
+          <NavigationBar variant="signup" />
         </div>
 
         <div className="w-[60%] flex flex-row justify-between mt-8">
-          <h1 className="text-5xl font-bold text-primary-red">Sign Up</h1>
+          <h1 className="text-4xl font-bold text-primary-red">Sign Up</h1>
           <PhaseIndicator currentStep={currentStep} steps={steps} />
         </div>
-      
+
         <div className="w-[60%] h-full flex flex-col mt-10">
           {renderPhaseContent()}
         </div>
-          
+
         <NavigationButtons
           onPrevStep={prevStep}
           onNextStep={nextStep}
@@ -191,7 +215,7 @@ export default function SignUp() {
           canGoForward={canGoForward()}
           nextButtonText={getNextButtonText()}
         />
-        
+
         <Footer variant="dark" className="w-full" />
       </div>
     </>

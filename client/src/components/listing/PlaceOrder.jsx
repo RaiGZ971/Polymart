@@ -8,11 +8,10 @@ import {
   OrderCalendarPicker,
   Modal,
 } from "../../components";
-import { placeOrderData } from "../../data";
+import placeOrderData from "../../data/placeOrderData";
 import timeSlots from "@/data/timeSlots";
 
 export default function PlaceOrder({ order, quantity, onClose, currentUser }) {
-  console.log("PlaceOrder modal rendered", order, currentUser);
   const [form, setForm] = useState({
     ...placeOrderData,
     ...order,
@@ -78,9 +77,17 @@ export default function PlaceOrder({ order, quantity, onClose, currentUser }) {
     }));
   };
 
+  // Validation: All required fields must be filled
+  const isFormValid =
+    form.paymentMethod &&
+    form.meetUpDate &&
+    form.meetUpTime &&
+    form.meetUpLocation &&
+    form.quantity > 0;
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-40">
-      <div className="w-full max-w-4xl  max-h-[700px] overflow-y-auto bg-white rounded-t-xl shadow-glow p-8 relative">
+      <div className="w-full max-w-4xl max-h-[80vh] overflow-y-auto bg-white rounded-t-xl shadow-glow p-8 relative">
         <button
           className="flex items-center gap-2 text-gray-400 hover:text-primary-red text-lg font-medium"
           onClick={onClose}
@@ -215,8 +222,16 @@ export default function PlaceOrder({ order, quantity, onClose, currentUser }) {
         </button>
         <button
           className="bg-primary-red text-white px-6 py-2 rounded-full font-semibold hover:bg-hover-red disabled:bg-gray-300 disabled:text-gray-500"
-          onClick={() => setShowModal(true)}
-          disabled={currentUser?.role === "user"}
+          onClick={() => {
+            if (!isFormValid) return;
+            const filtered = Object.keys(placeOrderData).reduce((obj, key) => {
+              obj[key] = form[key];
+              return obj;
+            }, {});
+            console.log("Place Order Data:", filtered);
+            setShowModal(true);
+          }}
+          disabled={!isFormValid || currentUser?.role === "user"}
         >
           Place Order
         </button>

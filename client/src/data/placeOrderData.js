@@ -15,7 +15,6 @@ function formatDatePlaced(date = new Date()) {
 const placeOrderData = {
   orderId: "",
   productName: "",
-  productImage: "",
   productPrice: "",
   productOfferPrice: "",
   meetUpDate: null,

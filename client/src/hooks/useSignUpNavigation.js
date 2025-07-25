@@ -105,7 +105,7 @@ export const useSignUpNavigation = (
         setStep5SubStep(3);
         return;
       } else if (step5SubStep === 3) {
-        navigate("/sign-in"); // <-- Add this line
+        navigate("/sign-in");
         return;
       }
     }
