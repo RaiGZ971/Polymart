@@ -2,18 +2,23 @@ import { useState, useEffect } from "react";
 import ChatPreview from "./ChatPreview";
 import ChatContainer from "./ChatContainer";
 
-export default function ChatApp({ initialChatId = null, onClose }) {
-  const [currentView, setCurrentView] = useState("preview");
-  const [selectedChat, setSelectedChat] = useState(null);
+export default function ChatApp({
+  initialChatId = null,
+  initialView = "preview",
+  initialChatData = null,
+  onClose,
+  fromOrderDetails = false, // <-- add default value
+}) {
+  const [currentView, setCurrentView] = useState(initialView);
+  const [selectedChat, setSelectedChat] = useState(initialChatData);
 
   // If initialChatId is provided, start with that chat open
   useEffect(() => {
-    if (initialChatId) {
-      // You'll need to get the chat data by ID from your useChat hook
-      // For now, we'll just set the view to preview and let user select
-      setCurrentView("preview");
+    if (initialChatId && initialView === "chat" && initialChatData) {
+      setCurrentView("chat");
+      setSelectedChat(initialChatData);
     }
-  }, [initialChatId]);
+  }, [initialChatId, initialView, initialChatData]);
 
   const handleChatSelect = (chat) => {
     setSelectedChat(chat); // Store the entire chat object
@@ -22,9 +27,14 @@ export default function ChatApp({ initialChatId = null, onClose }) {
 
   const handleBack = () => {
     if (currentView === "chat") {
-      // If in chat view, go back to preview
-      setCurrentView("preview");
-      setSelectedChat(null);
+      if (fromOrderDetails) {
+        // Close the chat modal and go back to order details
+        if (onClose) onClose();
+      } else {
+        // Go back to chat preview
+        setCurrentView("preview");
+        setSelectedChat(null);
+      }
     } else {
       // If in preview view, close the entire chat overlay
       if (onClose) {
