@@ -111,7 +111,7 @@ export const listingFieldConfig = {
     label: "Payment Methods",
     required: true,
     component: "toggle",
-    maxSelections: 1,
+    maxSelections: 5,
     options: paymentMethods,
   },
   meetupLocations: {
