@@ -27,7 +27,7 @@ const userOrders = [
   },
   {
     id: 2,
-    role: "user",
+    role: "seller",
     status: "Ongoing",
     location: "Lagoon",
     product: "Sneakers",

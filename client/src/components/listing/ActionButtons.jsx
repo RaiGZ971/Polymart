@@ -1,5 +1,7 @@
 import React from "react";
 
+import { Button } from "@/components";
+
 export default function ActionButtons({
   order,
   role,
@@ -16,18 +18,15 @@ export default function ActionButtons({
   if (status === "cancelled") {
     return (
       <>
-        <button
-          className="text-gray-400 px-5 py-1.5 rounded-full cursor-not-allowed"
-          disabled
-        >
+        <Button variant="graytext" disabled>
           Cancel Order
-        </button>
-        <button
+        </Button>
+        <Button
           className="bg-gray-400 text-white px-5 py-1.5 rounded-full cursor-not-allowed"
           disabled
         >
           Order Cancelled
-        </button>
+        </Button>
       </>
     );
   }
@@ -35,12 +34,9 @@ export default function ActionButtons({
   if (role === "user" && status === "ongoing") {
     return (
       <div className="flex justify-end w-full">
-        <button
-          className="bg-primary-red text-white px-5 py-1.5 rounded-full hover:bg-red-600 transition-colors"
-          onClick={onItemReceivedClick}
-        >
+        <Button variant="primary" onClick={onItemReceivedClick}>
           Item Received
-        </button>
+        </Button>
       </div>
     );
   }
@@ -48,12 +44,9 @@ export default function ActionButtons({
   if (status === "completed") {
     return (
       <div className="flex justify-end w-full">
-        <button
-          className="bg-primary-red text-white px-5 py-1.5 rounded-full hover:bg-red-600 transition-colors"
-          onClick={onLeaveReviewClick}
-        >
+        <Button variant="primary" onClick={onLeaveReviewClick}>
           Leave a Review
-        </button>
+        </Button>
       </div>
     );
   }
@@ -61,18 +54,12 @@ export default function ActionButtons({
   if (role !== "user" && status === "ongoing") {
     return (
       <>
-        <button
-          className="text-primary-red hover:text-hover-red hover:font-semibold"
-          onClick={onCancelClick}
-        >
+        <Button variant="graytext" onClick={onCancelClick}>
           Cancel Order
-        </button>
-        <button
-          className="bg-primary-red text-white px-5 py-1.5 rounded-full hover:bg-red-600 transition-colors"
-          onClick={onMarkCompleteClick}
-        >
+        </Button>
+        <Button variant="primary" onClick={onMarkCompleteClick}>
           Mark as Complete
-        </button>
+        </Button>
       </>
     );
   }
@@ -80,18 +67,12 @@ export default function ActionButtons({
   if (role !== "user" && (status === "placed" || status === "order placed")) {
     return (
       <>
-        <button
-          className="text-primary-red hover:text-hover-red hover:font-semibold"
-          onClick={onRejectOrder}
-        >
+        <Button variant="graytext" onClick={onRejectOrder}>
           Reject Order
-        </button>
-        <button
-          className="bg-primary-red text-white px-5 py-1.5 rounded-full hover:bg-red-600 transition-colors"
-          onClick={onAcceptOrder}
-        >
+        </Button>
+        <Button variant="primary" onClick={onAcceptOrder}>
           Accept Order
-        </button>
+        </Button>
       </>
     );
   }
@@ -99,27 +80,18 @@ export default function ActionButtons({
   if (isUserPlaced) {
     return (
       <>
-        <button className="text-primary-red hover:text-hover-red hover:font-semibold">
-          Edit Details
-        </button>
-        <button
-          className="bg-primary-red text-white px-5 py-1.5 rounded-full hover:bg-red-600 transition-colors"
-          onClick={onCancelClick}
-        >
+        <Button variant="graytext">Edit Details</Button>
+        <Button variant="primary" onClick={onCancelClick}>
           Cancel Order
-        </button>
+        </Button>
       </>
     );
   }
 
   return (
     <>
-      <button className="text-primary-red hover:text-hover-red hover:font-semibold">
-        Report Bogus
-      </button>
-      <button className="bg-primary-red text-white px-5 py-1.5 rounded-full hover:bg-red-600 transition-colors">
-        Order Completed
-      </button>
+      <Button variant="graytext">Report Bogus</Button>
+      <Button variant="primary">Order Completed</Button>
     </>
   );
 }

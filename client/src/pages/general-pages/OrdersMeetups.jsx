@@ -3,12 +3,10 @@ import {
   MainDashboard,
   OrdersListingsComponent,
   DropdownFilter,
-} from "../../components";
-import ProductDetail from "../../components/listing/ProductDetail";
-import Modal from "../../components/shared/Modal";
-import userOrders from "../../data/userOrders";
-import orderStatus from "../../data/orderStatus";
-import { meetUpLocationsFilter } from "../../data";
+  ProductDetail,
+  Modal,
+} from "@/components";
+import { meetUpLocationsFilter, orderStatus, userOrders } from "@/data";
 
 export default function OrdersMeetups() {
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -16,11 +14,10 @@ export default function OrdersMeetups() {
   const [selectedLocation, setSelectedLocation] = useState(
     meetUpLocationsFilter[0]?.value || ""
   );
-  const [activeTab, setActiveTab] = useState("orders"); // "orders" or "listings"
+  const [activeTab, setActiveTab] = useState("orders");
 
-  // Message dialog state
   const [showMessageDialog, setShowMessageDialog] = useState(false);
-  const [dialogType, setDialogType] = useState(""); // "accept" or "reject"
+  const [dialogType, setDialogType] = useState("");
   const [message, setMessage] = useState("");
 
   const handleBack = () => setSelectedOrder(null);
@@ -55,10 +52,6 @@ export default function OrdersMeetups() {
     // Close dialog and reset state
     setShowMessageDialog(false);
     setMessage("");
-    setDialogType("");
-
-    // Optionally update the order status or refresh data
-    // You might want to update the selectedOrder status here
   };
 
   // Handle message dialog close
