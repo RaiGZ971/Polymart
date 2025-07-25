@@ -13,6 +13,20 @@ import { sortByPriceOptions } from "../../data";
 import ordersSampleData from "../../data/ordersSampleData";
 import { useNavigate } from "react-router-dom";
 
+function getProductPrice(product, useMax = false) {
+  if (
+    product.hasPriceRange &&
+    product.priceRange &&
+    (useMax ? product.priceRange.max : product.priceRange.min)
+  ) {
+    return Number(useMax ? product.priceRange.max : product.priceRange.min);
+  }
+  if (product.productPrice) {
+    return Number(product.productPrice);
+  }
+  return 0;
+}
+
 export default function GeneralDashboard() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
@@ -25,6 +39,9 @@ export default function GeneralDashboard() {
 
   const currentUser = { id: "user123", role: "user" };
 
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(Infinity);
+
   const handleCategoryChange = (categoryValue) => {
     setActiveCategory(categoryValue);
   };
@@ -33,14 +50,15 @@ export default function GeneralDashboard() {
     setSortBy(newSortBy);
   };
 
-  // Separate data for All Listings and Your Listings
   const allListings = ordersSampleData.filter((order) => {
     const matchesCategory =
       activeCategory === "all" || order.category === activeCategory;
     const matchesSearch = order.productName
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
+    const price = getProductPrice(order);
+    const matchesPrice = price >= minPrice && price <= maxPrice;
+    return matchesCategory && matchesSearch && matchesPrice;
   });
 
   const yourListings = ordersSampleData.filter((order) => {
@@ -49,20 +67,24 @@ export default function GeneralDashboard() {
     const matchesSearch = order.productName
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
+    const price = getProductPrice(order);
+    const matchesPrice = price >= minPrice && price <= maxPrice;
     return (
-      matchesCategory && matchesSearch && order.seller_id === currentUser.id // Make sure your data has sellerId
+      matchesCategory &&
+      matchesSearch &&
+      matchesPrice &&
+      order.seller_id === currentUser.id
     );
   });
 
-  // Choose which data to display based on activeTab
   const filteredOrders =
     activeTab === "your-listings" ? yourListings : allListings;
 
   const sortedOrders = [...filteredOrders].sort((a, b) => {
     if (sortBy === "low-to-high") {
-      return a.productPrice - b.productPrice;
+      return getProductPrice(a) - getProductPrice(b);
     } else if (sortBy === "high-to-low") {
-      return b.productPrice - a.productPrice;
+      return getProductPrice(b, true) - getProductPrice(a, true);
     }
     return 0;
   });
@@ -83,7 +105,6 @@ export default function GeneralDashboard() {
 
   return (
     <MainDashboard>
-      {/* Categories Section */}
       <div className="w-[80%] mt-0 space-y-6">
         <h1 className="text-4xl font-bold text-primary-red mt-10">
           Welcome Back, User!
@@ -101,7 +122,6 @@ export default function GeneralDashboard() {
           onKeyDown={handleSearchInputKeyDown}
         />
       </div>
-      {/* Products Filter Section */}
       <div className="flex items-center justify-between w-[80%] mt-10">
         <div className="flex flex-row gap-4 justify-end ">
           <button
@@ -133,7 +153,6 @@ export default function GeneralDashboard() {
           onChange={handleSortChange}
         />
       </div>
-      {/* Product Cards Grid */}
       <div className="w-[80%] min-h-[300px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mt-4 mx-auto">
         {sortedOrders.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center min-h-[200px]">
@@ -164,7 +183,6 @@ export default function GeneralDashboard() {
           </>
         )}
       </div>
-      {/* Overlay for CreateListingComponent */}
       {showCreateListing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div
