@@ -89,8 +89,8 @@ export default function LeaveReviewComponent({
         </button>
 
         {/* Content Container */}
-        <div className="flex flex-col items-center px-12 pt-24 pb-12 h-full">
-          <h1 className="text-3xl font-bold text-[#950000] mb-6">
+        <div className="flex flex-col items-center px-12 pt-16 pb-4 h-full">
+          <h1 className="text-3xl font-bold text-[#950000] mb-8">
             Leave A Review
           </h1>
 
@@ -116,17 +116,15 @@ export default function LeaveReviewComponent({
 
           {/* Rating Stars */}
           <div className="mb-6 flex justify-center items-center w-full">
-            <div className="flex justify-center">
-              <RatingStars
-                value={rating}
-                onChange={setRating}
-                starClassName="text-5xl w-12 h-12"
-              />
-            </div>
+            <RatingStars
+              value={rating}
+              onChange={setRating}
+              size="large"
+            />
           </div>
 
           {/* Remarks Section */}
-          <div className="mb-2 w-full flex justify-center">
+          <div className="mb-8 w-full flex justify-center">
             <Textarea
               label="Remarks"
               value={remarks}
@@ -136,7 +134,7 @@ export default function LeaveReviewComponent({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-between w-full mt-auto">
+          <div className="flex justify-between w-full mt-auto mb-2">
             <button
               onClick={handleSkip}
               className="text-primary-red hover:underline font-medium transition-colors bg-transparent border-none outline-none px-6 py-1.5"
