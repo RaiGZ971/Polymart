@@ -160,12 +160,12 @@ export default function DateDropdown({
     <div className="flex flex-col items-center font-poppins" ref={dropdownRef}>
       {/*Date Dropdown Container*/}
       <div
-        className={`border py-3 px-6 rounded-[30px] relative w-64 transition-all duration-200 ease-in-out cursor-pointer ${
+        className={`border py-3 px-6 rounded-[30px] relative w-full transition-all duration-200 ease-in-out cursor-pointer ${
           hasError
             ? "border-error-red"
             : isFocused || isOpen
-              ? "border-black"
-              : "border-gray-400"
+            ? "border-black"
+            : "border-gray-400"
         }`}
         onClick={handleToggle}
         onBlur={handleBlur}
@@ -184,8 +184,12 @@ export default function DateDropdown({
         <span
           className={`absolute left-3 bg-white pointer-events-none px-2 transition-all duration-200 font-poppins ${
             isFocused || hasValue || isOpen
-              ? `-top-2 text-xs px-2 ${hasError ? "text-error-red font-bold" : "text-black font-bold"}`
-              : `top-3 text-base ${hasError ? "text-error-red" : "text-gray-400"}`
+              ? `-top-2 text-xs px-2 ${
+                  hasError ? "text-error-red font-bold" : "text-black font-bold"
+                }`
+              : `top-3 text-base ${
+                  hasError ? "text-error-red" : "text-gray-400"
+                }`
           }`}
         >
           {label}
@@ -261,10 +265,10 @@ export default function DateDropdown({
                           isSelected
                             ? "bg-black text-white"
                             : isToday
-                              ? "bg-gray-200 text-black font-bold"
-                              : dayObj.isDisabled
-                                ? "text-gray-300 cursor-not-allowed"
-                                : "text-black hover:bg-gray-100"
+                            ? "bg-gray-200 text-black font-bold"
+                            : dayObj.isDisabled
+                            ? "text-gray-300 cursor-not-allowed"
+                            : "text-black hover:bg-gray-100"
                         }
                       `}
                     >

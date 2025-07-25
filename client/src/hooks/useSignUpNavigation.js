@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // <-- Add this import
 
 export const useSignUpNavigation = (
   emailVerificationStep,
@@ -9,6 +10,7 @@ export const useSignUpNavigation = (
 ) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [step5SubStep, setStep5SubStep] = useState(1);
+  const navigate = useNavigate(); // <-- Add this line
 
   const validateCurrentStep = () => {
     // Get the phase configuration for current step
@@ -103,6 +105,7 @@ export const useSignUpNavigation = (
         setStep5SubStep(3);
         return;
       } else if (step5SubStep === 3) {
+        navigate("/sign-in"); // <-- Add this line
         return;
       }
     }

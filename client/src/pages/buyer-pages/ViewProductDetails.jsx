@@ -158,6 +158,7 @@ export default function ViewProductDetails() {
               className="hover:bg-primary-red hover:text-white px-4 py-2 rounded-full bg-white border-2 
                   border-primary-red transition-colors text-primary-red font-bold w-full"
               onClick={() => {
+                console.log("Place Order clicked", order.hasPriceRange);
                 if (order.hasPriceRange) {
                   setShowOfferModal(true);
                 } else {
@@ -332,8 +333,8 @@ export default function ViewProductDetails() {
         {/* PlaceOrder modal */}
         {showPlaceOrder && (
           <PlaceOrder
-            order={order} // <-- pass order directly
-            currentUser={currentUser} // <-- pass currentUser
+            order={customOrder || order} // <-- use customOrder if present
+            currentUser={currentUser}
             quantity={quantity}
             onClose={() => {
               setShowPlaceOrder(false);
