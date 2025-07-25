@@ -8,6 +8,8 @@ export default function ActionButtons({
   onItemReceivedClick,
   onMarkCompleteClick,
   onLeaveReviewClick,
+  onAcceptOrder,
+  onRejectOrder,
 }) {
   const status = order.status?.toLowerCase();
 
@@ -78,10 +80,16 @@ export default function ActionButtons({
   if (role !== "user" && (status === "placed" || status === "order placed")) {
     return (
       <>
-        <button className="text-primary-red hover:text-hover-red hover:font-semibold">
+        <button
+          className="text-primary-red hover:text-hover-red hover:font-semibold"
+          onClick={onRejectOrder}
+        >
           Reject Order
         </button>
-        <button className="bg-primary-red text-white px-5 py-1.5 rounded-full hover:bg-red-600 transition-colors">
+        <button
+          className="bg-primary-red text-white px-5 py-1.5 rounded-full hover:bg-red-600 transition-colors"
+          onClick={onAcceptOrder}
+        >
           Accept Order
         </button>
       </>
