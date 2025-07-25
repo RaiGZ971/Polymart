@@ -11,17 +11,21 @@ export default function PhaseIndicator({ currentStep, steps }) {
             <div className="flex flex-col items-center space-y-1">
               <div
                 className={`
-                  w-8 h-8 flex items-center justify-center rounded-full border-2 text-sm font-bold
+                  w-6 h-6 flex items-center justify-center rounded-full border-2 text-xs font-bold
                   ${isCurrent ? "bg-hover-red text-white border-hover-red" : ""}
                   ${isPassed ? "bg-white text-hover-red border-hover-red" : ""}
-                  ${!isPassed && !isCurrent ? "bg-white text-gray-300 border-gray-300" : ""}
+                  ${
+                    !isPassed && !isCurrent
+                      ? "bg-white text-gray-300 border-gray-300"
+                      : ""
+                  }
                 `}
               >
                 {step}
               </div>
               <div
                 className={`
-                  text-xs text-center w-20
+                  text-[10px] text-center w-10 flex flex-col items-center
                   ${isCurrent ? "text-hover-red" : ""}
                   ${isPassed ? "text-hover-red" : ""}
                   ${!isPassed && !isCurrent ? "text-gray-300" : ""}

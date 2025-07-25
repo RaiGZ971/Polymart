@@ -6,13 +6,12 @@ import {
   Textarea,
   ToggleButton,
   OrderCalendarPicker,
+  Modal,
 } from "../../components";
-import { placeOrderData } from "../../data";
-import timeSlots from "../../data/timeSlots";
-import Modal from "../shared/Modal"; // adjust path if needed
+import placeOrderData from "../../data/placeOrderData";
+import timeSlots from "@/data/timeSlots";
 
-export default function PlaceOrder({ order, quantity = 1, onClose }) {
-  // Initialize form state with placeOrderData and incoming order props
+export default function PlaceOrder({ order, quantity, onClose, currentUser }) {
   const [form, setForm] = useState({
     ...placeOrderData,
     ...order,
@@ -21,24 +20,26 @@ export default function PlaceOrder({ order, quantity = 1, onClose }) {
       {
         name: order?.productName,
         image: order?.productImage,
-        price: order?.productPrice,
+        // Use offer price if present, else normal price
+        price: order?.productPriceOffer || order?.productPrice,
         quantity,
       },
     ],
     meetUpLocation: order?.meetupLocations?.[0] || "",
     meetUpDate: "",
     meetUpTime: "",
+    // Use offer note/message if present, else remarks
+    remarks: order?.offerMessage || order?.remarks || "",
   });
 
   const [showModal, setShowModal] = useState(false);
-  const [modalStep, setModalStep] = useState("confirm"); // "confirm" or "success"
+  const [modalStep, setModalStep] = useState("confirm");
 
-  // Handle date change
   const handleDateChange = (date) => {
     setForm((prev) => ({
       ...prev,
       meetUpDate: date,
-      meetUpTime: "", // reset time when date changes
+      meetUpTime: "",
     }));
   };
 
@@ -49,7 +50,6 @@ export default function PlaceOrder({ order, quantity = 1, onClose }) {
     }));
   };
 
-  // Handle remarks change
   const handleRemarksChange = (e) => {
     setForm((prev) => ({
       ...prev,
@@ -57,7 +57,6 @@ export default function PlaceOrder({ order, quantity = 1, onClose }) {
     }));
   };
 
-  // Handle meet up location change
   const handleLocationChange = (location) => {
     setForm((prev) => ({
       ...prev,
@@ -65,14 +64,12 @@ export default function PlaceOrder({ order, quantity = 1, onClose }) {
     }));
   };
 
-  // Add paymentMethods from order or fallback
   const paymentMethods = order?.paymentMethods || [
     "Cash",
     "GCash",
     "Bank Transfer",
   ];
 
-  // Handle payment method change
   const handlePaymentMethodChange = (method) => {
     setForm((prev) => ({
       ...prev,
@@ -80,9 +77,17 @@ export default function PlaceOrder({ order, quantity = 1, onClose }) {
     }));
   };
 
+  // Validation: All required fields must be filled
+  const isFormValid =
+    form.paymentMethod &&
+    form.meetUpDate &&
+    form.meetUpTime &&
+    form.meetUpLocation &&
+    form.quantity > 0;
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-40">
-      <div className="w-full max-w-4xl  max-h-[700px] overflow-y-auto bg-white rounded-t-xl shadow-glow p-8 relative">
+      <div className="w-full max-w-4xl max-h-[80vh] overflow-y-auto bg-white rounded-t-xl shadow-glow p-8 relative">
         <button
           className="flex items-center gap-2 text-gray-400 hover:text-primary-red text-lg font-medium"
           onClick={onClose}
@@ -97,7 +102,6 @@ export default function PlaceOrder({ order, quantity = 1, onClose }) {
           </h1>
           <p className="text-gray-800">Order Details</p>
         </div>
-        {/* Content */}
         <div className="w-full flex flex-col gap-4">
           <Container>
             <Items order={form} />
@@ -218,8 +222,16 @@ export default function PlaceOrder({ order, quantity = 1, onClose }) {
         </button>
         <button
           className="bg-primary-red text-white px-6 py-2 rounded-full font-semibold hover:bg-hover-red disabled:bg-gray-300 disabled:text-gray-500"
-          onClick={() => setShowModal(true)}
-          disabled={currentUser?.role === "user"}
+          onClick={() => {
+            if (!isFormValid) return;
+            const filtered = Object.keys(placeOrderData).reduce((obj, key) => {
+              obj[key] = form[key];
+              return obj;
+            }, {});
+            console.log("Place Order Data:", filtered);
+            setShowModal(true);
+          }}
+          disabled={!isFormValid || currentUser?.role === "user"}
         >
           Place Order
         </button>

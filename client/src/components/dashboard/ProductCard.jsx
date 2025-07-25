@@ -28,7 +28,7 @@ export default function ProductCard({ order }) {
 
   return (
     <div
-      className="w-[268px] h-[346px] bg-white rounded-2xl shadow-md hover:shadow-glow hover:scale-[102%] hover:shadow-gray-400 transition-all duration-200 relative flex flex-col overflow-hidden"
+      className="w-full h-full bg-white rounded-2xl shadow-md hover:shadow-glow hover:scale-[102%] hover:shadow-gray-400 transition-all duration-200 relative flex flex-col overflow-hidden"
       style={{ minWidth: 247, minHeight: 346 }}
     >
       {/* Image */}

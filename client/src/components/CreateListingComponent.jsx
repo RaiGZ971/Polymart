@@ -32,24 +32,38 @@ export default function CreateListingComponent({ onClose }) {
   );
 
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleSubmit = () => {
-    if (validateForm()) {
+    const isValid = validateForm();
+    
+    if (isValid) {
       setShowConfirm(true);
-    } else {
-      console.log("Form has errors:", errors);
     }
   };
 
   const handleConfirm = () => {
     // Place your submit logic here (e.g., API call)
+    
+    // Close confirmation modal and show success modal
     setShowConfirm(false);
+    setShowSuccess(true);
+  };
+
+  const handleSuccessConfirm = () => {
+    setShowSuccess(false);
     onClose?.();
   };
 
   const handleCancel = () => {
     onClose?.();
   };
+
+  // Disable meet-up related fields if transaction method is 'online'
+  const isOnlineOnly =
+    Array.isArray(listingData.transactionMethods) &&
+    listingData.transactionMethods.length === 1 &&
+    listingData.transactionMethods[0] === "online";
 
   return (
     <div className="w-full max-w-4xl bg-white rounded-xl shadow-glow p-8 relative">
@@ -116,50 +130,57 @@ export default function CreateListingComponent({ onClose }) {
         <Container>
           <div>
             <h1 className="text-xl text-primary-red font-semibold">
-              Choose your preferred payment method/s
+              Choose your preferred payment method
             </h1>
             <h1 className="text-sm text-gray-800 -mb-3">
-              Please take note that all payment transactions are made during
-              meet ups.
+              All payments happen outside the app (either during meet-ups or through chat arrangements).
             </h1>
           </div>
-          {renderListingField("paymentMethods")}
+          {renderListingField("paymentMethods", {
+            filteredOptions: isOnlineOnly 
+              ? ['gcash', 'maya', 'bank_transfer', 'remittance']
+              : null
+          })}
         </Container>
-        <Container>
-          <h1 className="text-xl text-primary-red font-semibold -mb-6">
-            Choose your preferred meet-up location/s
-          </h1>
-          <h1 className="text-sm text-gray-800 ">
-            Here are the common campus locations where meet-ups usually happen.
-            <br /> <br /> Please select all the places you're comfortable
-            meeting at:
-          </h1>
-          <div className="w-full gap-12 flex flex-row justify-between">
-            <div className="w-2/3">
-              <img
-                src={PUPMap}
-                alt="PUP Campus Map"
-                className="w-full h-auto rounded-2xl shadow-md"
-              />
-            </div>
-            <div className="w-1/3">
-              <h1 className="text-xl text-primary-red font-semibold mb-3">
-                Meet Up Locations
+        {!isOnlineOnly && (
+          <>
+            <Container>
+              <h1 className="text-xl text-primary-red font-semibold -mb-6">
+                Choose your preferred meet-up location/s
               </h1>
-              {renderListingField("meetupLocations")}
-            </div>
-          </div>
-        </Container>
-        <Container>
-          <h1 className="text-xl text-primary-red font-semibold -mb-6">
-            Choose available dates for meet-up/s
-          </h1>
-          <h1 className="text-sm text-gray-800 ">
-            Select the date and time that best fits your schedule for the
-            meet-ups.
-          </h1>
-          {renderListingField("availableSchedules")}
-        </Container>
+              <h1 className="text-sm text-gray-800 ">
+                Here are the common campus locations where meet-ups usually happen.
+                <br /> <br /> Please select all the places you're comfortable
+                meeting at:
+              </h1>
+              <div className="w-full gap-12 flex flex-row justify-between">
+                <div className="w-2/3">
+                  <img
+                    src={PUPMap}
+                    alt="PUP Campus Map"
+                    className="w-full h-auto rounded-2xl shadow-md"
+                  />
+                </div>
+                <div className="w-1/3">
+                  <h1 className="text-xl text-primary-red font-semibold mb-3">
+                    Meet Up Locations
+                  </h1>
+                  {renderListingField("meetupLocations")}
+                </div>
+              </div>
+            </Container>
+            <Container>
+              <h1 className="text-xl text-primary-red font-semibold -mb-6">
+                Choose available dates for meet-up/s
+              </h1>
+              <h1 className="text-sm text-gray-800 ">
+                Select the date and time that best fits your schedule for the
+                meet-ups.
+              </h1>
+              {renderListingField("availableSchedules")}
+            </Container>
+          </>
+        )}
         <Container>
           <h1 className="text-xl text-primary-red font-semibold -mb-6">
             Remark (Optional)
@@ -187,7 +208,6 @@ export default function CreateListingComponent({ onClose }) {
             </button>
           </div>
         </div>
-        {/* Confirmation Modal */}
         <Modal
           isOpen={showConfirm}
           onClose={() => setShowConfirm(false)}
@@ -195,6 +215,15 @@ export default function CreateListingComponent({ onClose }) {
           type="confirmation"
           title="Submit Listing?"
           description="You're almost done! Please make sure all your product details are correct before submitting. Once submitted, your listing will be sent for review and made visible to other users (if applicable)."
+        />
+        
+        <Modal
+          isOpen={showSuccess}
+          onClose={handleSuccessConfirm}
+          onConfirm={handleSuccessConfirm}
+          type="alert"
+          title="Listing Submitted!"
+          description="Your listing has been successfully submitted and is now under review. You will be notified once it's approved and visible to other users."
         />
       </div>
     </div>

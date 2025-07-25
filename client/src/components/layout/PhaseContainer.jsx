@@ -6,9 +6,9 @@ export default function PhaseContainer({
 }) {
   return (
     <div
-      className={`border-2 border-hover-red rounded-3xl p-8 w-full mx-auto ${className}`}
+      className={`border-2 border-primary-red rounded-3xl p-8 w-full mx-auto ${className}`}
     >
-      <div className="text-hover-red bg-white px-4 text-xl -mt-12 font-semibold w-fit">
+      <div className="text-primary-red bg-white px-4 text-xl -mt-12 font-semibold w-fit">
         {label}
       </div>
       {title && (

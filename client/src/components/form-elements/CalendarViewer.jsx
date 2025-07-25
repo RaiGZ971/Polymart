@@ -55,7 +55,7 @@ export default function CalendarViewer({
         <button
           key={day}
           type="button"
-          className={`p-2 text-xs rounded-full text-center transition ${
+          className={`p-2 text-[9px] rounded-full text-center transition ${
             selectedDate === dateStr ? "bg-primary-red text-white" : ""
           } ${
             isBooked
@@ -135,7 +135,7 @@ export default function CalendarViewer({
               {selectedTimes.map(([_, time], idx) => (
                 <span
                   key={idx}
-                  className="px-2 py-0.5 rounded-full text-primary-red border border-primary-red text-[10px] font-medium text-center"
+                  className="px-2 py-0.5 rounded-full text-primary-red border border-primary-red text-[9px] font-medium text-center"
                 >
                   {timeSlots.find((slot) => slot.value === time)?.label || time}
                 </span>
