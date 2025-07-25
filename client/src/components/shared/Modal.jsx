@@ -1,20 +1,22 @@
 import { createPortal } from "react-dom";
-import { Textfield, Textarea } from "../../components";
+import { Textfield, Textarea, Button } from "@/components";
 
-export default function Modal({
+const Modal = ({
   isOpen,
   onClose,
+  onConfirm,
+  type,
   title,
   description,
-  type = "alert",
-  onConfirm,
   children,
   offerPrice,
   setOfferPrice,
   offerMessage,
   setOfferMessage,
-}) {
-  if (!isOpen) return null;
+}) => {
+  if (!isOpen) {
+    return null;
+  }
 
   return createPortal(
     <div className="fixed inset-0 top-0 left-0 z-[100000] flex items-center justify-center bg-black bg-opacity-40 m-0 p-0">
@@ -44,42 +46,47 @@ export default function Modal({
         <div className="flex justify-end gap-2">
           {type === "confirm" && (
             <>
-              <button
-                className="border border-primary-red text-primary-red px-6 py-2 rounded-full"
-                onClick={onClose}
-              >
+              <Button variant="outline" onClick={onClose}>
                 CANCEL
-              </button>
-              <button
-                className="bg-primary-red text-white px-6 py-2 rounded-full"
-                onClick={onConfirm}
-              >
+              </Button>
+              <Button variant="primary" onClick={onConfirm}>
                 CONFIRM
-              </button>
+              </Button>
+            </>
+          )}
+          {type === "confirmation" && (
+            <>
+              <Button variant="outline" onClick={onClose}>
+                Review Details
+              </Button>
+              <Button className="primary" onClick={onConfirm}>
+                Submit Listing
+              </Button>
             </>
           )}
           {type === "alert" && (
-            <button
-              className="bg-primary-red text-white px-6 py-2 rounded-full"
-              onClick={onConfirm}
-            >
+            <Button variant="primary" onClick={onConfirm}>
               OK
-            </button>
+            </Button>
+          )}
+          {type === "message" && (
+            <>
+              <Button variant="outline" onClick={onClose}>
+                CANCEL
+              </Button>
+              <Button variant="primary" onClick={onConfirm}>
+                {title.includes("Accept") ? "ACCEPT" : "REJECT"}
+              </Button>
+            </>
           )}
           {type === "offer" && (
             <>
-              <button
-                className="border border-primary-red text-primary-red px-6 py-2 rounded-full"
-                onClick={onClose}
-              >
+              <Button variant="outline" onClick={onClose}>
                 CANCEL
-              </button>
-              <button
-                className="bg-primary-red text-white px-6 py-2 rounded-full"
-                onClick={onConfirm}
-              >
+              </Button>
+              <Button variant="primary" onClick={onConfirm}>
                 MAKE OFFER
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -87,4 +94,6 @@ export default function Modal({
     </div>,
     document.body
   );
-}
+};
+
+export default Modal;

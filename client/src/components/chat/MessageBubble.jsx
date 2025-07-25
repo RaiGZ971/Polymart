@@ -14,15 +14,15 @@ const MessageBubble = ({
     }
 
     if (isUser) {
-      if (isFirst && isLast) return "rounded-2xl";
-      if (isFirst) return "rounded-2xl rounded-br-sm";
-      if (isLast) return "rounded-2xl rounded-tr-none";
-      return "rounded-2xl rounded-tr-sm rounded-br-sm";
+      if (isFirst && isLast) return "rounded-xl";
+      if (isFirst) return "rounded-xl rounded-br-sm";
+      if (isLast) return "rounded-xl rounded-tr-none";
+      return "rounded-xl rounded-tr-sm rounded-br-sm";
     } else {
-      if (isFirst && isLast) return "rounded-2xl";
-      if (isFirst) return "rounded-2xl rounded-bl-sm";
-      if (isLast) return "rounded-2xl rounded-tl-none";
-      return "rounded-2xl rounded-tl-sm rounded-bl-sm";
+      if (isFirst && isLast) return "rounded-xl";
+      if (isFirst) return "rounded-xl rounded-bl-sm";
+      if (isLast) return "rounded-xl rounded-tl-none";
+      return "rounded-xl rounded-tl-sm rounded-bl-sm";
     }
   };
 

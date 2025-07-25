@@ -41,7 +41,7 @@ export default function Items({ order }) {
               <p className="text-gray-800 font-semibold">{item.name}</p>
               <p className="text-primary-red text-lg font-bold">
                 {isPendingOffer
-                  ? `PHP ${order.productPriceOffer} x ${quantity}`
+                  ? `PHP ${order.productPriceOffer}`
                   : `PHP ${item.price}`}
               </p>
             </div>

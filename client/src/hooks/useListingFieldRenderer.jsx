@@ -31,7 +31,7 @@ export const useListingFieldRenderer = (
   };
 
   // Main render function using configuration
-  const renderListingField = (fieldName) => {
+  const renderListingField = (fieldName, props = {}) => {
     const config = listingFieldConfig[fieldName];
     if (!config) return null;
 
@@ -183,9 +183,15 @@ export const useListingFieldRenderer = (
         // Support multiple selections (array) for toggles
         const value = getFieldValue(fieldName);
         const isArray = Array.isArray(value);
+        
+        // Use filtered options if provided, otherwise use config options
+        const optionsToUse = props.filteredOptions 
+          ? config.options?.filter(option => props.filteredOptions.includes(option.value))
+          : config.options;
+
         return (
           <div key={fieldName} className="flex gap-2 flex-wrap">
-            {config.options?.map((option) => {
+            {optionsToUse?.map((option) => {
               const isActive = isArray
                 ? value.includes(option.value)
                 : value === option.value;
