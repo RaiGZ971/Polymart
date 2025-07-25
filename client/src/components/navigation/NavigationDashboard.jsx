@@ -235,7 +235,7 @@ export default function NavigationDashboard() {
                 onClick={() => handleItemClick(item)}
               >
                 <IconComponent
-                  size={28}
+                  size={22}
                   className={`group-hover:text-hover-red transition-colors duration-200 ${
                     active ? "text-primary-red" : "text-gray-800"
                   }`}
