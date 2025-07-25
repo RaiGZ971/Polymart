@@ -104,13 +104,14 @@ export const listingFieldConfig = {
     label: "Transaction Methods",
     required: true,
     component: "toggle",
-    maxSelections: 2,
+    maxSelections: 1,
     options: transactionMethods,
   },
   paymentMethods: {
     label: "Payment Methods",
     required: true,
     component: "toggle",
+    maxSelections: 5,
     options: paymentMethods,
   },
   meetupLocations: {

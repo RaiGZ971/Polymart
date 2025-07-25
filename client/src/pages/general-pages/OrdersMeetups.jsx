@@ -3,11 +3,10 @@ import {
   MainDashboard,
   OrdersListingsComponent,
   DropdownFilter,
-} from "../../components";
-import ProductDetail from "../../components/listing/ProductDetail";
-import userOrders from "../../data/userOrders";
-import orderStatus from "../../data/orderStatus";
-import { meetUpLocationsFilter } from "../../data";
+  ProductDetail,
+  Modal,
+} from "@/components";
+import { meetUpLocationsFilter, orderStatus, userOrders } from "@/data";
 
 export default function OrdersMeetups() {
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -15,7 +14,11 @@ export default function OrdersMeetups() {
   const [selectedLocation, setSelectedLocation] = useState(
     meetUpLocationsFilter[0]?.value || ""
   );
-  const [activeTab, setActiveTab] = useState("orders"); // "orders" or "listings"
+  const [activeTab, setActiveTab] = useState("orders");
+
+  const [showMessageDialog, setShowMessageDialog] = useState(false);
+  const [dialogType, setDialogType] = useState("");
+  const [message, setMessage] = useState("");
 
   const handleBack = () => setSelectedOrder(null);
 
@@ -25,6 +28,37 @@ export default function OrdersMeetups() {
 
   const handleLocationChange = (value) => {
     setSelectedLocation(value);
+  };
+
+  // Handle accept order action
+  const handleAcceptOrder = () => {
+    setDialogType("accept");
+    setMessage("");
+    setShowMessageDialog(true);
+  };
+
+  // Handle reject order action
+  const handleRejectOrder = () => {
+    setDialogType("reject");
+    setMessage("");
+    setShowMessageDialog(true);
+  };
+
+  // Handle message dialog confirmation
+  const handleMessageConfirm = () => {
+    // TODO: Implement API call to accept/reject order with message
+    console.log(`${dialogType} order with message:`, message);
+
+    // Close dialog and reset state
+    setShowMessageDialog(false);
+    setMessage("");
+  };
+
+  // Handle message dialog close
+  const handleMessageClose = () => {
+    setShowMessageDialog(false);
+    setMessage("");
+    setDialogType("");
   };
 
   // Count for tabs
@@ -108,7 +142,9 @@ export default function OrdersMeetups() {
             <ProductDetail
               order={selectedOrder}
               onBack={handleBack}
-              role={selectedOrder.role} // <-- pass the role prop
+              role={selectedOrder.role}
+              onAcceptOrder={handleAcceptOrder}
+              onRejectOrder={handleRejectOrder}
             />
           ) : filteredData.length > 0 ? (
             filteredData.map((order, idx) => (
@@ -123,6 +159,20 @@ export default function OrdersMeetups() {
           )}
         </div>
       </div>
+
+      {/* Message Dialog Modal */}
+      <Modal
+        isOpen={showMessageDialog}
+        onClose={handleMessageClose}
+        onConfirm={handleMessageConfirm}
+        type="message"
+        title={dialogType === "accept" ? "Accept Order" : "Reject Order"}
+        description={
+          dialogType === "accept"
+            ? "If you accept order, the order process will proceed."
+            : "Once you reject order, no further actions are allowed. Are you sure you want to proceed?"
+        }
+      />
     </MainDashboard>
   );
 }

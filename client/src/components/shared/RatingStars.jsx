@@ -2,30 +2,39 @@ import { useState, useRef } from "react";
 
 const STAR_COUNT = 5;
 
-export default function RatingStars({ value = 0, onChange }) {
+export default function RatingStars({
+  value = 0,
+  onChange,
+  size = "default", // "default" or "large"
+}) {
   const [hoverValue, setHoverValue] = useState(null);
   const containerRef = useRef(null);
 
-  // Calculate the value based on mouse position
-  const getValueFromPosition = (e) => {
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percent = Math.max(0, Math.min(1, x / rect.width));
-    // Only full star increments
-    return Math.ceil(percent * STAR_COUNT);
+  // Size configurations
+  const sizeConfig = {
+    default: {
+      containerClass: "flex justify-center items-center gap-1",
+      starClass: "w-6 h-6 text-2xl cursor-pointer",
+    },
+    large: {
+      containerClass: "flex justify-center items-center gap-2",
+      starClass: "w-12 h-12 text-5xl cursor-pointer",
+    },
   };
 
-  const handleMouseMove = (e) => {
-    setHoverValue(getValueFromPosition(e));
+  const config = sizeConfig[size] || sizeConfig.default;
+
+  const handleStarClick = (starIndex) => {
+    const newValue = starIndex + 1;
+    if (onChange) onChange(newValue);
+  };
+
+  const handleStarHover = (starIndex) => {
+    setHoverValue(starIndex + 1);
   };
 
   const handleMouseLeave = () => {
     setHoverValue(null);
-  };
-
-  const handleClick = (e) => {
-    const newValue = getValueFromPosition(e);
-    if (onChange) onChange(newValue);
   };
 
   // Which value to display (hover or actual)
@@ -34,10 +43,8 @@ export default function RatingStars({ value = 0, onChange }) {
   return (
     <div
       ref={containerRef}
-      className="flex cursor-pointer select-none w-[120px] h-6"
-      onMouseMove={handleMouseMove}
+      className={config.containerClass}
       onMouseLeave={handleMouseLeave}
-      onClick={handleClick}
       aria-label="Rating"
       role="slider"
       aria-valuenow={value}
@@ -51,9 +58,11 @@ export default function RatingStars({ value = 0, onChange }) {
         return (
           <span
             key={i}
-            className={`inline-block text-center align-middle w-6 h-6 text-2xl transition-colors ${
+            className={`inline-block text-center ${config.starClass} transition-colors ${
               isActive ? "text-yellow-400" : "text-gray-300"
             }`}
+            onClick={() => handleStarClick(i)}
+            onMouseEnter={() => handleStarHover(i)}
           >
             {isActive ? "★" : "☆"}
           </span>
