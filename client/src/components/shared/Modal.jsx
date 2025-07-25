@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { Textfield, Textarea } from "../../components";
+import { Textfield, Textarea, Button } from "@/components";
 
 const Modal = ({
   isOpen,
@@ -46,74 +46,47 @@ const Modal = ({
         <div className="flex justify-end gap-2">
           {type === "confirm" && (
             <>
-              <button
-                className="border border-primary-red text-primary-red px-6 py-2 rounded-full"
-                onClick={onClose}
-              >
+              <Button variant="outline" onClick={onClose}>
                 CANCEL
-              </button>
-              <button
-                className="bg-primary-red text-white px-6 py-2 rounded-full"
-                onClick={onConfirm}
-              >
+              </Button>
+              <Button variant="primary" onClick={onConfirm}>
                 CONFIRM
-              </button>
+              </Button>
             </>
           )}
           {type === "confirmation" && (
             <>
-              <button
-                className="border border-primary-red text-primary-red px-6 py-2 rounded-full"
-                onClick={onClose}
-              >
+              <Button variant="outline" onClick={onClose}>
                 Review Details
-              </button>
-              <button
-                className="bg-primary-red text-white px-6 py-2 rounded-full"
-                onClick={onConfirm}
-              >
+              </Button>
+              <Button className="primary" onClick={onConfirm}>
                 Submit Listing
-              </button>
+              </Button>
             </>
           )}
           {type === "alert" && (
-            <button
-              className="bg-primary-red text-white px-6 py-2 rounded-full"
-              onClick={onConfirm}
-            >
+            <Button variant="primary" onClick={onConfirm}>
               OK
-            </button>
+            </Button>
           )}
           {type === "message" && (
             <>
-              <button
-                className="border border-primary-red text-primary-red px-6 py-2 rounded-full"
-                onClick={onClose}
-              >
+              <Button variant="outline" onClick={onClose}>
                 CANCEL
-              </button>
-              <button
-                className="bg-primary-red text-white px-6 py-2 rounded-full"
-                onClick={onConfirm}
-              >
+              </Button>
+              <Button variant="primary" onClick={onConfirm}>
                 {title.includes("Accept") ? "ACCEPT" : "REJECT"}
-              </button>
+              </Button>
             </>
           )}
           {type === "offer" && (
             <>
-              <button
-                className="border border-primary-red text-primary-red px-6 py-2 rounded-full"
-                onClick={onClose}
-              >
+              <Button variant="outline" onClick={onClose}>
                 CANCEL
-              </button>
-              <button
-                className="bg-primary-red text-white px-6 py-2 rounded-full"
-                onClick={onConfirm}
-              >
+              </Button>
+              <Button variant="primary" onClick={onConfirm}>
                 MAKE OFFER
-              </button>
+              </Button>
             </>
           )}
         </div>

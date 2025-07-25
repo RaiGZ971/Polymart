@@ -2,7 +2,7 @@ const VARIANTS = {
   primary: "bg-primary-red text-white hover:bg-hover-red font-semibold",
   darkred: "bg-hover-red text-white hover:bg-secondary-red font-semibold",
   outline:
-    "border border-primary-red text-primary-red hover:bg-primary-red hover:text-white font-semibold",
+    "border border-primary-red text-primary-red hover:bg-primary-red hover:text-white ",
   secondary: "bg-gray-200 text-black hover:bg-gray-300",
   danger: "bg-red-600 text-white hover:bg-red-700",
   graytext:
