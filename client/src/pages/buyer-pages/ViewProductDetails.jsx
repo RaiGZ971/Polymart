@@ -35,16 +35,16 @@ export default function ViewProductDetails() {
   const location = useLocation();
   const navigate = useNavigate();
   const order = location.state?.order;
-  const currentUser = location.state?.currentUser; // <-- get currentUser from location state
+  const currentUser = location.state?.currentUser;
   const [quantity, setQuantity] = useState(1);
   const [showPlaceOrder, setShowPlaceOrder] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
-  const [showChat, setShowChat] = useState(false); // <-- state for chat
+  const [showChat, setShowChat] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [offerPrice, setOfferPrice] = useState("");
   const [offerMessage, setOfferMessage] = useState("");
-  const [customOrder, setCustomOrder] = useState(null); // for passing custom price
+  const [customOrder, setCustomOrder] = useState(null);
 
   const averageRating =
     order.reviews && order.reviews.length > 0
@@ -333,7 +333,7 @@ export default function ViewProductDetails() {
         {/* PlaceOrder modal */}
         {showPlaceOrder && (
           <PlaceOrder
-            order={customOrder || order} // <-- use customOrder if present
+            order={customOrder || order}
             currentUser={currentUser}
             quantity={quantity}
             onClose={() => {
