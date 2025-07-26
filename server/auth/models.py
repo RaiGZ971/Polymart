@@ -38,3 +38,41 @@ class VerificationStatus(BaseModel):
     verified_at: Optional[str] = None
     rejection_reason: Optional[str] = None
 
+class UserData(BaseModel):
+    user_id: int
+    username: str
+    email: str
+    first_name: str
+    last_name: str
+
+class SignUpData(UserData):
+    verification_submitted: bool
+    requires_verification: bool
+
+class LoginData(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserData
+
+class SignUpResponse(BaseModel):
+    success: bool
+    status: str
+    message: str
+    data: SignUpData
+
+class LoginResponse(BaseModel):
+    success: bool
+    status: str
+    message: str
+    data: LoginData
+
+class EmailVerificationData(BaseModel):
+    email: str
+    token_sent: bool
+
+class EmailVerificationResponse(BaseModel):
+    success: bool
+    status: str
+    message: str
+    data: EmailVerificationData
+

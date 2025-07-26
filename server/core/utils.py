@@ -36,8 +36,12 @@ def create_standardized_response(
     status: str = "success"
 ) -> Dict[str, Any]:
     """Create a standardized API response format"""
-    response = {"status": status, "message": message}
+    response = {
+        "success": True if status == "success" else False,
+        "status": status, 
+        "message": message
+    }
     if data:
-        response.update(data)
+        response["data"] = data
     return response
 
