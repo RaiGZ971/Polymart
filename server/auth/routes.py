@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, 
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from auth import utils
-from auth.models import SignUp, Login
+from auth.models import SignUp, Login, SignUpResponse, LoginResponse, EmailVerificationResponse
 from auth.email_verification import (
     create_email_verification_request, 
     send_verification_email, 
@@ -29,7 +29,7 @@ class EmailVerificationRequest(BaseModel):
 # EMAIL VERIFICATION ENDPOINTS (STEP 1)
 # =============================================
 
-@router.post("/verify-email/send")
+@router.post("/verify-email/send", response_model=EmailVerificationResponse)
 async def send_email_verification(request: EmailVerificationRequest):
     """
     Step 1: Send verification token to email address.
@@ -140,7 +140,7 @@ async def email_verified(request: Request):
 # USER REGISTRATION ENDPOINTS (STEP 2-5)
 # =============================================
 
-@router.post("/signup")
+@router.post("/signup", response_model=SignUpResponse, status_code=201)
 async def signup(signup_data: SignUp):
     """
     Sign up route that creates a new user. Verification documents should be uploaded separately using /s3/user-documents/submit-verification.
@@ -234,7 +234,7 @@ async def signup(signup_data: SignUp):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@router.post("/login")
+@router.post("/login", response_model=LoginResponse)
 async def login(login_data: Login):
     """
     Login route using student number and password

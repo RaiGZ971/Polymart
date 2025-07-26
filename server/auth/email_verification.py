@@ -313,16 +313,14 @@ async def verify_email_token_by_link(token: str) -> Dict[str, Any]:
 
 def create_email_verification_response(success: bool, message: str, email: str = None, token_sent: bool = False) -> Dict[str, Any]:
     """Create standardized email verification response"""
-    data = {}
-    if email:
-        data["email"] = email
-    if token_sent:
-        data["token_sent"] = token_sent
-        data["expires_in_minutes"] = int(os.getenv("EMAIL_VERIFICATION_EXPIRE_MINUTES", "15"))
+    data = {
+        "email": email or "",
+        "token_sent": token_sent
+    }
     
     status = "success" if success else "error"
     return create_standardized_response(
         message=message,
-        data=data if data else None,
+        data=data,
         status=status
     )
