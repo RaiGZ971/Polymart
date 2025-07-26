@@ -9,11 +9,11 @@ from supabase_client.schemas import (
     CreateOrderRequest, CreateOrderResponse, Order, OrdersResponse,
     UpdateMeetupRequest, MeetupResponse
 )
+from supabase_client.database import orders as order_db, meetups as meetup_db
+from supabase_client.database.base import get_authenticated_client
 from supabase_client.utils import (
-    get_supabase_client, validate_order_transaction_method, validate_order_payment_method,
-    check_listing_availability, create_order_record, get_order_by_id,
-    convert_order_to_response, update_listing_stock, get_user_orders,
-    convert_orders_to_response, calculate_pagination_offset, create_meetup_record
+    validate_order_transaction_method, validate_order_payment_method,
+    convert_order_to_response, convert_orders_to_response
 )
 from auth.utils import get_current_user
 from core.utils import create_standardized_response
@@ -34,12 +34,9 @@ async def create_order(
         validate_order_transaction_method(order_request.transaction_method)
         validate_order_payment_method(order_request.payment_method)
         
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
-        
         # Check listing availability and get listing details
-        listing = await check_listing_availability(
-            supabase, 
+        listing = await order_db.check_listing_availability(
+            current_user["user_id"], 
             order_request.listing_id, 
             order_request.quantity, 
             current_user["user_id"]
@@ -76,22 +73,24 @@ async def create_order(
             )
         
         # Create the order record
-        order_data = await create_order_record(
-            supabase=supabase,
-            buyer_id=current_user["user_id"],
-            seller_id=listing["seller_id"],
-            listing_id=order_request.listing_id,
-            quantity=order_request.quantity,
-            price_at_purchase=float(price_at_purchase),
-            transaction_method=order_request.transaction_method,
-            payment_method=order_request.payment_method,
-            buyer_requested_price=order_request.buyer_requested_price
+        order_data = await order_db.create_order(
+            user_id=current_user["user_id"],
+            order_data={
+                "buyer_id": current_user["user_id"],
+                "seller_id": listing["seller_id"],
+                "listing_id": order_request.listing_id,
+                "quantity": order_request.quantity,
+                "price_at_purchase": float(price_at_purchase),
+                "transaction_method": order_request.transaction_method,
+                "payment_method": order_request.payment_method,
+                "buyer_requested_price": order_request.buyer_requested_price
+            }
         )
         
         # Create meetup record if transaction method is "meet_up"
         if order_request.transaction_method == "meet_up":
-            await create_meetup_record(
-                supabase=supabase,
+            await meetup_db.create_meetup(
+                user_id=current_user["user_id"],
                 order_id=order_data["order_id"]
             )
         
@@ -99,6 +98,7 @@ async def create_order(
         # Stock should only be updated when order status changes to "confirmed" or "completed"
         
         # Convert to response format
+        supabase = get_authenticated_client(current_user["user_id"])
         order_response = await convert_order_to_response(supabase, order_data)
         
         return CreateOrderResponse(
@@ -129,12 +129,8 @@ async def get_user_orders(
     Supports pagination and filtering by status and role.
     """
     try:
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
-        
         # Get user orders with pagination and filters
-        orders_data = await get_user_orders(
-            supabase=supabase,
+        orders_data = await order_db.get_user_orders(
             user_id=current_user["user_id"],
             page=page,
             page_size=page_size,
@@ -143,6 +139,7 @@ async def get_user_orders(
         )
         
         # Convert to response format
+        supabase = get_authenticated_client(current_user["user_id"])
         orders_response = await convert_orders_to_response(supabase, orders_data["orders"])
         
         return OrdersResponse(
@@ -171,17 +168,14 @@ async def get_order_details(
     Only accessible to the buyer or seller of the order.
     """
     try:
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
-        
         # Get order by ID
-        order_data = await get_order_by_id(
-            supabase, 
-            order_id, 
-            current_user["user_id"]
+        order_data = await order_db.get_order_by_id(
+            current_user["user_id"], 
+            order_id
         )
         
         # Convert to response format
+        supabase = get_authenticated_client(current_user["user_id"])
         order_response = await convert_order_to_response(supabase, order_data)
         
         return order_response
@@ -206,11 +200,8 @@ async def update_meetup_details(
     Only accessible to buyer or seller of the order.
     """
     try:
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
-        
         # Verify user has access to this order
-        order_data = await get_order_by_id(supabase, order_id, current_user["user_id"])
+        order_data = await order_db.get_order_by_id(current_user["user_id"], order_id)
         
         # Check if order has meetup transaction method
         if order_data["transaction_method"] != "meet_up":
@@ -229,14 +220,11 @@ async def update_meetup_details(
         if not update_data:
             raise HTTPException(status_code=400, detail="No valid fields to update")
         
-        result = supabase.table("meetups").update(update_data).eq("order_id", order_id).execute()
-        
-        if not result.data:
-            raise HTTPException(status_code=404, detail="Meetup not found")
+        # Update meetup using database function
+        meetup_data = await meetup_db.update_meetup(current_user["user_id"], order_id, update_data)
         
         # Convert to proper response format
         from supabase_client.schemas import Meetup
-        meetup_data = result.data[0]
         meetup = Meetup(
             meetup_id=meetup_data["meetup_id"],
             order_id=meetup_data["order_id"],
@@ -279,51 +267,18 @@ async def confirm_meetup(
     When both confirm, meetup status becomes 'confirmed'.
     """
     try:
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
-        
         # Verify user has access to this order
-        order_data = await get_order_by_id(supabase, order_id, current_user["user_id"])
+        order_data = await order_db.get_order_by_id(current_user["user_id"], order_id)
         
         # Determine if user is buyer or seller
         is_buyer = order_data["buyer_id"] == current_user["user_id"]
         is_seller = order_data["seller_id"] == current_user["user_id"]
         
-        # Update confirmation status
-        update_data = {}
-        if is_buyer:
-            update_data["confirmed_by_buyer"] = True
-        elif is_seller:
-            update_data["confirmed_by_seller"] = True
-        
-        # Get current meetup status
-        meetup_result = supabase.table("meetups").select(
-            "confirmed_by_buyer,confirmed_by_seller"
-        ).eq("order_id", order_id).execute()
-        
-        if not meetup_result.data:
-            raise HTTPException(status_code=404, detail="Meetup not found")
-        
-        meetup = meetup_result.data[0]
-        
-        # Check if both parties will be confirmed after this update
-        both_confirmed = (
-            (meetup["confirmed_by_buyer"] or is_buyer) and
-            (meetup["confirmed_by_seller"] or is_seller)
-        )
-        
-        if both_confirmed:
-            update_data["status"] = "confirmed"
-            update_data["confirmed_at"] = "now()"
-        
-        result = supabase.table("meetups").update(update_data).eq("order_id", order_id).execute()
-        
-        if not result.data:
-            raise HTTPException(status_code=500, detail="Failed to confirm meetup")
+        # Confirm meetup using database function
+        meetup_data = await meetup_db.confirm_meetup_by_user(current_user["user_id"], order_id, is_buyer)
         
         # Convert to proper response format
         from supabase_client.schemas import Meetup
-        meetup_data = result.data[0]
         meetup = Meetup(
             meetup_id=meetup_data["meetup_id"],
             order_id=meetup_data["order_id"],
@@ -341,7 +296,7 @@ async def confirm_meetup(
         )
         
         message = "Meetup confirmed by buyer" if is_buyer else "Meetup confirmed by seller"
-        if both_confirmed:
+        if meetup_data["status"] == "confirmed":
             message = "Meetup confirmed by both parties"
         
         return MeetupResponse(
