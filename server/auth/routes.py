@@ -10,7 +10,7 @@ from auth.email_verification import (
     create_email_verification_response,
     check_email_verification_status
 )
-from supabase_client.database import create_user_profile, get_user_by_student_number, get_user_by_email, get_user_by_username, create_user_verification_documents
+from supabase_client.database.users import create_user_profile, get_user_by_student_number, get_user_by_email, get_user_by_username, create_user_verification_documents
 from core.utils import create_standardized_response
 from typing import Optional
 from pydantic import BaseModel, EmailStr
