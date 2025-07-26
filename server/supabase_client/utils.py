@@ -348,7 +348,8 @@ async def check_listing_availability(supabase, listing_id: int, quantity: int, b
 
 async def create_order_record(supabase, buyer_id: int, seller_id: int, listing_id: int, 
                             quantity: int, price_at_purchase: float, 
-                            transaction_method: str, payment_method: str) -> Dict[str, Any]:
+                            transaction_method: str, payment_method: str, 
+                            buyer_requested_price: Optional[float] = None) -> Dict[str, Any]:
     """
     Create a new order record in the database.
     """
@@ -357,6 +358,7 @@ async def create_order_record(supabase, buyer_id: int, seller_id: int, listing_i
         "seller_id": seller_id,
         "listing_id": listing_id,
         "quantity": quantity,
+        "buyer_requested_price": buyer_requested_price,
         "price_at_purchase": price_at_purchase,
         "transaction_method": transaction_method,
         "payment_method": payment_method,
@@ -435,9 +437,9 @@ async def get_order_by_id(supabase, order_id: int, user_id: int) -> Dict[str, An
 async def convert_order_to_response(supabase, order_data: Dict[str, Any]):
     """
     Convert order data to Order response model.
-    Includes associated listing information.
+    Includes associated listing information and meetup details if applicable.
     """
-    from supabase_client.schemas import Order
+    from supabase_client.schemas import Order, Meetup
     
     # Get listing information
     listing = None
@@ -463,18 +465,43 @@ async def convert_order_to_response(supabase, order_data: Dict[str, Any]):
         if listing_result.data:
             listing = await convert_listing_to_product(supabase, listing_result.data[0])
     
+    # Get meetup information if transaction method is meet_up
+    meetup = None
+    if order_data.get("transaction_method") == "meet_up":
+        meetup_result = supabase.table("meetups").select("*").eq("order_id", order_data["order_id"]).execute()
+        
+        if meetup_result.data:
+            meetup_data = meetup_result.data[0]
+            meetup = Meetup(
+                meetup_id=meetup_data["meetup_id"],
+                order_id=meetup_data["order_id"],
+                location=meetup_data.get("location"),
+                scheduled_at=meetup_data["scheduled_at"],
+                status=meetup_data["status"],
+                confirmed_by_buyer=meetup_data["confirmed_by_buyer"],
+                confirmed_by_seller=meetup_data["confirmed_by_seller"],
+                confirmed_at=meetup_data.get("confirmed_at"),
+                cancelled_at=meetup_data.get("cancelled_at"),
+                cancellation_reason=meetup_data.get("cancellation_reason"),
+                remarks=meetup_data.get("remarks"),
+                created_at=meetup_data["created_at"],
+                updated_at=meetup_data["updated_at"]
+            )
+    
     return Order(
         order_id=order_data["order_id"],
         buyer_id=order_data["buyer_id"],
         seller_id=order_data["seller_id"],
         listing_id=order_data["listing_id"],
         quantity=order_data["quantity"],
+        buyer_requested_price=order_data.get("buyer_requested_price"),
         price_at_purchase=float(order_data["price_at_purchase"]),
         status=order_data["status"],
         transaction_method=order_data["transaction_method"],
         payment_method=order_data["payment_method"],
         placed_at=order_data["placed_at"],
-        listing=listing
+        listing=listing,
+        meetup=meetup
     )
 
 async def get_user_orders(supabase, user_id: int, page: int = 1, page_size: int = 20, 
@@ -493,6 +520,7 @@ async def get_user_orders(supabase, user_id: int, page: int = 1, page_size: int 
         seller_id,
         listing_id,
         quantity,
+        buyer_requested_price,
         price_at_purchase,
         status,
         transaction_method,
@@ -539,3 +567,29 @@ async def convert_orders_to_response(supabase, orders: List[Dict[str, Any]]) -> 
         order_response = await convert_order_to_response(supabase, order)
         order_responses.append(order_response)
     return order_responses
+
+# Meetup Helper Functions
+async def create_meetup_record(supabase, order_id: int) -> Dict[str, Any]:
+    """
+    Create a meetup record for a meet_up transaction order.
+    Initially creates with status 'pending' and placeholder scheduled_at.
+    """
+    from datetime import datetime, timedelta
+    
+    # Create placeholder meetup with default scheduled time (can be updated later)
+    default_scheduled_at = (datetime.now() + timedelta(days=1)).isoformat()
+    
+    meetup_data = {
+        "order_id": order_id,
+        "scheduled_at": default_scheduled_at,
+        "status": "pending",
+        "confirmed_by_buyer": False,
+        "confirmed_by_seller": False
+    }
+    
+    result = supabase.table("meetups").insert(meetup_data).execute()
+    
+    if not result.data or len(result.data) == 0:
+        raise HTTPException(status_code=500, detail="Failed to create meetup record")
+    
+    return result.data[0]

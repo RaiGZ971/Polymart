@@ -90,6 +90,7 @@ class CreateOrderRequest(BaseModel):
     quantity: int = Field(..., ge=1, description="Quantity to order")
     transaction_method: str = Field(..., description="Transaction method: meet_up or online")
     payment_method: str = Field(..., description="Payment method: cash, gcash, maya, bank_transfer, or remittance")
+    buyer_requested_price: Optional[float] = Field(None, ge=0, description="Optional price requested by buyer (only for listings with price ranges where price_min != price_max)")
 
 class Order(BaseModel):
     order_id: int
@@ -97,12 +98,39 @@ class Order(BaseModel):
     seller_id: int
     listing_id: int
     quantity: int
+    buyer_requested_price: Optional[float]
     price_at_purchase: float
     status: str
     transaction_method: str
     payment_method: str
     placed_at: datetime
     listing: Optional[ProductListing] = None
+    meetup: Optional['Meetup'] = None
+
+class Meetup(BaseModel):
+    meetup_id: int
+    order_id: int
+    location: Optional[str]
+    scheduled_at: datetime
+    status: str
+    confirmed_by_buyer: bool
+    confirmed_by_seller: bool
+    confirmed_at: Optional[datetime]
+    cancelled_at: Optional[datetime]
+    cancellation_reason: Optional[str]
+    remarks: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+class UpdateMeetupRequest(BaseModel):
+    location: Optional[str] = Field(None, description="Meetup location")
+    scheduled_at: Optional[datetime] = Field(None, description="Scheduled meetup date and time")
+
+class MeetupResponse(BaseModel):
+    success: bool
+    status: str
+    message: str
+    data: Meetup
 
 class CreateOrderResponse(BaseModel):
     success: bool
@@ -114,3 +142,6 @@ class OrdersResponse(BaseModel):
     total_count: int
     page: int
     page_size: int
+
+# Update forward references
+Order.model_rebuild()
