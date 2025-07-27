@@ -173,3 +173,48 @@ async def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
         return None
     except Exception as e:
         handle_database_error("get user by username", e)
+
+
+async def get_user_by_id(user_id: int, include_private: bool = False) -> Optional[Dict[str, Any]]:
+    """
+    Get a user profile by user ID.
+    
+    Args:
+        user_id: The user ID to fetch
+        include_private: Whether to include private fields (email, contact_number, etc.)
+    
+    Returns:
+        User profile data or None if not found
+    """
+    try:
+        # Use unauthenticated client for public lookup
+        supabase = get_unauthenticated_client()
+        
+        if include_private:
+            # Include all fields for authenticated requests
+            select_fields = "*"
+        else:
+            # Only public fields for general user lookup
+            select_fields = """
+                user_id,
+                username,
+                first_name,
+                middle_name,
+                last_name,
+                pronouns,
+                course,
+                university_branch,
+                college,
+                is_verified_student,
+                profile_photo_url,
+                bio,
+                created_at
+            """
+        
+        result = supabase.table("user_profile").select(select_fields).eq("user_id", user_id).execute()
+        
+        if result.data and len(result.data) > 0:
+            return result.data[0]
+        return None
+    except Exception as e:
+        handle_database_error("get user by ID", e)

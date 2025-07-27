@@ -8,6 +8,26 @@ class User(BaseModel):
     email: str
     hashed_password: str
 
+class UserProfile(BaseModel):
+    user_id: int
+    username: str
+    first_name: str
+    middle_name: str
+    last_name: str
+    pronouns: Optional[str]
+    course: Optional[str]
+    university_branch: Optional[str]
+    college: Optional[str]
+    is_verified_student: bool
+    profile_photo_url: Optional[str]
+    bio: Optional[str]
+    created_at: datetime
+
+class UserProfileResponse(BaseModel):
+    success: bool
+    message: str
+    data: Optional[UserProfile]
+
 class ListingImage(BaseModel):
     image_id: int
     image_url: str
