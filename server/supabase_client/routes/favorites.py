@@ -8,11 +8,11 @@ from typing import Optional
 from supabase_client.schemas import (
     FavoriteRequest, FavoriteResponse, UserFavorite, UserFavoritesResponse
 )
-from supabase_client.utils import (
-    get_supabase_client, check_listing_exists_and_active, check_favorite_exists,
-    build_favorites_query, build_favorite_listing_detail_query, convert_listing_to_product,
-    get_total_count
+from supabase_client.database import favorites as favorites_db, listings as listings_db
+from supabase_client.database.favorites import (
+    build_favorites_query, build_favorite_listing_detail_query
 )
+from supabase_client.utils import convert_listing_to_product
 from auth.utils import get_current_user
 from core.utils import create_standardized_response
 
@@ -28,27 +28,23 @@ async def toggle_favorite_listing(
     If not favorited, add to favorite listings.
     """
     try:
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
-
-        # Fetch listing details to get seller_id
-        listing_query = supabase.table("listings").select("listing_id,seller_id").eq("listing_id", favorite_data.listing_id).single()
-        listing_result = listing_query.execute()
-        if not listing_result.data or "seller_id" not in listing_result.data:
+        # Check if listing exists and user can't favorite their own listing
+        listing = await listings_db.get_listing_by_id(current_user["user_id"], favorite_data.listing_id, include_seller_info=False)
+        if not listing:
             raise HTTPException(status_code=404, detail="Listing not found")
-        seller_id = listing_result.data["seller_id"]
-        if str(seller_id) == str(current_user["user_id"]):
+        
+        if listing["seller_id"] == current_user["user_id"]:
             raise HTTPException(status_code=400, detail="You cannot favorite your own listing.")
-
-        # Check if listing exists and is active
-        await check_listing_exists_and_active(supabase, favorite_data.listing_id)
+        
+        if listing["status"] != "active":
+            raise HTTPException(status_code=400, detail="Cannot favorite inactive listings")
 
         # Check if already favorited
-        is_favorited = await check_favorite_exists(supabase, current_user["user_id"], favorite_data.listing_id)
+        is_favorited = await favorites_db.check_favorite_exists(current_user["user_id"], favorite_data.listing_id)
 
         if is_favorited:
             # Remove from favorites
-            supabase.table("user_favorites").delete().eq("user_id", current_user["user_id"]).eq("listing_id", favorite_data.listing_id).execute()
+            await favorites_db.remove_favorite(current_user["user_id"], favorite_data.listing_id)
             return FavoriteResponse(
                 success=True,
                 message="Listing removed from favorite listings",
@@ -57,12 +53,7 @@ async def toggle_favorite_listing(
             )
         else:
             # Add to favorites
-            insert_result = supabase.table("user_favorites").insert({
-                "user_id": current_user["user_id"],
-                "listing_id": favorite_data.listing_id
-            }).execute()
-            if not insert_result.data or len(insert_result.data) == 0:
-                raise HTTPException(status_code=500, detail="Failed to add to favorite listings")
+            await favorites_db.add_favorite(current_user["user_id"], favorite_data.listing_id)
             return FavoriteResponse(
                 success=True,
                 message="Listing added to favorite listings",
@@ -84,17 +75,10 @@ async def get_user_favorite_listings(
     Get the current user's favorite listings. Optionally includes full listing details.
     """
     try:
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
+        # Get user's favorites
+        favorites_data = await favorites_db.get_user_favorites(current_user["user_id"], include_listing_details)
 
-        # Build base query for favorites (no pagination)
-        query = build_favorites_query(supabase, current_user["user_id"])
-        query = query.order("favorited_at", desc=True)
-
-        # Execute query
-        result = query.execute()
-
-        if not result.data:
+        if not favorites_data:
             return UserFavoritesResponse(
                 favorites=[],
                 total_count=0,
@@ -103,15 +87,15 @@ async def get_user_favorite_listings(
             )
 
         favorites = []
-        for favorite in result.data:
+        for favorite in favorites_data:
             listing_details = None
-            # If requested, fetch full listing details
-            if include_listing_details:
-                listing_query = build_favorite_listing_detail_query(supabase, favorite["listing_id"])
-                listing_result = listing_query.execute()
-                if listing_result.data and len(listing_result.data) > 0:
-                    listing = listing_result.data[0]
-                    listing_details = await convert_listing_to_product(supabase, listing)
+            # If listing details are included in the data
+            if include_listing_details and "listings" in favorite:
+                # Convert the nested listing data to product format
+                from supabase_client.database.base import get_authenticated_client
+                supabase = get_authenticated_client(current_user["user_id"])
+                listing_details = await convert_listing_to_product(supabase, favorite["listings"])
+            
             favorites.append(UserFavorite(
                 listing_id=favorite["listing_id"],
                 favorited_at=favorite["favorited_at"],
@@ -139,18 +123,17 @@ async def check_favorite_listing_status(
     Check if a specific listing is in the current user's favorite listings.
     """
     try:
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
-        
         # Check if favorited
-        is_favorited = await check_favorite_exists(supabase, current_user["user_id"], listing_id)
+        is_favorited = await favorites_db.check_favorite_exists(current_user["user_id"], listing_id)
         
         favorited_at = None
         if is_favorited:
-            # Get the favorite timestamp
-            favorite_result = supabase.table("user_favorites").select("favorited_at").eq("user_id", current_user["user_id"]).eq("listing_id", listing_id).execute()
-            if favorite_result.data and len(favorite_result.data) > 0:
-                favorited_at = favorite_result.data[0]["favorited_at"]
+            # Get the favorite details including timestamp
+            favorites_data = await favorites_db.get_user_favorites(current_user["user_id"], include_listing_details=False)
+            for favorite in favorites_data:
+                if favorite["listing_id"] == listing_id:
+                    favorited_at = favorite["favorited_at"]
+                    break
         
         return create_standardized_response(
             message="Favorite listing status retrieved",

@@ -9,11 +9,12 @@ from supabase_client.schemas import (
     ProductListingsResponse, ProductListing, CreateListingRequest, CreateListingResponse,
     UpdateListingStatusRequest, UpdateListingStatusResponse
 )
+from supabase_client.database import listings as listings_db
+from supabase_client.database.base import get_authenticated_client
 from supabase_client.utils import (
     validate_category, validate_status, validate_price_range,
-    get_supabase_client, convert_listings_to_products, convert_listing_to_product,
-    apply_listing_filters, apply_pagination, get_total_count,
-    build_public_listings_query, build_user_listings_query, build_listing_detail_query
+    validate_listing_transaction_methods, validate_listing_payment_methods,
+    convert_listings_to_products, convert_listing_to_product
 )
 from auth.utils import get_current_user
 from core.utils import create_standardized_response
@@ -38,23 +39,18 @@ async def get_product_listings(
         # Validate parameters
         validate_category(category)
         
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
+        # Get public listings using database function
+        listings_data = await listings_db.get_public_listings(
+            user_id=current_user["user_id"],
+            page=page,
+            page_size=page_size,
+            category=category,
+            search=search,
+            min_price=min_price,
+            max_price=max_price
+        )
         
-        # Build base query
-        query = build_public_listings_query(supabase, current_user["user_id"])
-        
-        # Apply filters
-        query = apply_listing_filters(query, category, search, min_price, max_price)
-        
-        # Get total count for pagination
-        total_count = get_total_count(query)
-        
-        # Apply pagination and execute
-        query = apply_pagination(query, page, page_size)
-        result = query.execute()
-        
-        if not result.data:
+        if not listings_data["listings"]:
             return ProductListingsResponse(
                 products=[],
                 total_count=0,
@@ -63,11 +59,12 @@ async def get_product_listings(
             )
         
         # Convert listings to products
-        products = await convert_listings_to_products(supabase, result.data)
+        supabase = get_authenticated_client(current_user["user_id"])
+        products = await convert_listings_to_products(supabase, listings_data["listings"])
         
         return ProductListingsResponse(
             products=products,
-            total_count=total_count,
+            total_count=listings_data["total_count"],
             page=page,
             page_size=page_size
         )
@@ -93,19 +90,15 @@ async def get_my_listings(
         validate_category(category)
         validate_status(status)
 
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
+        # Get user's listings using database function
+        listings_data = await listings_db.get_user_listings(
+            user_id=current_user["user_id"],
+            category=category,
+            search=search,
+            status=status
+        )
 
-        # Build base query
-        query = build_user_listings_query(supabase, current_user["user_id"])
-
-        # Apply filters
-        query = apply_listing_filters(query, category, search, status=status)
-
-        # Get all listings (no pagination)
-        result = query.order("created_at", desc=True).execute()
-
-        if not result.data:
+        if not listings_data:
             return ProductListingsResponse(
                 products=[],
                 total_count=0,
@@ -114,7 +107,8 @@ async def get_my_listings(
             )
 
         # Convert listings to products
-        products = await convert_listings_to_products(supabase, result.data)
+        supabase = get_authenticated_client(current_user["user_id"])
+        products = await convert_listings_to_products(supabase, listings_data)
 
         return ProductListingsResponse(
             products=products,
@@ -137,19 +131,18 @@ async def get_product_by_id(
     Get a specific product listing by ID (including user's own products)
     """
     try:
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
+        # Get listing by ID using database function
+        listing = await listings_db.get_listing_by_id(
+            user_id=current_user["user_id"],
+            listing_id=listing_id,
+            include_seller_info=True
+        )
         
-        # Build query for listing details
-        query = build_listing_detail_query(supabase, listing_id)
-        result = query.execute()
-        
-        if not result.data or len(result.data) == 0:
+        if not listing:
             raise HTTPException(status_code=404, detail="Product not found or not accessible")
         
-        listing = result.data[0]
-        
         # Convert to product object
+        supabase = get_authenticated_client(current_user["user_id"])
         product = await convert_listing_to_product(supabase, listing)
         
         return product
@@ -172,13 +165,11 @@ async def create_listing(
         # Validate parameters
         validate_category(listing_data.category)
         validate_price_range(listing_data.price_min, listing_data.price_max)
-        
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
+        validate_listing_transaction_methods(listing_data.transaction_methods)
+        validate_listing_payment_methods(listing_data.payment_methods)
         
         # Prepare listing data for insertion
         listing_insert_data = {
-            "seller_id": current_user["user_id"],
             "name": listing_data.name,
             "description": listing_data.description,
             "category": listing_data.category,
@@ -187,17 +178,12 @@ async def create_listing(
             "price_max": listing_data.price_max,
             "total_stock": listing_data.total_stock,
             "seller_meetup_locations": listing_data.seller_meetup_locations,
-            "status": "active",  # Default status
-            "sold_count": 0  # Default sold count
+            "transaction_methods": listing_data.transaction_methods,
+            "payment_methods": listing_data.payment_methods
         }
         
-        # Insert the listing
-        result = supabase.table("listings").insert(listing_insert_data).execute()
-        
-        if not result.data or len(result.data) == 0:
-            raise HTTPException(status_code=500, detail="Failed to create listing")
-        
-        created_listing = result.data[0]
+        # Create the listing using database function
+        created_listing = await listings_db.create_listing(current_user["user_id"], listing_insert_data)
         listing_id = created_listing["listing_id"]
         
         # Insert meetup time slots if provided
@@ -212,17 +198,17 @@ async def create_listing(
                     )
                 
                 meetup_time_data.append({
-                    "listing_id": listing_id,
                     "start_time": time_slot.start_time.isoformat(),
                     "end_time": time_slot.end_time.isoformat()
                 })
             
-            # Insert all meetup time slots
+            # Insert all meetup time slots using database function
             if meetup_time_data:
-                meetup_result = supabase.table("listing_meetup_time_details").insert(meetup_time_data).execute()
-                if not meetup_result.data:
+                try:
+                    await listings_db.add_listing_meetup_times(current_user["user_id"], listing_id, meetup_time_data)
+                except Exception as e:
                     # Log warning but don't fail the entire listing creation
-                    print(f"Warning: Failed to insert meetup time details for listing {listing_id}")
+                    print(f"Warning: Failed to insert meetup time details for listing {listing_id}: {e}")
         
         return CreateListingResponse(
             success=True,
@@ -257,44 +243,39 @@ async def update_listing_status(
         # Validate the new status
         validate_status(status_data.status)
         
-        # Get authenticated client
-        supabase = get_supabase_client(current_user["user_id"])
+        # Get current listing to check status and ownership
+        current_listing = await listings_db.get_listing_by_id(
+            user_id=current_user["user_id"],
+            listing_id=listing_id,
+            include_seller_info=False
+        )
         
-        # First, check if the listing exists and belongs to the current user
-        listing_check = supabase.table("listings").select("listing_id,seller_id,name,status").eq("listing_id", listing_id).execute()
-        
-        if not listing_check.data or len(listing_check.data) == 0:
+        if not current_listing:
             raise HTTPException(status_code=404, detail="Listing not found")
         
-        listing = listing_check.data[0]
-        
-        # Check ownership
-        if listing["seller_id"] != current_user["user_id"]:
+        # Check ownership (this is also validated in the database function)
+        if current_listing["seller_id"] != current_user["user_id"]:
             raise HTTPException(status_code=403, detail="You can only update your own listings")
         
         # Check if status is actually changing
-        if listing["status"] == status_data.status:
+        if current_listing["status"] == status_data.status:
             return UpdateListingStatusResponse(
                 success=True,
                 message=f"Listing status is already '{status_data.status}'",
                 data={
                     "listing_id": listing_id,
-                    "name": listing["name"],
-                    "old_status": listing["status"],
+                    "name": current_listing["name"],
+                    "old_status": current_listing["status"],
                     "new_status": status_data.status
                 }
             )
         
-        # Update the status
-        update_result = supabase.table("listings").update({
-            "status": status_data.status,
-            "updated_at": "now()"
-        }).eq("listing_id", listing_id).eq("seller_id", current_user["user_id"]).execute()
-        
-        if not update_result.data or len(update_result.data) == 0:
-            raise HTTPException(status_code=500, detail="Failed to update listing status")
-        
-        updated_listing = update_result.data[0]
+        # Update the status using database function
+        updated_listing = await listings_db.update_listing_status(
+            user_id=current_user["user_id"],
+            listing_id=listing_id,
+            new_status=status_data.status
+        )
         
         return UpdateListingStatusResponse(
             success=True,
@@ -302,7 +283,7 @@ async def update_listing_status(
             data={
                 "listing_id": listing_id,
                 "name": updated_listing["name"],
-                "old_status": listing["status"],
+                "old_status": current_listing["status"],
                 "new_status": updated_listing["status"],
                 "updated_at": updated_listing["updated_at"]
             }

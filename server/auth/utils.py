@@ -150,3 +150,15 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"}
         )
+
+
+async def get_current_user_optional(credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))) -> Optional[Dict[str, Any]]:
+    """Optional dependency to get current authenticated user from JWT token. Returns None if no token or invalid token."""
+    if not credentials:
+        return None
+    
+    try:
+        payload = verify_token(credentials.credentials)
+        return payload
+    except Exception:
+        return None
