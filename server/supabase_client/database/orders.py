@@ -17,7 +17,7 @@ async def check_listing_availability(user_id: int, listing_id: int, quantity: in
         supabase = get_authenticated_client(user_id)
         
         listing_result = supabase.table("listings").select(
-            "listing_id,seller_id,name,status,total_stock,sold_count,price_min,price_max"
+            "listing_id,seller_id,name,status,total_stock,sold_count,price_min,price_max,transaction_methods,payment_methods"
         ).eq("listing_id", listing_id).execute()
         
         validate_record_exists(listing_result.data, "Listing not found")

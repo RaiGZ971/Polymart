@@ -206,5 +206,7 @@ def build_favorite_listing_detail_query(supabase, listing_id: int):
         created_at,
         updated_at,
         seller_meetup_locations,
+        transaction_methods,
+        payment_methods,
         user_profile!inner(username)
     """).eq("listing_id", listing_id).eq("status", "active")

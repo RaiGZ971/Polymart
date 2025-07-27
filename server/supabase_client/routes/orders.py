@@ -7,12 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 from supabase_client.schemas import (
     CreateOrderRequest, CreateOrderResponse, Order, OrdersResponse,
-    UpdateMeetupRequest, MeetupResponse
+    UpdateMeetupRequest, CreateMeetupRequest, MeetupResponse
 )
 from supabase_client.database import orders as order_db, meetups as meetup_db
 from supabase_client.database.base import get_authenticated_client
 from supabase_client.utils import (
     validate_order_transaction_method, validate_order_payment_method,
+    validate_order_against_listing_methods,
     convert_order_to_response, convert_orders_to_response
 )
 from auth.utils import get_current_user
@@ -40,6 +41,14 @@ async def create_order(
             order_request.listing_id, 
             order_request.quantity, 
             current_user["user_id"]
+        )
+        
+        # Validate that the selected transaction and payment methods are available in the listing
+        validate_order_against_listing_methods(
+            order_request.transaction_method,
+            order_request.payment_method,
+            listing.get("transaction_methods", []),
+            listing.get("payment_methods", [])
         )
         
         # Validate buyer_requested_price usage
@@ -87,13 +96,7 @@ async def create_order(
             }
         )
         
-        # Create meetup record if transaction method is "meet_up"
-        if order_request.transaction_method == "meet_up":
-            await meetup_db.create_meetup(
-                user_id=current_user["user_id"],
-                order_id=order_data["order_id"]
-            )
-        
+        # Note: Meetup creation is now handled separately via POST /orders/{order_id}/meetup
         # Note: Stock is NOT updated here since order is still "pending"
         # Stock should only be updated when order status changes to "confirmed" or "completed"
         
@@ -313,4 +316,84 @@ async def confirm_meetup(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to confirm meetup: {str(e)}"
+        )
+
+
+@router.post("/orders/{order_id}/meetup", response_model=MeetupResponse)
+async def create_meetup(
+    order_id: int,
+    meetup_request: CreateMeetupRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Create a meetup for an order that uses 'meet_up' transaction method.
+    Only accessible to buyer or seller of the order.
+    """
+    try:
+        # Verify user has access to this order and check transaction method
+        order_data = await order_db.get_order_by_id(current_user["user_id"], order_id)
+        
+        # Check if order uses meetup transaction method
+        if order_data["transaction_method"] != "meet_up":
+            raise HTTPException(
+                status_code=400,
+                detail="Meetup can only be created for orders with 'meet_up' transaction method"
+            )
+        
+        # Check if meetup already exists
+        try:
+            existing_meetup = await meetup_db.get_meetup_by_order_id(current_user["user_id"], order_id)
+            if existing_meetup:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Meetup already exists for this order. Use PATCH to update it."
+                )
+        except HTTPException as e:
+            # If error is "Meetup not found", that's what we want - continue
+            if "not found" not in str(e.detail).lower():
+                raise
+        
+        # Create the meetup record
+        meetup_data = await meetup_db.create_meetup_with_details(
+            user_id=current_user["user_id"],
+            order_id=order_id,
+            meetup_details={
+                "location": meetup_request.location,
+                "scheduled_at": meetup_request.scheduled_at.isoformat(),
+                "remarks": meetup_request.remarks
+            }
+        )
+        
+        # Convert to proper response format
+        from supabase_client.schemas import Meetup
+        meetup = Meetup(
+            meetup_id=meetup_data["meetup_id"],
+            order_id=meetup_data["order_id"],
+            location=meetup_data.get("location"),
+            scheduled_at=meetup_data["scheduled_at"],
+            status=meetup_data["status"],
+            confirmed_by_buyer=meetup_data["confirmed_by_buyer"],
+            confirmed_by_seller=meetup_data["confirmed_by_seller"],
+            confirmed_at=meetup_data.get("confirmed_at"),
+            cancelled_at=meetup_data.get("cancelled_at"),
+            cancellation_reason=meetup_data.get("cancellation_reason"),
+            remarks=meetup_data.get("remarks"),
+            created_at=meetup_data["created_at"],
+            updated_at=meetup_data["updated_at"]
+        )
+        
+        return MeetupResponse(
+            success=True,
+            status="success",
+            message="Meetup created successfully",
+            data=meetup
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error creating meetup: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create meetup: {str(e)}"
         )

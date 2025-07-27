@@ -55,6 +55,8 @@ async def get_listing_by_id(user_id: int, listing_id: int, include_seller_info: 
                 created_at,
                 updated_at,
                 seller_meetup_locations,
+                transaction_methods,
+                payment_methods,
                 user_profile!inner(username)
             """
         else:
@@ -94,6 +96,8 @@ async def get_public_listings(user_id: int, page: int = 1, page_size: int = 20,
             created_at,
             updated_at,
             seller_meetup_locations,
+            transaction_methods,
+            payment_methods,
             user_profile!inner(username)
         """).eq("status", "active").neq("seller_id", user_id)
         
@@ -152,6 +156,8 @@ async def get_user_listings(user_id: int, category: Optional[str] = None,
             created_at,
             updated_at,
             seller_meetup_locations,
+            transaction_methods,
+            payment_methods,
             user_profile!inner(username)
         """).eq("seller_id", user_id)
         
@@ -323,7 +329,8 @@ def build_public_listings_query(supabase, user_id: int):
     """Build base query for public listings (excluding current user's listings)."""
     return supabase.table("listings").select(
         "listing_id,seller_id,name,description,category,tags,price_min,price_max,"
-        "total_stock,sold_count,status,created_at,updated_at,seller_meetup_locations"
+        "total_stock,sold_count,status,created_at,updated_at,seller_meetup_locations,"
+        "transaction_methods,payment_methods"
     ).neq("seller_id", user_id).not_.is_("seller_id", "null").eq("status", "active")
 
 
@@ -331,7 +338,8 @@ def build_user_listings_query(supabase, user_id: int):
     """Build base query for user's own listings."""
     return supabase.table("listings").select(
         "listing_id,seller_id,name,description,category,tags,price_min,price_max,"
-        "total_stock,sold_count,status,created_at,updated_at,seller_meetup_locations"
+        "total_stock,sold_count,status,created_at,updated_at,seller_meetup_locations,"
+        "transaction_methods,payment_methods"
     ).eq("seller_id", user_id)
 
 
@@ -352,5 +360,7 @@ def build_listing_detail_query(supabase, listing_id: int):
         created_at,
         updated_at,
         seller_meetup_locations,
+        transaction_methods,
+        payment_methods,
         user_profile!inner(username)
     """).eq("listing_id", listing_id).eq("status", "active").not_.is_("seller_id", "null")

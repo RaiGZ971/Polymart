@@ -158,3 +158,51 @@ async def cancel_meetup(user_id: int, order_id: int, cancellation_reason: Option
         raise
     except Exception as e:
         handle_database_error("cancel meetup", e)
+
+
+async def get_meetup_by_order_id(user_id: int, order_id: int) -> Dict[str, Any]:
+    """
+    Get meetup details by order ID.
+    Raises HTTPException if meetup not found.
+    """
+    try:
+        supabase = get_authenticated_client(user_id)
+        
+        result = supabase.table("meetups").select("*").eq("order_id", order_id).execute()
+        
+        if not result.data or len(result.data) == 0:
+            raise HTTPException(status_code=404, detail="Meetup not found for this order")
+        
+        return result.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        handle_database_error("get meetup by order ID", e)
+
+
+async def create_meetup_with_details(user_id: int, order_id: int, meetup_details: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Create a new meetup record with initial details (location, scheduled_at, remarks).
+    """
+    try:
+        supabase = get_authenticated_client(user_id)
+        
+        # Prepare meetup data with details
+        meetup_data = {
+            "order_id": order_id,
+            "status": "pending",
+            "confirmed_by_buyer": False,
+            "confirmed_by_seller": False,
+            "location": meetup_details.get("location"),
+            "scheduled_at": meetup_details.get("scheduled_at"),
+            "remarks": meetup_details.get("remarks")
+        }
+        
+        result = supabase.table("meetups").insert(meetup_data).execute()
+        
+        validate_record_exists(result.data, "Failed to create meetup")
+        return result.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        handle_database_error("create meetup with details", e)
