@@ -66,6 +66,8 @@ async def convert_listing_to_product(supabase, listing: Dict[str, Any]) -> Produ
         created_at=listing["created_at"],
         updated_at=listing["updated_at"],
         seller_meetup_locations=listing["seller_meetup_locations"],
+        transaction_methods=listing.get("transaction_methods"),
+        payment_methods=listing.get("payment_methods"),
         images=images
     )
 

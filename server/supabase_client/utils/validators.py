@@ -3,7 +3,7 @@ Validation functions for Supabase client operations.
 Contains validation logic for categories, statuses, prices, and other constraints.
 """
 
-from typing import Optional
+from typing import Optional, List
 from fastapi import HTTPException
 
 VALID_CATEGORIES = {
@@ -83,4 +83,56 @@ def validate_price_range(price_min: Optional[float], price_max: Optional[float])
         raise HTTPException(
             status_code=400,
             detail="Maximum price must be greater than or equal to minimum price"
+        )
+
+
+def validate_listing_transaction_methods(transaction_methods: List[str]) -> None:
+    """Validate listing transaction methods array."""
+    if not transaction_methods:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one transaction method must be specified"
+        )
+    
+    invalid_methods = set(transaction_methods) - VALID_TRANSACTION_METHODS
+    if invalid_methods:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid transaction methods: {', '.join(invalid_methods)}. "
+                   f"Valid methods are: {', '.join(VALID_TRANSACTION_METHODS)}"
+        )
+
+
+def validate_listing_payment_methods(payment_methods: List[str]) -> None:
+    """Validate listing payment methods array."""
+    if not payment_methods:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one payment method must be specified"
+        )
+    
+    invalid_methods = set(payment_methods) - VALID_PAYMENT_METHODS
+    if invalid_methods:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid payment methods: {', '.join(invalid_methods)}. "
+                   f"Valid methods are: {', '.join(VALID_PAYMENT_METHODS)}"
+        )
+
+
+def validate_order_against_listing_methods(order_transaction_method: str, order_payment_method: str,
+                                         listing_transaction_methods: List[str], listing_payment_methods: List[str]) -> None:
+    """Validate that order methods are available in the listing."""
+    if order_transaction_method not in listing_transaction_methods:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Transaction method '{order_transaction_method}' is not available for this listing. "
+                   f"Available methods: {', '.join(listing_transaction_methods)}"
+        )
+    
+    if order_payment_method not in listing_payment_methods:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Payment method '{order_payment_method}' is not available for this listing. "
+                   f"Available methods: {', '.join(listing_payment_methods)}"
         )

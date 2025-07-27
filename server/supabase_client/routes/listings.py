@@ -13,6 +13,7 @@ from supabase_client.database import listings as listings_db
 from supabase_client.database.base import get_authenticated_client
 from supabase_client.utils import (
     validate_category, validate_status, validate_price_range,
+    validate_listing_transaction_methods, validate_listing_payment_methods,
     convert_listings_to_products, convert_listing_to_product
 )
 from auth.utils import get_current_user
@@ -164,6 +165,8 @@ async def create_listing(
         # Validate parameters
         validate_category(listing_data.category)
         validate_price_range(listing_data.price_min, listing_data.price_max)
+        validate_listing_transaction_methods(listing_data.transaction_methods)
+        validate_listing_payment_methods(listing_data.payment_methods)
         
         # Prepare listing data for insertion
         listing_insert_data = {
@@ -174,7 +177,9 @@ async def create_listing(
             "price_min": listing_data.price_min,
             "price_max": listing_data.price_max,
             "total_stock": listing_data.total_stock,
-            "seller_meetup_locations": listing_data.seller_meetup_locations
+            "seller_meetup_locations": listing_data.seller_meetup_locations,
+            "transaction_methods": listing_data.transaction_methods,
+            "payment_methods": listing_data.payment_methods
         }
         
         # Create the listing using database function

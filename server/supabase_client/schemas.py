@@ -27,6 +27,8 @@ class CreateListingRequest(BaseModel):
     total_stock: Optional[int] = Field(None, ge=0, description="Total stock available")
     seller_meetup_locations: Optional[List[str]] = Field(None, description="Available meetup locations")
     meetup_time_slots: Optional[List[MeetupTimeSlot]] = Field(None, description="Available meetup time slots")
+    transaction_methods: List[str] = Field(..., description="Available transaction methods (meet_up, online)")
+    payment_methods: List[str] = Field(..., description="Available payment methods (cash, gcash, maya, bank_transfer, remittance)")
 
 class CreateListingResponse(BaseModel):
     success: bool
@@ -57,6 +59,8 @@ class ProductListing(BaseModel):
     created_at: datetime
     updated_at: datetime
     seller_meetup_locations: Optional[List[str]]
+    transaction_methods: Optional[List[str]]
+    payment_methods: Optional[List[str]]
     images: List[ListingImage] = []
 
 class ProductListingsResponse(BaseModel):
@@ -125,6 +129,11 @@ class Meetup(BaseModel):
 class UpdateMeetupRequest(BaseModel):
     location: Optional[str] = Field(None, description="Meetup location")
     scheduled_at: Optional[datetime] = Field(None, description="Scheduled meetup date and time")
+
+class CreateMeetupRequest(BaseModel):
+    location: Optional[str] = Field(None, description="Initial meetup location")
+    scheduled_at: datetime = Field(..., description="Scheduled meetup date and time")
+    remarks: Optional[str] = Field(None, description="Additional remarks for the meetup")
 
 class MeetupResponse(BaseModel):
     success: bool
