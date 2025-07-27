@@ -7,6 +7,7 @@ from fastapi import APIRouter
 from .listings import router as listings_router
 from .favorites import router as favorites_router
 from .orders import router as orders_router
+from .users import router as users_router
 
 # Create main router that combines all sub-routers
 router = APIRouter()
@@ -15,3 +16,4 @@ router = APIRouter()
 router.include_router(listings_router)
 router.include_router(favorites_router)
 router.include_router(orders_router)
+router.include_router(users_router)

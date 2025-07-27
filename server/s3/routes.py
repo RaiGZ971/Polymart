@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 from auth.utils import get_current_user
 from core.utils import create_standardized_response
 from core.config import generate_private_url, convert_s3_key_to_public_url
-from supabase_client.database import create_user_verification_documents, update_user_verification_documents, get_user_verification_status
+from supabase_client.database.users import create_user_verification_documents, update_user_verification_documents, get_user_verification_status
 from supabase_client.auth_client import get_authenticated_supabase_client
 
 load_dotenv()
@@ -84,7 +84,7 @@ async def upload_profile_photo(
         )
         
         # Update user profile with the new photo URL
-        from supabase_client.database import update_user_profile
+        from supabase_client.database.users import update_user_profile
         update_result = await update_user_profile(
             user_id=user_id,
             update_data={"profile_photo_url": file_url}
