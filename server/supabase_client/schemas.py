@@ -8,6 +8,26 @@ class User(BaseModel):
     email: str
     hashed_password: str
 
+class UserProfile(BaseModel):
+    user_id: int
+    username: str
+    first_name: str
+    middle_name: str
+    last_name: str
+    pronouns: Optional[str]
+    course: Optional[str]
+    university_branch: Optional[str]
+    college: Optional[str]
+    is_verified_student: bool
+    profile_photo_url: Optional[str]
+    bio: Optional[str]
+    created_at: datetime
+
+class UserProfileResponse(BaseModel):
+    success: bool
+    message: str
+    data: Optional[UserProfile]
+
 class ListingImage(BaseModel):
     image_id: int
     image_url: str
@@ -27,6 +47,8 @@ class CreateListingRequest(BaseModel):
     total_stock: Optional[int] = Field(None, ge=0, description="Total stock available")
     seller_meetup_locations: Optional[List[str]] = Field(None, description="Available meetup locations")
     meetup_time_slots: Optional[List[MeetupTimeSlot]] = Field(None, description="Available meetup time slots")
+    transaction_methods: List[str] = Field(..., description="Available transaction methods (meet_up, online)")
+    payment_methods: List[str] = Field(..., description="Available payment methods (cash, gcash, maya, bank_transfer, remittance)")
 
 class CreateListingResponse(BaseModel):
     success: bool
@@ -57,6 +79,8 @@ class ProductListing(BaseModel):
     created_at: datetime
     updated_at: datetime
     seller_meetup_locations: Optional[List[str]]
+    transaction_methods: Optional[List[str]]
+    payment_methods: Optional[List[str]]
     images: List[ListingImage] = []
 
 class ProductListingsResponse(BaseModel):
@@ -90,6 +114,7 @@ class CreateOrderRequest(BaseModel):
     quantity: int = Field(..., ge=1, description="Quantity to order")
     transaction_method: str = Field(..., description="Transaction method: meet_up or online")
     payment_method: str = Field(..., description="Payment method: cash, gcash, maya, bank_transfer, or remittance")
+    buyer_requested_price: Optional[float] = Field(None, ge=0, description="Optional price requested by buyer (only for listings with price ranges where price_min != price_max)")
 
 class Order(BaseModel):
     order_id: int
@@ -97,12 +122,44 @@ class Order(BaseModel):
     seller_id: int
     listing_id: int
     quantity: int
+    buyer_requested_price: Optional[float]
     price_at_purchase: float
     status: str
     transaction_method: str
     payment_method: str
     placed_at: datetime
     listing: Optional[ProductListing] = None
+    meetup: Optional['Meetup'] = None
+
+class Meetup(BaseModel):
+    meetup_id: int
+    order_id: int
+    location: Optional[str]
+    scheduled_at: datetime
+    status: str
+    confirmed_by_buyer: bool
+    confirmed_by_seller: bool
+    confirmed_at: Optional[datetime]
+    cancelled_at: Optional[datetime]
+    cancellation_reason: Optional[str]
+    remarks: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+class UpdateMeetupRequest(BaseModel):
+    location: Optional[str] = Field(None, description="Meetup location")
+    scheduled_at: Optional[datetime] = Field(None, description="Scheduled meetup date and time")
+
+class CreateMeetupRequest(BaseModel):
+    location: Optional[str] = Field(None, description="Initial meetup location")
+    scheduled_at: datetime = Field(..., description="Scheduled meetup date and time")
+    remarks: Optional[str] = Field(None, description="Additional remarks for the meetup")
+
+class MeetupResponse(BaseModel):
+    success: bool
+    status: str
+    message: str
+    data: Meetup
 
 class CreateOrderResponse(BaseModel):
     success: bool
@@ -114,3 +171,6 @@ class OrdersResponse(BaseModel):
     total_count: int
     page: int
     page_size: int
+
+# Update forward references
+Order.model_rebuild()

@@ -1,7 +1,11 @@
-from supabase import create_client, Client
-import os
+"""
+User-related database operations.
+Handles user profile management, verification, and authentication operations.
+"""
+
 from typing import Optional, Dict, Any
-from .auth_client import get_authenticated_supabase_client, get_unauthenticated_supabase_client
+from fastapi import HTTPException
+from .base import get_authenticated_client, get_unauthenticated_client, handle_database_error
 
 
 async def create_user_profile(user_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -10,10 +14,7 @@ async def create_user_profile(user_data: Dict[str, Any]) -> Optional[Dict[str, A
     """
     try:
         # Use unauthenticated client for signup
-        supabase = get_unauthenticated_supabase_client()
-        if not supabase:
-            print("Failed to get Supabase client")
-            return None
+        supabase = get_unauthenticated_client()
         
         # Insert user profile
         result = supabase.table("user_profile").insert(user_data).execute()
@@ -22,8 +23,8 @@ async def create_user_profile(user_data: Dict[str, Any]) -> Optional[Dict[str, A
             return result.data[0]
         return None
     except Exception as e:
-        print(f"Error creating user profile: {e}")
-        return None
+        handle_database_error("create user profile", e)
+
 
 async def create_user_verification_documents(user_id: int, document_urls: Dict[str, str]) -> Optional[Dict[str, Any]]:
     """
@@ -31,10 +32,8 @@ async def create_user_verification_documents(user_id: int, document_urls: Dict[s
     """
     try:
         # Use authenticated client with user context for RLS
-        supabase = get_authenticated_supabase_client(user_id)
-        if not supabase:
-            print("Failed to get Supabase authenticated client")
-            return None
+        supabase = get_authenticated_client(user_id)
+        
         verification_data = {
             "user_id": user_id,
             "student_id_front_url": document_urls.get("student_id_front_url"),
@@ -42,8 +41,10 @@ async def create_user_verification_documents(user_id: int, document_urls: Dict[s
             "cor_url": document_urls.get("cor_url"),
             "status": "pending"
         }
+        
         print(f"Attempting to insert verification data for user_id: {user_id}")
         result = supabase.table("user_verification").insert(verification_data).execute()
+        
         if result.data:
             print(f"Successfully created verification record: {result.data[0]}")
             return result.data[0]
@@ -51,8 +52,7 @@ async def create_user_verification_documents(user_id: int, document_urls: Dict[s
             print(f"No data returned from insert operation. Result: {result}")
         return None
     except Exception as e:
-        print(f"Error creating user verification documents: {e}")
-        return None
+        handle_database_error("create user verification documents", e)
 
 
 async def update_user_verification_documents(user_id: int, document_urls: Dict[str, str]) -> Optional[Dict[str, Any]]:
@@ -61,10 +61,7 @@ async def update_user_verification_documents(user_id: int, document_urls: Dict[s
     """
     try:
         # Use authenticated client with user context for RLS
-        supabase = get_authenticated_supabase_client(user_id)
-        if not supabase:
-            print("Failed to get Supabase authenticated client")
-            return None
+        supabase = get_authenticated_client(user_id)
         
         update_data = {
             "student_id_front_url": document_urls.get("student_id_front_url"),
@@ -83,8 +80,8 @@ async def update_user_verification_documents(user_id: int, document_urls: Dict[s
             print(f"No data returned from update operation. Result: {result}")
         return None
     except Exception as e:
-        print(f"Error updating user verification documents: {e}")
-        return None
+        handle_database_error("update user verification documents", e)
+
 
 async def get_user_verification_status(user_id: int) -> Optional[Dict[str, Any]]:
     """
@@ -92,10 +89,7 @@ async def get_user_verification_status(user_id: int) -> Optional[Dict[str, Any]]
     """
     try:
         # Use authenticated client with user context for RLS
-        supabase = get_authenticated_supabase_client(user_id)
-        if not supabase:
-            print("Failed to get Supabase authenticated client")
-            return None
+        supabase = get_authenticated_client(user_id)
         
         result = supabase.table("user_verification").select("*").eq("user_id", user_id).execute()
         
@@ -103,8 +97,8 @@ async def get_user_verification_status(user_id: int) -> Optional[Dict[str, Any]]
             return result.data[0]
         return None
     except Exception as e:
-        print(f"Error getting user verification status: {e}")
-        return None
+        handle_database_error("get user verification status", e)
+
 
 async def update_user_profile(user_id: int, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """
@@ -112,10 +106,7 @@ async def update_user_profile(user_id: int, update_data: Dict[str, Any]) -> Opti
     """
     try:
         # Use authenticated client with user context for RLS
-        supabase = get_authenticated_supabase_client(user_id)
-        if not supabase:
-            print("Failed to get Supabase authenticated client")
-            return None
+        supabase = get_authenticated_client(user_id)
         
         # Add updated_at timestamp
         update_data["updated_at"] = "now()"
@@ -130,8 +121,8 @@ async def update_user_profile(user_id: int, update_data: Dict[str, Any]) -> Opti
             print(f"No data returned from update operation. Result: {result}")
         return None
     except Exception as e:
-        print(f"Error updating user profile: {e}")
-        return None
+        handle_database_error("update user profile", e)
+
 
 async def get_user_by_student_number(student_number: str) -> Optional[Dict[str, Any]]:
     """
@@ -139,10 +130,7 @@ async def get_user_by_student_number(student_number: str) -> Optional[Dict[str, 
     """
     try:
         # Use unauthenticated client for public lookup
-        supabase = get_unauthenticated_supabase_client()
-        if not supabase:
-            print("Failed to get Supabase client")
-            return None
+        supabase = get_unauthenticated_client()
         
         result = supabase.table("user_profile").select("*").eq("student_number", student_number).execute()
         
@@ -150,8 +138,8 @@ async def get_user_by_student_number(student_number: str) -> Optional[Dict[str, 
             return result.data[0]
         return None
     except Exception as e:
-        print(f"Error getting user by student number: {e}")
-        return None
+        handle_database_error("get user by student number", e)
+
 
 async def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     """
@@ -159,10 +147,7 @@ async def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     """
     try:
         # Use unauthenticated client for public lookup
-        supabase = get_unauthenticated_supabase_client()
-        if not supabase:
-            print("Failed to get Supabase client")
-            return None
+        supabase = get_unauthenticated_client()
         
         result = supabase.table("user_profile").select("*").eq("email", email.lower().strip()).execute()
         
@@ -170,8 +155,8 @@ async def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
             return result.data[0]
         return None
     except Exception as e:
-        print(f"Error getting user by email: {e}")
-        return None
+        handle_database_error("get user by email", e)
+
 
 async def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
     """
@@ -179,10 +164,7 @@ async def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
     """
     try:
         # Use unauthenticated client for public lookup
-        supabase = get_unauthenticated_supabase_client()
-        if not supabase:
-            print("Failed to get Supabase client")
-            return None
+        supabase = get_unauthenticated_client()
         
         result = supabase.table("user_profile").select("*").eq("username", username).execute()
         
@@ -190,5 +172,49 @@ async def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
             return result.data[0]
         return None
     except Exception as e:
-        print(f"Error getting user by username: {e}")
+        handle_database_error("get user by username", e)
+
+
+async def get_user_by_id(user_id: int, include_private: bool = False) -> Optional[Dict[str, Any]]:
+    """
+    Get a user profile by user ID.
+    
+    Args:
+        user_id: The user ID to fetch
+        include_private: Whether to include private fields (email, contact_number, etc.)
+    
+    Returns:
+        User profile data or None if not found
+    """
+    try:
+        # Use unauthenticated client for public lookup
+        supabase = get_unauthenticated_client()
+        
+        if include_private:
+            # Include all fields for authenticated requests
+            select_fields = "*"
+        else:
+            # Only public fields for general user lookup
+            select_fields = """
+                user_id,
+                username,
+                first_name,
+                middle_name,
+                last_name,
+                pronouns,
+                course,
+                university_branch,
+                college,
+                is_verified_student,
+                profile_photo_url,
+                bio,
+                created_at
+            """
+        
+        result = supabase.table("user_profile").select(select_fields).eq("user_id", user_id).execute()
+        
+        if result.data and len(result.data) > 0:
+            return result.data[0]
         return None
+    except Exception as e:
+        handle_database_error("get user by ID", e)
