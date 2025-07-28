@@ -31,5 +31,5 @@ export class ChatService {
         return ApiClient.post(`dynamodb/message/${roomID}`, form);
     }
     
-    static async updateMessage(roomID, messageID, content)
+//     static async updateMessage(roomID, messageID, content)
 }
