@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, 
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from auth import utils
-from auth.models import SignUp, Login
+from auth.models import SignUp, Login, SignUpResponse, LoginResponse, EmailVerificationResponse
 from auth.email_verification import (
     create_email_verification_request, 
     send_verification_email, 
@@ -10,7 +10,7 @@ from auth.email_verification import (
     create_email_verification_response,
     check_email_verification_status
 )
-from supabase_client.database import create_user_profile, get_user_by_student_number, get_user_by_email, get_user_by_username, create_user_verification_documents
+from supabase_client.database.users import create_user_profile, get_user_by_student_number, get_user_by_email, get_user_by_username, create_user_verification_documents
 from core.utils import create_standardized_response
 from typing import Optional
 from pydantic import BaseModel, EmailStr
@@ -29,7 +29,7 @@ class EmailVerificationRequest(BaseModel):
 # EMAIL VERIFICATION ENDPOINTS (STEP 1)
 # =============================================
 
-@router.post("/verify-email/send")
+@router.post("/verify-email/send", response_model=EmailVerificationResponse)
 async def send_email_verification(request: EmailVerificationRequest):
     """
     Step 1: Send verification token to email address.
@@ -140,7 +140,7 @@ async def email_verified(request: Request):
 # USER REGISTRATION ENDPOINTS (STEP 2-5)
 # =============================================
 
-@router.post("/signup")
+@router.post("/signup", response_model=SignUpResponse, status_code=201)
 async def signup(signup_data: SignUp):
     """
     Sign up route that creates a new user. Verification documents should be uploaded separately using /s3/user-documents/submit-verification.
@@ -234,7 +234,7 @@ async def signup(signup_data: SignUp):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@router.post("/login")
+@router.post("/login", response_model=LoginResponse)
 async def login(login_data: Login):
     """
     Login route using student number and password
@@ -268,51 +268,6 @@ async def login(login_data: Login):
         
         # Create and return login response
         response_data = utils.create_login_response(user, access_token)
-        
-        return JSONResponse(content=response_data, status_code=200)
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
-@router.get("/me")
-async def get_current_user_info(current_user: dict = Depends(utils.get_current_user)):
-    """
-    Get current authenticated user information
-    """
-    try:
-        user_id = current_user.get("user_id")
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token payload")
-        
-        # Get fresh user data from database
-        user = await get_user_by_student_number(current_user.get("student_number"))
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        # Return user profile information (exclude sensitive data)
-        user_info = {
-            "user_id": user["user_id"],
-            "username": user["username"],
-            "first_name": user["first_name"],
-            "middle_name": user["middle_name"],
-            "last_name": user["last_name"],
-            "email": user["email"],
-            "student_number": user["student_number"],
-            "course": user["course"],
-            "university_branch": user["university_branch"],
-            "college": user["college"],
-            "is_verified_student": user["is_verified_student"],
-            "profile_photo_url": user["profile_photo_url"],
-            "bio": user["bio"],
-            "pronouns": user["pronouns"]
-        }
-        
-        response_data = create_standardized_response(
-            message="User information retrieved successfully",
-            data={"user": user_info}
-        )
         
         return JSONResponse(content=response_data, status_code=200)
         
