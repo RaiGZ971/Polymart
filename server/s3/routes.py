@@ -25,15 +25,15 @@ async def upload_review_images(reviewee_id: str, images: list[UploadFile] = File
         for image, file in zip(processed_images, images):
             s3_client.upload_fileobj(
                 file.file,
-                os.getenv("S3_PUBLIC_BUCKET"),
-                image,
+                os.getenv("S3_BUCKET"),
+                f"public/{image}",  # Add public/ prefix
                 ExtraArgs={"ContentType": file.content_type}
             )
 
         return{"images": processed_images}
 
     except ClientError as e:
-        raise HTTPException(status_code=e.response["responseMetadata"]["HTTPStatusCode"], detail=f"Failed to upload array images in {os.getenv("S3_PUBLIC_BUCKET")}/user_documents/reviews/{reviewee_id}")
+        raise HTTPException(status_code=e.response["responseMetadata"]["HTTPStatusCode"], detail=f"Failed to upload array images in {os.getenv('S3_BUCKET')}/public/user_documents/reviews/{reviewee_id}")
     except HTTPException:
         raise
     except Exception as e:
@@ -46,26 +46,26 @@ async def upload_message_image(room_id: str, image: UploadFile = File(...)):
 
         s3_client.upload_fileobj(
             image.file,
-            os.getenv("S3_PRIVATE_BUCKET"),
-            processed_image,
+            os.getenv("S3_BUCKET"),
+            f"private/{processed_image}",  # Add private/ prefix
             ExtraArgs={"ContentType": image.content_type}
         )
 
         return {"image": processed_image}
 
     except ClientError as e:
-        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to upload image in {os.getenv("S3_PRIVATE_BUCKET")}/user_documents/messages/{room_id}")
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to upload image in {os.getenv('S3_BUCKET')}/private/user_documents/messages/{room_id}")
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
 
-@router.post("/user-documents/profile-photo")
-async def upload_profile_photo(
+@router.patch("/user-documents/profile-photo")
+async def update_profile_photo(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload profile photo (public bucket) and update user profile"""
+    """Update profile photo (replaces existing one) and update user profile"""
     try:
         username = current_user.get("username", "unknown")
         user_id = current_user.get("user_id")
@@ -73,8 +73,17 @@ async def upload_profile_photo(
         if not user_id:
             raise HTTPException(status_code=400, detail="User ID not found in authentication context")
         
-        # Upload file to S3
-        file_url = await utils.upload_file_with_metadata(
+        # Get current user profile to check for existing photo
+        from supabase_client.database.users import get_user_by_id, update_user_profile
+        current_profile = await get_user_by_id(user_id, include_private=True)
+        
+        old_photo_url = None
+        if current_profile and current_profile.get("profile_photo_url"):
+            old_photo_url = current_profile["profile_photo_url"]
+            print(f"Found existing profile photo for user {username}: {old_photo_url}")
+        
+        # Upload new file to S3
+        new_file_url = await utils.upload_file_with_metadata(
             file=file,
             document_type="profile_photo",
             folder_prefix="user_documents/profile",
@@ -84,25 +93,45 @@ async def upload_profile_photo(
         )
         
         # Update user profile with the new photo URL
-        from supabase_client.database.users import update_user_profile
         update_result = await update_user_profile(
             user_id=user_id,
-            update_data={"profile_photo_url": file_url}
+            update_data={"profile_photo_url": new_file_url}
         )
         
         if not update_result:
-            print(f"Warning: Failed to update profile photo URL in database for user {user_id}")
-            # Don't fail the entire operation, just log the warning
+            # If database update fails, try to clean up the new file
+            try:
+                s3_key = utils.extract_s3_key_from_url(new_file_url)
+                await utils.delete_file_from_s3(s3_key)
+            except:
+                pass  # Don't fail if cleanup fails
+            raise HTTPException(status_code=500, detail="Failed to update profile photo in database")
+        
+        # Delete old profile photo if it exists (only after successful database update)
+        if old_photo_url:
+            try:
+                old_s3_key = utils.extract_s3_key_from_url(old_photo_url)
+                deleted = await utils.delete_file_from_s3(old_s3_key)
+                if deleted:
+                    print(f"Successfully deleted old profile photo: {old_s3_key}")
+                else:
+                    print(f"Warning: Failed to delete old profile photo: {old_s3_key}")
+            except Exception as e:
+                print(f"Warning: Error deleting old profile photo {old_photo_url}: {e}")
+                # Don't fail the entire operation if old file deletion fails
         
         return create_standardized_response(
-            message="Profile photo uploaded successfully",
-            data={"file_url": file_url}
+            message="Profile photo updated successfully",
+            data={
+                "file_url": new_file_url,
+                "old_photo_deleted": old_photo_url is not None
+            }
         )
         
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to upload profile photo: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update profile photo: {str(e)}")
 
 @router.post("/user-documents/verification-documents")
 async def submit_verification_documents(
@@ -442,14 +471,14 @@ async def delete_message_image(image: str):
         key = parsedImage.path.lstrip("/")
 
         s3_client.delete_object(
-            Bucket=os.getenv("S3_PRIVATE_BUCKET"),
-            Key=key
+            Bucket=os.getenv("S3_BUCKET"),
+            Key=f"private/{key}"  # Add private/ prefix if not already present
         )
 
         return{"image deleted": key}
     
     except ClientError as e:
-        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete image meesage in {os.getenv("S3_PRIVATE_BUCKET")}")
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete image message in {os.getenv('S3_BUCKET')}")
     except HTTPException:
         raise
     except Exception as e:
@@ -459,17 +488,17 @@ async def delete_message_image(image: str):
 async def delete_review_images(images: list[str]):
     try:
         parsedImages = [urlparse(image) for image in images]
-        keys = [parsedImage.path.lstrip("/") for parsedImage in parsedImages]
+        keys = [f"public/{parsedImage.path.lstrip('/')}" for parsedImage in parsedImages]  # Add public/ prefix
     
         s3_client.delete_objects(
-            Bucket=os.getenv("S3_PUBLIC_BUCKET"), 
+            Bucket=os.getenv("S3_BUCKET"), 
             Delete={"Objects": [{"Key": key} for key in keys]}
         )
 
         return {"images deleted": keys}
     
     except ClientError as e:
-        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete images review in {os.getenv("S3_PUBLIC_BUCKET")}")
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete images review in {os.getenv('S3_BUCKET')}")
     except HTTPException:
         raise
     except Exception as e:
@@ -482,14 +511,14 @@ async def delete_review_image(image: str):
         key = parsedImage.path.lstrip("/")
 
         s3_client.delete_object(
-            Bucket=os.getenv("S3_PUBLIC_BUCKET"),
-            Key=key
+            Bucket=os.getenv("S3_BUCKET"),
+            Key=f"public/{key}"  # Add public/ prefix
         )
 
         return {"image deleted": key}
     
     except ClientError as e:
-        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete image review in {os.getenv("S3_PUBLIC_BUCKET")}")
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete image review in {os.getenv('S3_BUCKET')}")
     except HTTPException:
         raise
     except Exception as e:
