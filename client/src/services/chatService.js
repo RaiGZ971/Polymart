@@ -1,0 +1,29 @@
+import { ApiClient  } from "./apiClient.js";
+import { API_BASE } from "../config/api";
+
+export class ChatService {
+
+    static async getContacts(userID){
+        return ApiClient.get(`/dynamodb/contacts/${userID}`);
+    }
+
+    static async getMessages(senderID, receiverID){
+        return ApiClient.get(`/dynamodb/messages/${senderID}/${receiverID}`);
+    }
+
+    static async uploadImage(roomID, imageFile){
+        const formData = new FormData();
+        formData.append('image', imageFile);
+
+        const response = await fetch(`${API_BASE}/s3/message/${roomID}`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if(!response.ok){
+            throw new Error(`Failed to upload image: ${response.statusText}`);
+        }
+
+        return response.json();
+    }
+}
