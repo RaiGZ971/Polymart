@@ -164,14 +164,14 @@ async def upload_message_image(room_id: str, image: UploadFile = File(...)):
 
         s3Client.upload_fileobj(
             image.file,
-            os.getenv("S3_PRIVATE_BUCKET"),
-            processedImage,
+            os.getenv("S3_BUCKET"),
+            f"private/{processedImage}",  # Add private/ prefix
             ExtraArgs={"ContentType": image.content_type}
         )
 
         return{"image": processedImage}
     except ClientError as e:
-        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to upload image in {os.getenv("S3-POLYMART-PRIVATE")}/user_documents/messages/{room_id}")
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to upload image in {os.getenv('S3_BUCKET')}/private/user_documents/messages/{room_id}")
     except HTTPException:
         raise
     except Exception as e:
