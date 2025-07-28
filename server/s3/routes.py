@@ -18,7 +18,7 @@ router = APIRouter()
 s3_client = boto3.client("s3")
 
 @router.post("/review/{reviewee_id}")
-async def upload_review_images(reviewee_id: str, images: list[UploadFile] = File(...)):
+async def upload_review_images(reviewee_id: str, images: list[UploadFile] = File(...), current_user: dict = Depends(get_current_user)):
     try:
         processed_images = [utils.create_image_url("reviews", reviewee_id, image) for image in images]
 
@@ -40,7 +40,7 @@ async def upload_review_images(reviewee_id: str, images: list[UploadFile] = File
         raise HTTPException(status_code=500, detail=f"Failed to upload array images: {str(e)}")
     
 @router.post("/message/{room_id}")
-async def upload_message_image(room_id: str, image: UploadFile = File(...)):
+async def upload_message_image(room_id: str, image: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     try:
         processed_image = utils.create_image_url("messages", room_id, image)
 
@@ -515,7 +515,7 @@ async def migrate_image_urls(
         raise HTTPException(status_code=500, detail=f"Failed to migrate image URLs: {str(e)}")
 
 @router.delete("/message")
-async def delete_message_image(image: str):
+async def delete_message_image(image: str, current_user: dict = Depends(get_current_user)):
     try:
         parsedImage = urlparse(image)
         key = parsedImage.path.lstrip("/")
@@ -535,7 +535,7 @@ async def delete_message_image(image: str):
         raise HTTPException(status_code=500, detail=f"Failed to delete image message: {str(e)}")
     
 @router.delete("/review-images")
-async def delete_review_images(images: list[str]):
+async def delete_review_images(images: list[str], current_user: dict = Depends(get_current_user)):
     try:
         parsedImages = [urlparse(image) for image in images]
         keys = [f"public/{parsedImage.path.lstrip('/')}" for parsedImage in parsedImages]  # Add public/ prefix
@@ -555,7 +555,7 @@ async def delete_review_images(images: list[str]):
         raise HTTPException(status_code=500, detail=f"Failed to delete images in review: {str(e)}")
 
 @router.delete("/review-image")
-async def delete_review_image(image: str):
+async def delete_review_image(image: str, current_user: dict = Depends(get_current_user)):
     try:
         parsedImage = urlparse(image)
         key = parsedImage.path.lstrip("/")

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File, Depends
 from fastapi.responses import HTMLResponse
 from dotenv import load_dotenv
 
@@ -10,6 +10,7 @@ from botocore.exceptions import ClientError
 from dynamodb import client, utils, models
 from core import config
 from s3 import utils as s3Utlis
+from auth.utils import get_current_user
 import os
 import json
 
@@ -158,7 +159,7 @@ tableNotification = dynamodb.Table("hackybara-notification") #type:ignore
 
 #TEMPORARY
 @router.post("/message/{room_id}")
-async def upload_message_image(room_id: str, image: UploadFile = File(...)):
+async def upload_message_image(room_id: str, image: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     try:
         processedImage = s3Utlis.create_image_url("messages", room_id, image)
 
@@ -212,7 +213,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, sender_id: str,
         manager.disconnect(websocket, room_id)
 
 @router.get("/messages/{sender_id}/{receiver_id}")
-async def get_messages(sender_id: str, receiver_id: str):
+async def get_messages(sender_id: str, receiver_id: str, current_user: dict = Depends(get_current_user)):
     room_id = utils.get_room(sender_id, receiver_id)
 
     try:
@@ -274,7 +275,7 @@ async def get_messages(sender_id: str, receiver_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to review messages: {str(e)}")
     
 @router.get("/message/{room_id}/{message_id}", response_model=models.message)
-async def get_message(room_id: str, message_id: str):
+async def get_message(room_id: str, message_id: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableMessage.query(
             KeyConditionExpression=Key("room_id").eq(room_id),
@@ -293,7 +294,7 @@ async def get_message(room_id: str, message_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to review message: {str(e)}")
     
 @router.get("/chat/{sender_id}/{receiver_id}", response_class=HTMLResponse)
-async def serve_chat_html(sender_id: str, receiver_id: str):
+async def serve_chat_html(sender_id: str, receiver_id: str, current_user: dict = Depends(get_current_user)):
     room_id = utils.get_room(sender_id, receiver_id)
     html_with_room = html.replace("{{room_id}}", room_id)\
                          .replace("{{sender_id}}", sender_id)\
@@ -301,7 +302,7 @@ async def serve_chat_html(sender_id: str, receiver_id: str):
     return HTMLResponse(html_with_room)
 
 @router.get("/contacts/{user_id}")
-async def get_contacts(user_id: str):
+async def get_contacts(user_id: str, current_user: dict = Depends(get_current_user)):
     try:
         response = tableMessage.scan(
             FilterExpression=Attr("room_id").contains(user_id)
@@ -332,7 +333,7 @@ async def get_contacts(user_id: str):
 
 
 @router.put("/message-update/{room_id}/{message_id}", response_model=models.message)
-async def update_message(room_id: str, message_id: str, content: str):
+async def update_message(room_id: str, message_id: str, content: str, current_user: dict = Depends(get_current_user)):
     currentDate = utils.get_current_date()
     try:
         query = tableMessage.query(
@@ -359,7 +360,7 @@ async def update_message(room_id: str, message_id: str, content: str):
         raise HTTPException(status_code=500, detail=f"Failed to review: {str(e)}")
     
 @router.delete("/message-delete/{room_id}/{message_id}", response_model=models.message)
-async def delete_message(room_id: str, message_id: str):
+async def delete_message(room_id: str, message_id: str, current_user: dict = Depends(get_current_user)):
     currentDate = utils.get_current_date()
     
     try:
@@ -386,7 +387,7 @@ async def delete_message(room_id: str, message_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to review: {str(e)}")
     
 @router.delete("/message-delete-full/{room_id}/{message_id}", response_model=models.message)
-async def delete_full_message(room_id: str, message_id: str):
+async def delete_full_message(room_id: str, message_id: str, current_user: dict = Depends(get_current_user)):
     
     try:
         query = tableMessage.query(
@@ -411,7 +412,7 @@ async def delete_full_message(room_id: str, message_id: str):
 
 #REVIEW SYSTEM
 @router.get("/review/{reviewee_id}/{review_id}", response_model=models.review)
-async def get_review(reviewee_id: str, review_id: str):
+async def get_review(reviewee_id: str, review_id: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableReview.query(
             KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
@@ -430,7 +431,7 @@ async def get_review(reviewee_id: str, review_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to review: {str(e)}")
 
 @router.get("/product-review/{reviewee_id}/{product_id}")
-async def get_product_review(reviewee_id: str, product_id: str):
+async def get_product_review(reviewee_id: str, product_id: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableReview.query(
             KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
@@ -449,7 +450,7 @@ async def get_product_review(reviewee_id: str, product_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to review product: {str(e)}")
     
 @router.get("/seller-review/{reviewee_id}")
-async def get_seller_review(reviewee_id: str):
+async def get_seller_review(reviewee_id: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableReview.query(
             KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
@@ -467,7 +468,7 @@ async def get_seller_review(reviewee_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to review seller: {str(e)}")
 
 @router.post("/review", response_model=models.review)
-async def post_review(form: models.raw_review):
+async def post_review(form: models.raw_review, current_user: dict = Depends(get_current_user)):
     try:
         processedForm = utils.process_review_form(form)
 
@@ -485,7 +486,7 @@ async def post_review(form: models.raw_review):
         raise HTTPException(status_code=500, detail=f"Failed to post review: {str(e)}")
     
 @router.put("/review/{reviewee_id}/{review_id}", response_model=models.review)
-async def update_review(reviewee_id: str, review_id: str, form: models.update_review):
+async def update_review(reviewee_id: str, review_id: str, form: models.update_review, current_user: dict = Depends(get_current_user)):
     try:
         query = tableReview.query(
             KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
@@ -533,7 +534,7 @@ async def update_review(reviewee_id: str, review_id: str, form: models.update_re
         raise HTTPException(status_code=500, detail=f"Failed to update review: {str(e)}")
 
 @router.delete("/review/{reviewee_id}/{review_id}", response_model=models.review)
-async def delete_review(reviewee_id: str, review_id: str):
+async def delete_review(reviewee_id: str, review_id: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableReview.query(
             KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
@@ -557,7 +558,7 @@ async def delete_review(reviewee_id: str, review_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to delete review: {str(e)}")
     
 @router.delete("/review-image/{reviewee_id}/{review_id}", response_model=models.review)
-async def delete_image_review(reviewee_id: str, review_id: str, image: str):
+async def delete_image_review(reviewee_id: str, review_id: str, image: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableReview.query(
             KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
@@ -585,7 +586,7 @@ async def delete_image_review(reviewee_id: str, review_id: str, image: str):
         raise HTTPException(status_code=500, detail=f"Failed to delete image review: {str(e)}")
 
 @router.delete("/review-images/{reviewee_id}/{review_id}")
-async def delete_images_review(reviewee_id: str, review_id: str, images: list[str]):
+async def delete_images_review(reviewee_id: str, review_id: str, images: list[str], current_user: dict = Depends(get_current_user)):
     try:
         query = tableReview.query(
             KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
@@ -615,7 +616,7 @@ async def delete_images_review(reviewee_id: str, review_id: str, images: list[st
     
 #REPORT SYSTEM
 @router.get("/report/{report_id}", response_model=models.report)
-async def get_report(report_id: str):
+async def get_report(report_id: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableReport.query(
             KeyConditionExpression=Key("report_id").eq(report_id)
@@ -633,7 +634,7 @@ async def get_report(report_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to review report: {str(e)}")
     
 @router.get("/reports")
-async def get_all_report():
+async def get_all_report(current_user: dict = Depends(get_current_user)):
     try:
         items = []
         response = tableReport.scan()
@@ -655,7 +656,7 @@ async def get_all_report():
         raise HTTPException(status_code=500, detail=f"Failed to review all report: {str(e)}")
     
 @router.post("/report", response_model=models.report)
-async def post_report(form: models.raw_report):
+async def post_report(form: models.raw_report, current_user: dict = Depends(get_current_user)):
     try:
         processedForm = utils.process_report_form(form)
 
@@ -673,7 +674,7 @@ async def post_report(form: models.raw_report):
         raise HTTPException(status_code=500, detail=f"Failed to post report: {str(e)}")
     
 @router.put("/report/{report_id}", response_model=models.report)
-async def update_report(report_id: str, status: str):
+async def update_report(report_id: str, status: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableReport.query(
             KeyConditionExpression=Key("report_id").eq(report_id)
@@ -698,7 +699,7 @@ async def update_report(report_id: str, status: str):
         raise HTTPException(status_code=500, detail=f"Failed to update report: {str(e)}")
     
 @router.delete("/report/{report_id}", response_model=models.report)
-async def delete_report(report_id: str):
+async def delete_report(report_id: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableReport.query(
             KeyConditionExpression=Key("report_id").eq(report_id)
@@ -721,7 +722,7 @@ async def delete_report(report_id: str):
 
 #NOTIFICATION SYSTEM
 @router.get("/notification/{user_id}/{notification_id}", response_model=models.notification)
-async def get_notification(user_id: str, notification_id: str):
+async def get_notification(user_id: str, notification_id: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableNotification.query(
             KeyConditionExpression=Key("user_id").eq(user_id),
@@ -740,7 +741,7 @@ async def get_notification(user_id: str, notification_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to fetch notification: {str(e)}")
     
 @router.get("notifications/{user_id}")
-async def get_all_user_notification(user_id: str):
+async def get_all_user_notification(user_id: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableNotification.query(
             KeyConditionExpression=Key("user_id").eq(user_id),
@@ -759,7 +760,7 @@ async def get_all_user_notification(user_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to fetch all user notification: {str(e)}")
 
 @router.post("/notification", response_model=models.notification)
-async def post_notification(form: models.raw_notification):
+async def post_notification(form: models.raw_notification, current_user: dict = Depends(get_current_user)):
     try:
         processedForm = utils.process_notification_form(form)
 
@@ -777,7 +778,7 @@ async def post_notification(form: models.raw_notification):
         raise HTTPException(status_code=500, detail=f"failed to post notification: {str(e)}")
     
 @router.put("/notification-seen-update/{user_id}")
-async def notification_seen_update(user_id: str):
+async def notification_seen_update(user_id: str, current_user: dict = Depends(get_current_user)):
     try:
         items = []
 
@@ -812,7 +813,7 @@ async def notification_seen_update(user_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to update seen notification: {str(e)}")
     
 @router.delete("/notification/{user_id}/{notification_id}", response_model=models.notification)
-async def delete_notification(user_id: str, notification_id: str):
+async def delete_notification(user_id: str, notification_id: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableNotification.query(
             KeyConditionExpression=Key("user_id").eq(user_id),
@@ -836,7 +837,7 @@ async def delete_notification(user_id: str, notification_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to delete notifictaion: {str(e)}")
 
 @router.delete("notifications/{user_id}")
-async def delete_all_read_notification(user_id: str):
+async def delete_all_read_notification(user_id: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableNotification.query(
             KeyConditionExpression=Key("user_id").eq(user_id),
