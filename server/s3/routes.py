@@ -133,6 +133,56 @@ async def update_profile_photo(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update profile photo: {str(e)}")
 
+@router.delete("/user-documents/profile-photo")
+async def delete_profile_photo(
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete user's profile photo and remove from profile"""
+    try:
+        username = current_user.get("username", "unknown")
+        user_id = current_user.get("user_id")
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID not found in authentication context")
+        
+        # Get current user profile to check for existing photo
+        from supabase_client.database.users import get_user_by_id, update_user_profile
+        current_profile = await get_user_by_id(user_id, include_private=True)
+        
+        if not current_profile or not current_profile.get("profile_photo_url"):
+            raise HTTPException(status_code=404, detail="No profile photo found to delete")
+        
+        photo_url = current_profile["profile_photo_url"]
+        
+        # Update user profile to remove photo URL
+        update_result = await update_user_profile(
+            user_id=user_id,
+            update_data={"profile_photo_url": None}
+        )
+        
+        if not update_result:
+            raise HTTPException(status_code=500, detail="Failed to remove profile photo from database")
+        
+        # Delete the file from S3
+        try:
+            s3_key = utils.extract_s3_key_from_url(photo_url)
+            deleted = await utils.delete_file_from_s3(s3_key)
+            if not deleted:
+                print(f"Warning: Failed to delete profile photo file from S3: {s3_key}")
+        except Exception as e:
+            print(f"Warning: Error deleting profile photo file {photo_url}: {e}")
+            # Don't fail the entire operation if file deletion fails
+        
+        return create_standardized_response(
+            message="Profile photo deleted successfully",
+            data={"deleted_photo_url": photo_url}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete profile photo: {str(e)}")
+
 @router.post("/user-documents/verification-documents")
 async def submit_verification_documents(
     student_id_front: UploadFile = File(...),
