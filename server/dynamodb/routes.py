@@ -75,7 +75,7 @@ html = """
                 const formData = new FormData();
                 formData.append("image", file);
 
-                const response = await fetch(`/dynamodb/message/${room_id}`, {
+                const response = await fetch(`/dynamodb/message-image/${room_id}`, {
                     method: "POST",
                     body: formData
                 });
@@ -157,7 +157,6 @@ tableReport = dynamodb.Table("hackybara-report") #type:ignore
 tableReview = dynamodb.Table("hackybara-review") #type:ignore
 tableNotification = dynamodb.Table("hackybara-notification") #type:ignore
 
-#TEMPORARY
 @router.post("/message/{room_id}")
 async def upload_message_image(room_id: str, image: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     try:
@@ -177,7 +176,7 @@ async def upload_message_image(room_id: str, image: UploadFile = File(...), curr
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
-
+    
 #CHATTING SYSTEM
 @router.websocket("/message/{room_id}/{sender_id}/{receiver_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str, sender_id: str, receiver_id: str):
@@ -190,7 +189,14 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, sender_id: str,
             content = msg.get("content")
             image = msg.get("image")
 
-            processedForm = utils.process_message_form(room_id, content, sender_id, receiver_id, image)
+            form = models.raw_message(
+                sender_id=sender_id,
+                receiver_id=receiver_id,
+                content=content if content else None,
+                image=image if image else None
+            )
+
+            processedForm = utils.process_message_form(room_id, form)
 
             # Post message in dynamodb hackybara-message
             try:
@@ -330,7 +336,24 @@ async def get_contacts(user_id: str, current_user: dict = Depends(get_current_us
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch rooms: {str(e)}")
+    
+@router.post("/message/{room_id}", response_model=models.message)
+async def upload_message(room_id: str, form: models.raw_message):
+    try:
+        processedForm = utils.process_message_form(room_id, form)
 
+        tableMessage.put_item(
+            Item=processedForm.model_dump(exclude_none=True)
+        )
+
+        return processedForm
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to upload message in hackybara-message: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload message: {str(e)}")
 
 @router.put("/message-update/{room_id}/{message_id}", response_model=models.message)
 async def update_message(room_id: str, message_id: str, content: str, current_user: dict = Depends(get_current_user)):
