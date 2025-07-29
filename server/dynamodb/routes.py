@@ -161,16 +161,17 @@ tableNotification = dynamodb.Table("hackybara-notification") #type:ignore
 @router.post("/message-image/{room_id}")
 async def upload_message_image(room_id: str, image: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     try:
-        processedImage = s3Utlis.create_image_url("messages", room_id, image)
+        processed_image = s3Utlis.create_image_url("messages", room_id, image)
 
         s3Client.upload_fileobj(
             image.file,
             os.getenv("S3_BUCKET"),
-            f"private/{processedImage}",  # Add private/ prefix
+            f"private/{processed_image}",  # Add private/ prefix
             ExtraArgs={"ContentType": image.content_type}
         )
 
-        return{"image": processedImage}
+        return {"image": processed_image}
+
     except ClientError as e:
         raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to upload image in {os.getenv('S3_BUCKET')}/private/user_documents/messages/{room_id}")
     except HTTPException:
@@ -445,6 +446,11 @@ async def get_review(reviewee_id: str, review_id: str, current_user: dict = Depe
 
         review = query.get("Items", [])[0]
 
+        images = review.get("images", [])
+        if images:
+            publicURLs = config.generate_public_urls(images)
+            review["images"] = publicURLs
+
         return review
     
     except ClientError as e:
@@ -464,6 +470,22 @@ async def get_product_review(reviewee_id: str, product_id: str, current_user: di
 
         productReview = query.get("Items", [])
 
+        imageURLs = []
+        imageCountPerReview = []
+
+        for review in productReview:
+            images = review.get("images", []) or []
+            imageCountPerReview.append(len(images))
+            imageURLs.extend(images)
+
+        publicURLs = config.generate_public_urls(imageURLs) if imageURLs else []
+
+        urlIndex = 0
+        for review, imageCount in zip(productReview, imageCountPerReview):
+            if imageCount > 0:
+                review["images"] = publicURLs[urlIndex: urlIndex + imageCount]
+                urlIndex += imageCount
+
         return productReview
     
     except ClientError as e:
@@ -482,6 +504,23 @@ async def get_seller_review(reviewee_id: str, current_user: dict = Depends(get_c
         )
 
         sellerReview = query.get("Items", [])
+
+        imageURLs = []
+        imageCountPerReview = []
+
+        for review in sellerReview:
+            images = review.get("images", []) or []
+            imageCountPerReview.append(len(images))
+            imageURLs.extend(images)
+
+        publicURLs = config.generate_public_urls(imageURLs) if imageURLs else []
+
+        urlIndex = 0
+        for review, imageCount in zip(sellerReview, imageCountPerReview):
+            if imageCount > 0:
+                review["images"] = publicURLs[urlIndex: urlIndex + imageCount]
+                urlIndex += imageCount
+
 
         return sellerReview
     except ClientError as e:
