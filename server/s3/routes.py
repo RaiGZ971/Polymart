@@ -522,7 +522,7 @@ async def delete_message_image(image: str, current_user: dict = Depends(get_curr
 
         s3_client.delete_object(
             Bucket=os.getenv("S3_BUCKET"),
-            Key=f"private/{key}"  # Add private/ prefix if not already present
+            Key=key  # Add private/ prefix if not already present
         )
 
         return{"image deleted": key}
@@ -538,7 +538,7 @@ async def delete_message_image(image: str, current_user: dict = Depends(get_curr
 async def delete_review_images(images: list[str], current_user: dict = Depends(get_current_user)):
     try:
         parsedImages = [urlparse(image) for image in images]
-        keys = [f"public/{parsedImage.path.lstrip('/')}" for parsedImage in parsedImages]  # Add public/ prefix
+        keys = [parsedImage.path.lstrip('/') for parsedImage in parsedImages]  # Add public/ prefix
     
         s3_client.delete_objects(
             Bucket=os.getenv("S3_BUCKET"), 
@@ -562,7 +562,7 @@ async def delete_review_image(image: str, current_user: dict = Depends(get_curre
 
         s3_client.delete_object(
             Bucket=os.getenv("S3_BUCKET"),
-            Key=f"public/{key}"  # Add public/ prefix
+            Key=key  # Add public/ prefix
         )
 
         return {"image deleted": key}

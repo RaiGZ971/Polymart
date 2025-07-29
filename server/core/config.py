@@ -15,7 +15,7 @@ def generate_private_urls(images: list[str]) -> list[str]:
         for image in images:
             url = s3Client.generate_presigned_url(
                 "get_object",
-                Params={"Bucket": os.getenv("S3_BUCKET"), "Key": image},
+                Params={"Bucket": os.getenv("S3_BUCKET"), "Key": f"private/{image}"},
                 ExpiresIn=3600
             )
             urls.append(url)
@@ -33,7 +33,7 @@ def generate_private_url(image: str) -> str:
     try:
         url = s3Client.generate_presigned_url(
             "get_object",
-            Params={"Bucket": os.getenv("S3_BUCKET"), "Key": image},
+            Params={"Bucket": os.getenv("S3_BUCKET"), "Key": f"private/{image}"},
             ExpiresIn=3600
         )
 
@@ -48,7 +48,7 @@ def generate_private_url(image: str) -> str:
     
 def generate_public_urls(images: list[str]) -> list[str]:
     try:
-        urls = [f"https://{os.getenv('S3_BUCKET')}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{image}" for image in images]
+        urls = [f"https://{os.getenv('S3_BUCKET')}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/public/{image}" for image in images]
 
         return urls
     
@@ -61,7 +61,7 @@ def generate_public_urls(images: list[str]) -> list[str]:
     
 def generate_public_url(image: str) -> str:
     try:
-        url = f"https://{os.getenv('S3_BUCKET')}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{image}"
+        url = f"https://{os.getenv('S3_BUCKET')}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/public/{image}"
         
         return url
         
