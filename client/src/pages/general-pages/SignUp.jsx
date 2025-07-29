@@ -31,7 +31,6 @@ export default function SignUp() {
     "Student Verification",
   ];
 
-  // Use the form data management hook
   const {
     formData,
     setFormData,
@@ -154,12 +153,15 @@ export default function SignUp() {
   // Simplified phase rendering using configuration
   const renderPhaseContent = () => {
     switch (currentStep) {
+      case 1:
+        return renderEmailVerificationContent();
       case 2:
         return (
           <Phase2Layout
-            formData={formData || {}} // ensures it's never undefined
+            formData={formData || {}}
             errors={errors}
             handleChange={handleChange}
+            renderField={renderField}
           />
         );
 
@@ -205,7 +207,12 @@ export default function SignUp() {
         </div>
 
         <div className="w-[60%] h-full flex flex-col mt-10">
-          {renderPhaseContent()}
+          <PhaseContainer
+            label={steps[currentStep - 1]}
+            title={currentStep === 1 ? getEmailVerificationTitle() : undefined}
+          >
+            {renderPhaseContent()}
+          </PhaseContainer>
         </div>
 
         <NavigationButtons

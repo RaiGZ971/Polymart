@@ -7,7 +7,7 @@ export const EmailFailedState = ({ onResend, onChangeEmail }) => {
         <XCircle className="w-20 h-20 text-primary-red" />
       </div>
       <div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">
+        <h3 className="text-3xl font-bold text-primary-red mb-5">
           Verification failed
         </h3>
         <p className="text-gray-600 mb-4">
