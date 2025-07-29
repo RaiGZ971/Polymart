@@ -31,5 +31,15 @@ export class ChatService {
         return ApiClient.post(`dynamodb/message/${roomID}`, form);
     }
     
-//     static async updateMessage(roomID, messageID, content)
+    static async updateMessage(roomID, messageID, content){
+        return ApiClient.put(`dynamodb/message-update/${roomID}/${messageID}`, content);
+    }
+
+    static async deleteMessage(roomID, messageID){
+        return ApiClient.delete(`dynamodb/message-delete/${roomID}/${messageID}`);
+    }
+
+    static async deleteMessageFull(roomID, messageID){
+        return ApiClient.delete(`dynamodb/message-delete-full/${roomID}/${messageID}`);
+    }
 }
