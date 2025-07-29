@@ -46,4 +46,11 @@ export class ApiClient {
     static async delete(endpoint){
         return this.request(endpoint, { method: 'DELETE'})
     }
+
+    static async deleteData(endpoint, data){
+        return this.request(endpoint, {
+            method: 'DELETE',
+            body: JSON.stringify(data)
+        });
+    }
 }
