@@ -803,7 +803,7 @@ async def get_notification(user_id: str, notification_id: str, current_user: dic
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch notification: {str(e)}")
     
-@router.get("notifications/{user_id}")
+@router.get("/notifications/{user_id}")
 async def get_all_user_notification(user_id: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableNotification.query(
@@ -899,7 +899,7 @@ async def delete_notification(user_id: str, notification_id: str, current_user: 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete notifictaion: {str(e)}")
 
-@router.delete("notifications/{user_id}")
+@router.delete("/notifications/{user_id}")
 async def delete_all_read_notification(user_id: str, current_user: dict = Depends(get_current_user)):
     try:
         query = tableNotification.query(
