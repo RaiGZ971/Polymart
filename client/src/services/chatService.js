@@ -11,7 +11,23 @@ export class ChatService {
         return ApiClient.get(`/dynamodb/messages/${senderID}/${receiverID}`);
     }
 
-    static async uploadImage(roomID, imageFile){
+    static async uploadMessage(roomID, form){
+        return ApiClient.post(`/dynamodb/message/${roomID}`, form);
+    }
+    
+    static async updateMessage(roomID, messageID, content){
+        return ApiClient.put(`/dynamodb/message-update/${roomID}/${messageID}`, content);
+    }
+
+    static async deleteMessage(roomID, messageID){
+        return ApiClient.delete(`/dynamodb/message-delete/${roomID}/${messageID}`);
+    }
+
+    static async deleteMessageFull(roomID, messageID){
+        return ApiClient.delete(`/dynamodb/message-delete-full/${roomID}/${messageID}`);
+    }
+
+    static async uploadImageBucket(roomID, imageFile){
         const formData = new FormData();
         formData.append('image', imageFile);
 
@@ -26,4 +42,9 @@ export class ChatService {
 
         return response.json();
     }
+
+    static async deleteMessageImageBucket(image){
+        return ApiClient.deleteData(`/s3/message`, image);
+    }
+
 }
