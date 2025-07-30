@@ -227,26 +227,6 @@ async def get_messages(sender_id: str, receiver_id: str, current_user: dict = De
     try:
         query = tableMessage.query(
             KeyConditionExpression=Key("room_id").eq(room_id),
-            FilterExpression=Attr("receiver_id").eq(sender_id) & Attr("read_status").eq(False)
-        )
-
-        unreadMessages = query.get("Items", [])
-
-        keys = [{"room_id": room_id, "created_at": unreadMessage["created_at"]} for unreadMessage in unreadMessages]
-        messageIDs = [unreadMessage["message_id"] for unreadMessage in unreadMessages]
-
-
-        for key, messageID in zip(keys, messageIDs):
-            tableMessage.update_item(
-                Key=key,
-                ConditionExpression=Attr("message_id").eq(messageID),
-                UpdateExpression="set read_status=:read_status",
-                ExpressionAttributeValues={":read_status": True}
-            )
-
-        # Read history messages in dynamodb hackybara-message
-        query = tableMessage.query(
-            KeyConditionExpression=Key("room_id").eq(room_id),
             FilterExpression=Attr("content").exists(),
             ScanIndexForward=True
         )
@@ -383,6 +363,44 @@ async def update_message(room_id: str, message_id: str, content: str, current_us
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to review: {str(e)}")
+    
+@router.put("/messages-status-updates/{sender_id}/{receiver_id}")
+async def update_status_messages(sender_id: str, receiver_id: str, current_user: dict = Depends(get_current_user)):
+    room_id = utils.get_room(sender_id, receiver_id)
+    updatedMessages = []
+
+    try:
+        query = tableMessage.query(
+            KeyConditionExpression=Key("room_id").eq(room_id),
+            FilterExpression=Attr("receiver_id").eq(sender_id) & Attr("read_status").eq(False)
+        )
+
+        unreadMessages = query.get("Items", [])
+
+        keys = [{"room_id": room_id, "created_at": unreadMessage["created_at"]} for unreadMessage in unreadMessages]
+        messageIDs = [unreadMessage["message_id"] for unreadMessage in unreadMessages]
+
+
+        for key, messageID in zip(keys, messageIDs):
+            response = tableMessage.update_item(
+                Key=key,
+                ConditionExpression=Attr("message_id").eq(messageID),
+                UpdateExpression="set read_status=:read_status",
+                ExpressionAttributeValues={":read_status": True},
+                ReturnValues="ALL_NEW"
+            )
+
+            updatedMessages.append(response["Attributes"])
+
+        return updatedMessages
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to update message status in hackybara-message: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update message status: {str(e)}")
+        
     
 @router.delete("/message-delete/{room_id}/{message_id}", response_model=models.message)
 async def delete_message(room_id: str, message_id: str, current_user: dict = Depends(get_current_user)):
