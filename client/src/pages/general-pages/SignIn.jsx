@@ -1,15 +1,64 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { NavigationBar, Footer, Textfield } from "@/components";
 import { stall } from "@/assets";
+import { AuthService } from "../../services/authService";
 
 export default function SignIn() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     studentId: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Handle messages from redirects
+  useEffect(() => {
+    const message = searchParams.get('message');
+    if (message) {
+      setError(decodeURIComponent(message));
+    }
+  }, [searchParams]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    // Clear error when user starts typing
+    if (error) setError("");
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!form.studentId || !form.password) {
+      setError("Please fill in all fields");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      
+      const loginData = {
+        student_number: form.studentId,
+        password: form.password
+      };
+
+      const result = await AuthService.login(loginData);
+      
+      if (result.success) {
+        // Redirect to dashboard on successful login
+        navigate('/dashboard');
+      } else {
+        setError(result.message || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setError(error.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -32,13 +81,14 @@ export default function SignIn() {
               </h1>
               <p className="text-sm">Sa PolyMart lahat ng Isko, may pwesto!</p>
             </div>
-            <form className="flex flex-col space-y-4">
+            <form className="flex flex-col space-y-4" onSubmit={handleSubmit}>
               <Textfield
                 label="Student ID"
                 name="studentId"
                 type="text"
                 value={form.studentId}
                 onChange={handleChange}
+                required
               />
 
               <Textfield
@@ -47,7 +97,15 @@ export default function SignIn() {
                 type="password"
                 value={form.password}
                 onChange={handleChange}
+                required
               />
+
+              {/* Display error message */}
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
 
               <a
                 href="/forgot-password"
@@ -57,9 +115,10 @@ export default function SignIn() {
               </a>
               <button
                 type="submit"
-                className="bg-hover-red text-white rounded-[30px] px-2 py-3 shadow-sm font-semibold hover:bg-secondary-red transition-colors"
+                disabled={loading}
+                className="bg-hover-red text-white rounded-[30px] px-2 py-3 shadow-sm font-semibold hover:bg-secondary-red transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign In
+                {loading ? 'Signing In...' : 'Sign In'}
               </button>
 
               <div className="flex items-center space-x-4">
