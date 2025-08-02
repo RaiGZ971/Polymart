@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   SearchBar,
   CategoryFilter,
@@ -10,37 +10,43 @@ import {
   MainDashboard,
 } from "../../components";
 import { sortByPriceOptions } from "../../data";
-import ordersSampleData from "../../data/ordersSampleData";
+import { useDashboardData } from "../../hooks";
+import { UserService } from "../../services";
 import { useNavigate } from "react-router-dom";
 
-function getProductPrice(product, useMax = false) {
-  if (
-    product.hasPriceRange &&
-    product.priceRange &&
-    (useMax ? product.priceRange.max : product.priceRange.min)
-  ) {
-    return Number(useMax ? product.priceRange.max : product.priceRange.min);
-  }
-  if (product.productPrice) {
-    return Number(product.productPrice);
-  }
-  return 0;
-}
-
 export default function GeneralDashboard() {
-  const [activeCategory, setActiveCategory] = useState("all");
-  const [sortBy, setSortBy] = useState("newest");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [pendingSearch, setPendingSearch] = useState("");
   const [showCreateListing, setShowCreateListing] = useState(false);
+  const [activeTab, setActiveTab] = useState("all-listings");
+  const [pendingSearch, setPendingSearch] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState("all-listings");
+  // Use the dashboard data hook
+  const {
+    listings,
+    myListings,
+    loading,
+    error,
+    activeCategory,
+    setActiveCategory,
+    sortBy,
+    setSortBy,
+    searchTerm,
+    setSearchTerm,
+    refreshData
+  } = useDashboardData();
 
-  const currentUser = { id: "user123", role: "user" };
-
-  const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(Infinity);
+  // Get current user on component mount
+  useEffect(() => {
+    const user = UserService.getCurrentUser();
+    setCurrentUser(user);
+    
+    // If user is not authenticated, redirect to login
+    if (!user) {
+      navigate('/sign-in');
+      return;
+    }
+  }, [navigate]);
 
   const handleCategoryChange = (categoryValue) => {
     setActiveCategory(categoryValue);
@@ -50,47 +56,11 @@ export default function GeneralDashboard() {
     setSortBy(newSortBy);
   };
 
-  const allListings = ordersSampleData.filter((order) => {
-    const matchesCategory =
-      activeCategory === "all" || order.category === activeCategory;
-    const matchesSearch = order.productName
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const price = getProductPrice(order);
-    const matchesPrice = price >= minPrice && price <= maxPrice;
-    return matchesCategory && matchesSearch && matchesPrice;
-  });
+  // Get the appropriate data based on active tab
+  const displayedListings = activeTab === "your-listings" ? myListings : listings;
 
-  const yourListings = ordersSampleData.filter((order) => {
-    const matchesCategory =
-      activeCategory === "all" || order.category === activeCategory;
-    const matchesSearch = order.productName
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const price = getProductPrice(order);
-    const matchesPrice = price >= minPrice && price <= maxPrice;
-    return (
-      matchesCategory &&
-      matchesSearch &&
-      matchesPrice &&
-      order.seller_id === currentUser.id
-    );
-  });
-
-  const filteredOrders =
-    activeTab === "your-listings" ? yourListings : allListings;
-
-  const sortedOrders = [...filteredOrders].sort((a, b) => {
-    if (sortBy === "low-to-high") {
-      return getProductPrice(a) - getProductPrice(b);
-    } else if (sortBy === "high-to-low") {
-      return getProductPrice(b, true) - getProductPrice(a, true);
-    }
-    return 0;
-  });
-
-  const handleProductClick = (order) => {
-    navigate("/buyer/view-product-details", { state: { order } });
+  const handleProductClick = (product) => {
+    navigate("/buyer/view-product-details", { state: { order: product } });
   };
 
   const handleSearchInputChange = (value) => {
@@ -103,11 +73,39 @@ export default function GeneralDashboard() {
     }
   };
 
+  // Show loading state
+  if (loading) {
+    return (
+      <MainDashboard>
+        <div className="w-[80%] mt-10 flex justify-center items-center min-h-[400px]">
+          <div className="text-lg text-gray-500">Loading...</div>
+        </div>
+      </MainDashboard>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <MainDashboard>
+        <div className="w-[80%] mt-10 flex flex-col justify-center items-center min-h-[400px]">
+          <div className="text-lg text-red-500 mb-4">Error: {error}</div>
+          <button 
+            onClick={refreshData}
+            className="px-4 py-2 bg-primary-red text-white rounded hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
+      </MainDashboard>
+    );
+  }
+
   return (
     <MainDashboard>
       <div className="w-[80%] mt-0 space-y-6">
         <h1 className="text-4xl font-bold text-primary-red mt-10">
-          Welcome Back, User!
+          Welcome Back, {currentUser?.username || 'User'}!
         </h1>
         <CategoryFilter
           onCategoryChange={handleCategoryChange}
@@ -154,10 +152,10 @@ export default function GeneralDashboard() {
         />
       </div>
       <div className="w-[80%] min-h-[300px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mt-4 mx-auto">
-        {sortedOrders.length === 0 ? (
+        {displayedListings.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center min-h-[200px]">
             <span className="text-gray-500 text-lg py-12">
-              No items matched
+              {activeTab === "your-listings" ? "No listings found. Create your first listing!" : "No items matched"}
             </span>
           </div>
         ) : (
@@ -171,13 +169,13 @@ export default function GeneralDashboard() {
                 />
               </div>
             )}
-            {sortedOrders.map((order, idx) => (
+            {displayedListings.map((product, idx) => (
               <div
-                key={idx}
-                onClick={() => handleProductClick(order)}
+                key={product.id || idx}
+                onClick={() => handleProductClick(product)}
                 className="cursor-pointer h-full"
               >
-                <ProductCard order={order} />
+                <ProductCard order={product} />
               </div>
             ))}
           </>
