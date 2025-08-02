@@ -34,18 +34,40 @@ export default function DateDropdown({
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+    const handleMouseDown = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setIsFocused(hasValue);
+      }
     };
-  }, [hasValue]);
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleMouseDown);
+      document.addEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [hasValue, isOpen]);
 
   // Initialize month/year from value
   useEffect(() => {
     if (value) {
-      const date = new Date(value);
-      setSelectedMonth(date.getMonth());
-      setSelectedYear(date.getFullYear());
+      // Parse date string directly to avoid timezone issues
+      const dateParts = value.split("-");
+      if (dateParts.length === 3) {
+        const year = parseInt(dateParts[0]);
+        const month = parseInt(dateParts[1]) - 1; // Subtract 1 because month is 0-indexed
+        setSelectedMonth(month);
+        setSelectedYear(year);
+      } else {
+        // Fallback to Date object parsing
+        const date = new Date(value);
+        setSelectedMonth(date.getMonth());
+        setSelectedYear(date.getFullYear());
+      }
     }
   }, [value]);
 
@@ -55,8 +77,11 @@ export default function DateDropdown({
   };
 
   const handleDateSelect = (day) => {
-    const selectedDate = new Date(selectedYear, selectedMonth, day);
-    const dateString = selectedDate.toISOString().split("T")[0];
+    // Create date string directly to avoid timezone issues
+    const year = selectedYear;
+    const month = String(selectedMonth + 1).padStart(2, "0"); // Add 1 because selectedMonth is 0-indexed
+    const dayStr = String(day).padStart(2, "0");
+    const dateString = `${year}-${month}-${dayStr}`;
 
     if (onChange) {
       onChange({
@@ -96,9 +121,20 @@ export default function DateDropdown({
   // Format display value
   const formatDisplayValue = (dateValue) => {
     if (!dateValue) return "";
+    
+    // Parse the date string directly to avoid timezone issues
+    const dateParts = dateValue.split("-");
+    if (dateParts.length === 3) {
+      const year = dateParts[0];
+      const month = dateParts[1];
+      const day = dateParts[2];
+      return `${year}/${month}/${day}`;
+    }
+    
+    // Fallback to Date object parsing if format is unexpected
     const date = new Date(dateValue);
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0"); // Add 1 because getMonth() is 0-indexed
+    const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}/${month}/${day}`;
   };
@@ -198,12 +234,21 @@ export default function DateDropdown({
 
         {/*Calendar Dropdown*/}
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 w-80">
+          <div 
+            className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 w-80"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             {/* Month/Year Header */}
             <div className="flex justify-between items-center p-4 border-b">
               <select
                 value={selectedMonth}
-                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setSelectedMonth(parseInt(e.target.value));
+                }}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="px-2 py-1 border rounded text-sm font-poppins"
               >
                 {months.map((month, index) => (
@@ -215,7 +260,12 @@ export default function DateDropdown({
 
               <select
                 value={selectedYear}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setSelectedYear(parseInt(e.target.value));
+                }}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="px-2 py-1 border rounded text-sm font-poppins"
               >
                 {years.map((year) => (

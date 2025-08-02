@@ -1,4 +1,4 @@
-import { Textfield, Dropdown, DateDropdown, Textarea } from "../components";
+import { Textfield, PasswordField, Dropdown, DateDropdown, Textarea } from "../components";
 
 export const useFieldRenderer = (formData, fieldConfig, handlers) => {
   const { handleChange, handleDropdownChange, handleFileChange, setFormData } =
@@ -6,14 +6,7 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
 
   // Helper function to get field value with auto-formatting
   const getFieldValue = (fieldName) => {
-    const config = fieldConfig[fieldName] || {};
     const value = formData[fieldName] || "";
-
-    // Apply uppercase if configured
-    if (config.uppercase && typeof value === "string") {
-      return value.toUpperCase();
-    }
-
     return value;
   };
 
@@ -47,7 +40,17 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
 
   // Example: update formData directly in a custom change handler
   const customHandleChange = (field) => (e) => {
-    const value = e.target.value;
+    let value = e.target.value;
+    const config = fieldConfig[field] || {};
+    
+    // Apply uppercase transformation if configured (for fields like student ID)
+    if (config.uppercase && typeof value === "string") {
+      value = value.toUpperCase();
+    }
+    
+    // Trim whitespace for all text fields when user finishes typing
+    // Note: We only trim on blur, not on every keystroke to preserve user experience
+    
     if (setFormData) {
       setFormData((prev) => ({
         ...prev,
@@ -55,7 +58,38 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
       }));
     }
     if (handleChange) {
-      handleChange(field)(e);
+      // Create a modified event with the transformed value
+      const modifiedEvent = {
+        ...e,
+        target: {
+          ...e.target,
+          value: value
+        }
+      };
+      handleChange(field)(modifiedEvent);
+    }
+  };
+
+  // Handle blur event to trim whitespace
+  const customHandleBlur = (field) => (e) => {
+    let value = e.target.value;
+    const config = fieldConfig[field] || {};
+    
+    // Always trim whitespace on blur
+    if (typeof value === "string") {
+      value = value.trim();
+      
+      // Apply uppercase transformation if configured (for fields like student ID)
+      if (config.uppercase) {
+        value = value.toUpperCase();
+      }
+    }
+    
+    if (setFormData) {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
     }
   };
 
@@ -77,12 +111,28 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
 
     switch (config.component) {
       case "textfield":
+        // Use PasswordField for password type fields
+        if (config.type === "password") {
+          return (
+            <PasswordField
+              key={fieldName}
+              {...commonProps}
+              name={fieldName}
+              error={extraProps.error}
+              onChange={customHandleChange(fieldName)}
+              onBlur={customHandleBlur(fieldName)}
+              required={config.required}
+            />
+          );
+        }
+        
         return (
           <Textfield
             key={fieldName}
             {...commonProps}
             error={extraProps.error}
             onChange={customHandleChange(fieldName)} // use custom handler
+            onBlur={customHandleBlur(fieldName)} // add blur handler for trimming
             {...getFieldProps(fieldName)}
           />
         );
@@ -127,5 +177,6 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
     getFieldValue,
     getFieldProps,
     getFieldOptions,
+    customHandleBlur
   };
 };
