@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { NavigationBar, Footer, Textfield } from "@/components";
+import { NavigationBar, Footer, Textfield, PasswordField } from "@/components";
 import { stall } from "@/assets";
 import { AuthService } from "../../services/authService";
 
@@ -91,10 +91,9 @@ export default function SignIn() {
                 required
               />
 
-              <Textfield
+              <PasswordField
                 label="Password"
                 name="password"
-                type="password"
                 value={form.password}
                 onChange={handleChange}
                 required

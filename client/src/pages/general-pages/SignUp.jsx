@@ -76,20 +76,20 @@ export default function SignUp() {
 
       // Transform form data to match backend API
       const signupData = {
-        username: formData.username,
-        first_name: formData.firstName,
-        middle_name: formData.middleName || "",
-        last_name: formData.lastName,
-        email: formData.email,
+        username: formData.username?.trim(),
+        first_name: formData.firstName?.trim(),
+        middle_name: formData.middleName?.trim() || "",
+        last_name: formData.lastName?.trim(),
+        email: formData.email?.trim(),
         password: formData.password,
         birthdate: formData.birthDate, // ISO date string YYYY-MM-DD
-        contact_number: formData.contactNumber,
-        course: formData.course,
-        university_branch: formData.universityBranch,
-        college: formData.college,
-        student_number: formData.studentID,
-        pronouns: formData.pronouns || "",
-        bio: formData.bio || ""
+        contact_number: formData.contactNumber?.trim(),
+        course: formData.course?.trim(),
+        university_branch: formData.universityBranch?.trim(),
+        college: formData.college?.trim(),
+        student_number: formData.studentID?.trim(),
+        pronouns: formData.pronouns?.trim() || "",
+        bio: formData.bio?.trim() || ""
       };
 
       console.log("Transformed signup data being sent:", signupData);

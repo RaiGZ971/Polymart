@@ -43,22 +43,19 @@ export const fieldConfig = {
   // Phase Two
   lastName: { 
     label: "Last Name",
-    required: true, 
-    uppercase: true,
+    required: true,
     type: 'text',
     component: 'textfield'
   },
   firstName: { 
     label: "First Name",
-    required: true, 
-    uppercase: true,
+    required: true,
     type: 'text',
     component: 'textfield'
   },
   middleName: { 
     label: "Middle Name",
-    required: false, 
-    uppercase: true,
+    required: false,
     type: 'text',
     component: 'textfield'
   },
@@ -87,14 +84,24 @@ export const fieldConfig = {
     required: true, 
     type: 'password',
     minLength: 8,
-    component: 'textfield'
+    component: 'textfield',
+    validation: {
+      minLength: 8,
+      requireUppercase: true,
+      requireLowercase: true,
+      requireNumber: true,
+      requireSpecialChar: true
+    }
   },
   confirmPassword: { 
     label: "Confirm Password",
     required: true, 
     type: 'password',
     matchField: 'password',
-    component: 'textfield'
+    component: 'textfield',
+    validation: {
+      matchField: 'password'
+    }
   },
 
   // Phase Three
