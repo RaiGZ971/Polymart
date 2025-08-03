@@ -9,6 +9,7 @@ export default function PasswordField({
   onBlur,
   onChange,
   value = "",
+  showValidation = true, // New prop to control validation display
   ...props
 }) {
   const [isFocused, setIsFocused] = useState(false);
@@ -68,10 +69,13 @@ export default function PasswordField({
 
     if (required && !realValue.trim()) {
       setInternalError(`${label} is required.`);
-    } else {
-      // Validate password strength
+    } else if (showValidation) {
+      // Only validate password strength when showValidation is true (signup)
       const passwordError = validatePassword(realValue);
       setInternalError(passwordError);
+    } else {
+      // For login, clear any validation errors
+      setInternalError("");
     }
 
     if (onBlur) {
@@ -283,7 +287,7 @@ export default function PasswordField({
         </span>
 
         {/*Password Requirements Info Button*/}
-        {(isFocused || hasValue) && (
+        {showValidation && (isFocused || hasValue) && (
           <button
             type="button"
             onClick={toggleRequirements}
@@ -297,7 +301,7 @@ export default function PasswordField({
       </div>
 
       {/*Password Requirements Popup*/}
-      {showRequirements && (
+      {showValidation && showRequirements && (
         <div className="w-full mt-2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
           <div className="flex justify-between items-center mb-2">
             <div className="text-xs text-gray-600 font-poppins font-semibold">Password requirements:</div>

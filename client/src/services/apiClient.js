@@ -2,6 +2,10 @@ import { API_BASE } from '../config/api.js';
 import { getHeaders } from '../config/api.js';
 
 export class ApiClient {
+    static getBaseURL() {
+        return API_BASE;
+    }
+
     static async request(endpoint, option = {}){
         const url = `${API_BASE}${endpoint}`;
         const config = {

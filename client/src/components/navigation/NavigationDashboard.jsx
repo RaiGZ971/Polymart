@@ -12,19 +12,53 @@ import {
   Heart,
 } from "lucide-react";
 import Logo from "../../assets/PolymartLogo.png";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ChatApp from "../chat/ChatApp";
 import NotificationOverlay from "../notifications/NotificationOverlay";
 import CreateListingComponent from "../CreateListingComponent";
 import { useNavigate, useLocation } from "react-router-dom";
+import { UserService } from "../../services/userService";
 
 export default function NavigationDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-  const firstName = "Jianna";
+  const [firstName, setFirstName] = useState("");
   const [showChat, setShowChat] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCreateListing, setShowCreateListing] = useState(false);
+
+  // Get user's first name on component mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const currentUser = UserService.getCurrentUser();
+        if (currentUser) {
+          // Try to get full profile for first name
+          try {
+            const profileResponse = await UserService.getMyProfile();
+            if (profileResponse.success && profileResponse.data) {
+              setFirstName(profileResponse.data.first_name || currentUser.username);
+            } else {
+              // Fallback to username if profile fetch fails
+              setFirstName(currentUser.username);
+            }
+          } catch (profileError) {
+            console.log('Could not fetch profile, using username:', profileError);
+            // Fallback to username if profile fetch fails
+            setFirstName(currentUser.username);
+          }
+        } else {
+          // User not authenticated, redirect to login
+          navigate('/sign-in');
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        navigate('/sign-in');
+      }
+    };
+
+    loadUserData();
+  }, [navigate]);
 
   // Sample notifications data - you can move this to a hook later
   const notifications = [
@@ -135,16 +169,8 @@ export default function NavigationDashboard() {
   };
 
   const handleLogoClick = () => {
-    if (onLogoClick) {
-      onLogoClick();
-    } else if (variant === "landing") {
-      const homeElement = document.getElementById("home");
-      if (homeElement) {
-        homeElement.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    } else {
-      window.location.href = "/";
-    }
+    // Navigate to dashboard like the Home button does
+    window.location.href = "/dashboard";
   };
 
   // Helper to check if nav item is active
@@ -218,7 +244,7 @@ export default function NavigationDashboard() {
           <img
             src={Logo}
             alt="Polymart Logo"
-            className="min-w-[148px] max-w-[148px] min-h-[50px] max-h-[50px] mx-4"
+            className="min-w-[148px] max-w-[148px] min-h-[50px] max-h-[50px] mx-4 cursor-pointer hover:opacity-80 transition-opacity duration-200"
             onClick={handleLogoClick}
           />
         </div>
