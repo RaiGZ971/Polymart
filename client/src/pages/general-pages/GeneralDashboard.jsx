@@ -9,7 +9,7 @@ import {
   CreateListingComponent,
   MainDashboard,
 } from "../../components";
-import { sortByPriceOptions } from "../../data";
+import { sortOptions } from "../../data";
 import { useDashboardData } from "../../hooks";
 import { UserService } from "../../services";
 import { useNavigate } from "react-router-dom";
@@ -39,10 +39,20 @@ export default function GeneralDashboard() {
   // Get current user on component mount
   useEffect(() => {
     const user = UserService.getCurrentUser();
+    const token = localStorage.getItem('authToken');
+    
+    console.log('🔑 Authentication check:', {
+      user,
+      hasToken: !!token,
+      token: token ? token.substring(0, 20) + '...' : null,
+      isAuthenticated: UserService.isAuthenticated()
+    });
+    
     setCurrentUser(user);
     
     // If user is not authenticated, redirect to login
-    if (!user) {
+    if (!user || !UserService.isAuthenticated()) {
+      console.log('❌ No user found or not authenticated, should redirect to sign-in');
       navigate('/sign-in');
       return;
     }
@@ -145,9 +155,8 @@ export default function GeneralDashboard() {
           </button>
         </div>
         <DropdownFilter
-          options={sortByPriceOptions}
+          options={sortOptions}
           selectedOption={sortBy}
-          labelPrefix="Price"
           onChange={handleSortChange}
         />
       </div>
