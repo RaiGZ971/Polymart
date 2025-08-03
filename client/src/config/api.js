@@ -21,7 +21,10 @@ export const getHeaders = (includeAuth = true) => {
     if(includeAuth){
         const token = localStorage.getItem('authToken');
         if(token) {
-            headers['Authorization'] = `Bearer ${token}`
+            headers['Authorization'] = `Bearer ${token}`;
+            console.log('🔑 Adding auth header with token:', token.substring(0, 20) + '...');
+        } else {
+            console.log('❌ No auth token found in localStorage');
         }
     }
 

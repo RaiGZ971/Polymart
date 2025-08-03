@@ -1,21 +1,11 @@
 import { useState } from "react";
+import { browsableCategories } from "../../data/productCategories.js";
 
 export default function CategoryFilter({
   onCategoryChange,
   initialCategory = "all",
 }) {
   const [activeCategory, setActiveCategory] = useState(initialCategory);
-
-  const categories = [
-    { name: "All Categories", value: "all" },
-    { name: "Academic Essentials", value: "academic" },
-    { name: "Creative Works", value: "creative" },
-    { name: "Services", value: "services" },
-    { name: "Tech & Gadgets", value: "technology" },
-    { name: "Fashion", value: "fashion" },
-    { name: "Anik-Anik", value: "anik" },
-    { name: "Other", value: "other" },
-  ];
 
   const handleCategoryClick = (categoryValue) => {
     setActiveCategory(categoryValue);
@@ -26,7 +16,7 @@ export default function CategoryFilter({
 
   return (
     <div className="flex flex-wrap items-center justify-center mt-4">
-      {categories.map((category, index) => (
+      {browsableCategories.map((category, index) => (
         <span
           key={index}
           onClick={() => handleCategoryClick(category.value)}
@@ -36,7 +26,7 @@ export default function CategoryFilter({
               : "text-gray-800 hover:text-primary-red"
           }`}
         >
-          {category.name}
+          {category.label}
         </span>
       ))}
     </div>

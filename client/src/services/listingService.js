@@ -10,6 +10,7 @@ export class ListingService {
    * @param {string} params.search - Search term
    * @param {number} params.min_price - Minimum price filter
    * @param {number} params.max_price - Maximum price filter
+   * @param {string} params.sort_by - Sort by option (newest, date_oldest, name_a_z, name_z_a, price_low_high, price_high_low)
    * @returns {Promise<Object>} Response with listings data
    */
   static async getPublicListings(params = {}) {
@@ -19,10 +20,16 @@ export class ListingService {
       // Add parameters if they exist
       if (params.page) queryParams.append('page', params.page);
       if (params.page_size) queryParams.append('page_size', params.page_size);
-      if (params.category && params.category !== 'all') queryParams.append('category', params.category);
+      
+      // Add category filter if provided (skip 'all' as it means no filter)
+      if (params.category && params.category !== 'all') {
+        queryParams.append('category', params.category);
+      }
+      
       if (params.search) queryParams.append('search', params.search);
       if (params.min_price !== undefined) queryParams.append('min_price', params.min_price);
       if (params.max_price !== undefined && params.max_price !== Infinity) queryParams.append('max_price', params.max_price);
+      if (params.sort_by) queryParams.append('sort_by', params.sort_by);
       
       const endpoint = `/supabase/listings${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
       return await ApiClient.get(endpoint);
@@ -38,16 +45,21 @@ export class ListingService {
    * @param {string} params.category - Filter by category
    * @param {string} params.search - Search term
    * @param {string} params.status - Filter by status (active, inactive, sold_out, archived)
+   * @param {string} params.sort_by - Sort by option (newest, date_oldest, name_a_z, name_z_a, price_low_high, price_high_low)
    * @returns {Promise<Object>} Response with user's listings data
    */
   static async getMyListings(params = {}) {
     try {
       const queryParams = new URLSearchParams();
       
-      // Add parameters if they exist
-      if (params.category && params.category !== 'all') queryParams.append('category', params.category);
+      // Add category filter if provided (skip 'all' as it means no filter)
+      if (params.category && params.category !== 'all') {
+        queryParams.append('category', params.category);
+      }
+      
       if (params.search) queryParams.append('search', params.search);
       if (params.status) queryParams.append('status', params.status);
+      if (params.sort_by) queryParams.append('sort_by', params.sort_by);
       
       const endpoint = `/supabase/listings/my-listings${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
       return await ApiClient.get(endpoint);

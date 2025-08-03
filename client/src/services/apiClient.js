@@ -8,8 +8,9 @@ export class ApiClient {
 
     static async request(endpoint, option = {}){
         const url = `${API_BASE}${endpoint}`;
+        const headers = getHeaders();
         const config = {
-            headers: getHeaders(),
+            headers,
             ...option
         };
 
@@ -18,13 +19,15 @@ export class ApiClient {
 
             if(!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+                console.error('❌ API Error:', { url, status: response.status, error: errorData });
                 throw new Error(errorData.detail || `HTTP error status: ${response.status}`);
             }
 
-            return await response.json();
+            const data = await response.json();
+            return data;
 
         }catch (error){
-            console.error(`API request failed: ${error.message}`)
+            console.error(`💥 API request failed: ${error.message}`)
             throw error;
         }
     }
