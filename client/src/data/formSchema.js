@@ -27,8 +27,8 @@ export const initialFormData = {
   bio: "", 
   // Phase Five
   cor: null,
-  studentIDPictureFront: null,
-  studentIDPictureBack: null,
+  studentIdFront: null,
+  studentIdBack: null,
 };
 
 export const fieldConfig = {
@@ -176,14 +176,14 @@ export const fieldConfig = {
     component: 'fileUpload',
     accept: '.pdf,.jpg,.jpeg,.png'
   },
-  studentIDPictureFront: {
+  studentIdFront: {
     label: "Student ID (Front)",
     required: true,
     type: 'file',
     component: 'fileUpload',
     accept: 'image/*'
   },
-  studentIDPictureBack: {
+  studentIdBack: {
     label: "Student ID (Back)",
     required: true,
     type: 'file',

@@ -4,3 +4,4 @@ export { AuthService } from './authService.js';
 export { ListingService } from './listingService.js';
 export { OrderService } from './orderService.js';
 export { UserService } from './userService.js';
+export { FileUploadService } from './fileUploadService.js';

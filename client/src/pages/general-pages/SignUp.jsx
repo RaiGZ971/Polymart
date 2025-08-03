@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 import {
   NavigationBar,
@@ -14,7 +14,7 @@ import {
 } from "@/components";
 
 import { fieldConfig, phaseConfig } from "../../data";
-import { AuthService } from "../../services/authService";
+import { AuthService, FileUploadService } from "../../services";
 
 import { useSignUpNavigation } from "../../hooks/useSignUpNavigation";
 import { useEmailVerification } from "../../hooks/useEmailVerification";
@@ -25,6 +25,7 @@ import { useFormData } from "../../hooks/useFormData";
 
 export default function SignUp() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   
   // Define steps array
   const steps = [
@@ -94,14 +95,65 @@ export default function SignUp() {
 
       console.log("Transformed signup data being sent:", signupData);
 
+      // Step 1: Create user account
       const result = await AuthService.signUp(signupData);
       
-      if (result.success) {
-        console.log("Signup successful:", result);
-        // Handle successful signup - could show success message or redirect
-      } else {
+      if (!result.success) {
         throw new Error(result.message || "Signup failed");
       }
+
+      console.log("Signup successful:", result);
+
+      // Step 2: Login to get authentication token for file uploads
+      const loginData = {
+        student_number: formData.studentID?.trim(),
+        password: formData.password
+      };
+
+      const loginResult = await AuthService.login(loginData);
+      
+      if (!loginResult.success) {
+        throw new Error("Failed to authenticate after signup");
+      }
+
+      console.log("Auto-login successful");
+
+      // Step 3: Upload profile picture if provided
+      if (formData.profilePicture && formData.profilePicture instanceof File) {
+        try {
+          console.log("Uploading profile picture...");
+          const profilePhotoResult = await FileUploadService.uploadProfilePhoto(formData.profilePicture);
+          console.log("Profile picture uploaded successfully:", profilePhotoResult);
+        } catch (error) {
+          console.error("Profile picture upload failed:", error);
+          // Continue with signup even if profile picture upload fails
+          alert(`Profile picture upload failed: ${error.message}. You can add it later from your profile.`);
+        }
+      }
+
+      // Step 4: Upload verification documents if provided
+      const hasVerificationDocs = formData.studentIdFront && formData.studentIdBack && formData.cor;
+      if (hasVerificationDocs) {
+        try {
+          console.log("Uploading verification documents...");
+          const documents = {
+            studentIdFront: formData.studentIdFront,
+            studentIdBack: formData.studentIdBack,
+            cor: formData.cor
+          };
+          const verificationResult = await FileUploadService.uploadVerificationDocuments(documents);
+          console.log("Verification documents uploaded successfully:", verificationResult);
+        } catch (error) {
+          console.error("Verification documents upload failed:", error);
+          // Continue with signup even if verification documents upload fails
+          alert(`Verification documents upload failed: ${error.message}. You can submit them later from your profile.`);
+        }
+      }
+
+      // Step 5: Redirect to dashboard or success page
+      alert("Account created successfully! Welcome to PolyMart!");
+      navigate('/dashboard');
+      
     } catch (error) {
       console.error("Signup error:", error);
       alert(`Signup failed: ${error.message}`);
