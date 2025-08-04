@@ -3,8 +3,8 @@ export const sortOptions = [
     { label: 'Date Added (Oldest)', value: 'date_oldest' },
     { label: 'Name (A-Z)', value: 'name_a_z' },
     { label: 'Name (Z-A)', value: 'name_z_a' },
-    { label: 'Low to High', value: 'price_low_high' },
-    { label: 'High to Low', value: 'price_high_low' },
+    { label: 'Price (Low to High)', value: 'price_low_high' },
+    { label: 'Price (High to Low)', value: 'price_high_low' },
 ];
 
 export const sortProducts = (products, sortBy) => {

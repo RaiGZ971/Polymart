@@ -1,14 +1,56 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ListingService } from '../services/listingService';
 
 export const useDashboardData = () => {
-  const [listings, setListings] = useState([]);
-  const [myListings, setMyListings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Try to load cached data from sessionStorage
+  const loadCachedData = () => {
+    try {
+      const cached = sessionStorage.getItem('polymart_dashboard_data');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const cacheAge = Date.now() - parsed.timestamp;
+        // Use cache if it's less than 5 minutes old
+        if (cacheAge < 5 * 60 * 1000) {
+          return parsed;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load cached data:', err);
+    }
+    return null;
+  };
+
+  const cachedData = loadCachedData();
+  
+  // Store ALL listings (unfiltered) for client-side filtering
+  const [allListings, setAllListings] = useState(cachedData?.allListings || []);
+  const [allMyListings, setAllMyListings] = useState(cachedData?.allMyListings || []);
+  const [loading, setLoading] = useState(!cachedData);
+  const [searchLoading, setSearchLoading] = useState(false); // Separate loading state for search
   const [error, setError] = useState(null);
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [sortBy, setSortBy] = useState('newest');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [activeCategory, setActiveCategory] = useState(cachedData?.activeCategory || 'all');
+  const [sortBy, setSortBy] = useState(cachedData?.sortBy || 'newest');
+  const [searchTerm, setSearchTerm] = useState(cachedData?.searchTerm || '');
+  const [lastFetchParams, setLastFetchParams] = useState(cachedData?.lastFetchParams || null);
+  const [isInitialized, setIsInitialized] = useState(!!cachedData);
+
+    // Cache data to sessionStorage
+  const cacheData = useCallback((newAllListings, newAllMyListings, params) => {
+    try {
+      const dataToCache = {
+        allListings: newAllListings, // Store complete datasets
+        allMyListings: newAllMyListings,
+        activeCategory: activeCategory, // Store current category separately
+        sortBy: sortBy, // Cache current sortBy separately
+        searchTerm: params.searchTerm,
+        lastFetchParams: params,
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem('polymart_dashboard_data', JSON.stringify(dataToCache));
+    } catch (err) {
+      console.warn('Failed to cache data:', err);
+    }
+  }, [activeCategory, sortBy]);
 
   // Transform API listing data to match ProductCard component expectations
   const transformListing = (listing) => {
@@ -44,118 +86,282 @@ export const useDashboardData = () => {
     };
   };
 
-  // Convert sort option to API parameters
+  // Client-side sorting function
+  const sortListings = useCallback((listingsToSort, sortOption) => {
+    const sorted = [...listingsToSort];
+    
+    switch (sortOption) {
+      case 'price_low_high':
+        return sorted.sort((a, b) => (a.productPrice || 0) - (b.productPrice || 0));
+      case 'price_high_low':
+        return sorted.sort((a, b) => (b.productPrice || 0) - (a.productPrice || 0));
+      case 'name_a_z':
+        return sorted.sort((a, b) => (a.productName || '').localeCompare(b.productName || ''));
+      case 'name_z_a':
+        return sorted.sort((a, b) => (b.productName || '').localeCompare(a.productName || ''));
+      case 'date_oldest':
+        return sorted.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      case 'newest':
+      default:
+        return sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+  }, []);
+
+    // Client-side filtering function
+  const filterListings = useCallback((listingsToFilter, category) => {
+    if (category === 'all') {
+      return listingsToFilter;
+    }
+    return listingsToFilter.filter(listing => 
+      listing.category && listing.category.toLowerCase() === category.toLowerCase()
+    );
+  }, []);
+
+  // Client-side search function
+  const searchListings = useCallback((listingsToSearch, query) => {
+    // If no query or empty query, return all listings
+    if (!query || query.trim().length === 0) {
+      return listingsToSearch;
+    }
+    
+    const searchQuery = query.toLowerCase().trim();
+    return listingsToSearch.filter(listing => {
+      // Search in product name, description, tags, and seller name
+      const searchableText = [
+        listing.productName || '',
+        listing.description || '',
+        listing.username || '',
+        ...(listing.tags || [])
+      ].join(' ').toLowerCase();
+      
+      return searchableText.includes(searchQuery);
+    });
+  }, []);
+
+  // Get filtered and sorted listings - computed on demand
+  const filteredListings = useMemo(() => {
+    let filtered = filterListings(allListings, activeCategory);
+    filtered = searchListings(filtered, searchTerm);
+    return sortListings(filtered, sortBy);
+  }, [allListings, activeCategory, searchTerm, filterListings, searchListings, sortBy, sortListings]);
+
+  const filteredMyListings = useMemo(() => {
+    let filtered = filterListings(allMyListings, activeCategory);
+    filtered = searchListings(filtered, searchTerm);
+    return sortListings(filtered, sortBy);
+  }, [allMyListings, activeCategory, searchTerm, filterListings, searchListings, sortBy, sortListings]);
+
+  // Convert sort option to API parameters (for server-side sorting when fetching new data)
   const getSortParams = (sortOption) => {
     return {
       sort_by: sortOption
     };
   };
 
-  // Fetch public listings
-  const fetchPublicListings = useCallback(async () => {
-    try {
-      console.log('🔍 Fetching public listings with params:', {
-        category: activeCategory,
-        search: searchTerm,
-        sort: sortBy
-      });
+  // Refresh all data with smart caching 
+  const refreshData = useCallback(async () => {
+    const currentParams = { searchTerm }; // Only search term triggers refetch, not category
+    
+    // Check if we need to refetch (only if search changed or we haven't initialized)
+    const paramsChanged = JSON.stringify(currentParams) !== JSON.stringify(lastFetchParams);
+    
+    if (!isInitialized || paramsChanged) {
+      console.log('📊 Refreshing data - initialized:', isInitialized, 'paramsChanged:', paramsChanged);
       
-      const params = {
-        category: activeCategory,
-        search: searchTerm,
+      // Use search loading for search operations, main loading for initial load
+      if (isInitialized) {
+        setSearchLoading(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+      
+      try {
+        console.log('🔍 Fetching listings with search term:', searchTerm);
+        
+        const publicParams = {
+          // Include search term if it exists, otherwise fetch all
+          ...(searchTerm ? { search: searchTerm } : {}),
+          ...getSortParams(sortBy)
+        };
+        
+        const myParams = {
+          ...(searchTerm ? { search: searchTerm } : {}),
+          sort_by: sortBy
+        };
+        
+        const [publicResponse, myResponse] = await Promise.all([
+          ListingService.getPublicListings(publicParams),
+          ListingService.getMyListings(myParams)
+        ]);
+        
+        // Transform and store listings
+        let newAllListings = [];
+        if (publicResponse.products) {
+          newAllListings = publicResponse.products.map(transformListing);
+        }
+        
+        let newAllMyListings = [];
+        if (myResponse.products) {
+          newAllMyListings = myResponse.products.map(transformListing);
+        }
+        
+        // Update the complete dataset
+        setAllListings(prev => JSON.stringify(prev) !== JSON.stringify(newAllListings) ? newAllListings : prev);
+        setAllMyListings(prev => JSON.stringify(prev) !== JSON.stringify(newAllMyListings) ? newAllMyListings : prev);
+        
+        // Cache the complete data
+        cacheData(newAllListings, newAllMyListings, currentParams);
+        
+        setLastFetchParams(currentParams);
+        setIsInitialized(true);
+      } catch (err) {
+        console.error('Error refreshing data:', err);
+        setError('Failed to refresh data');
+        setAllListings([]);
+        setAllMyListings([]);
+      } finally {
+        if (isInitialized) {
+          setSearchLoading(false);
+        } else {
+          setLoading(false);
+        }
+      }
+    } else {
+      console.log('📋 Using cached data, no refresh needed');
+    }
+  }, [searchTerm, isInitialized, lastFetchParams, sortBy, getSortParams, transformListing, cacheData]);
+
+  // Force refresh - always fetches new data
+  const forceRefresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setIsInitialized(false); // Reset initialization to force fetch
+    
+    try {
+      const currentParams = { searchTerm };
+      
+      console.log('🔄 Force refreshing data with search term:', searchTerm);
+      
+      const publicParams = {
+        // Include search term if it exists, otherwise fetch all
+        ...(searchTerm ? { search: searchTerm } : {}),
         ...getSortParams(sortBy)
       };
       
-      const response = await ListingService.getPublicListings(params);
-      console.log('📦 Public listings response:', response);
-      
-      if (response.products) {
-        const rawListings = response.products || [];
-        const transformedListings = rawListings.map(transformListing);
-        console.log('✅ Setting listings:', transformedListings.length, 'items');
-        console.log('📝 Sample listing:', transformedListings[0]);
-        setListings(transformedListings);
-      } else {
-        console.log('❌ No success or data in response');
-        setListings([]);
-      }
-    } catch (err) {
-      console.error('💥 Error fetching public listings:', err);
-      setError('Failed to load listings');
-      setListings([]);
-    }
-  }, [activeCategory, searchTerm, sortBy]);
-
-  // Fetch user's own listings
-  const fetchMyListings = useCallback(async () => {
-    try {
-      console.log('🔍 Fetching my listings with params:', {
-        category: activeCategory,
-        search: searchTerm,
-        sort: sortBy
-      });
-      
-      const params = {
-        category: activeCategory,
-        search: searchTerm,
+      const myParams = {
+        ...(searchTerm ? { search: searchTerm } : {}),
         sort_by: sortBy
       };
       
-      const response = await ListingService.getMyListings(params);
-      console.log('📦 My listings response:', response);
-      
-      if (response.products) {
-        const rawListings = response.products || [];
-        const transformedListings = rawListings.map(transformListing);
-        console.log('✅ Setting my listings:', transformedListings.length, 'items');
-        console.log('📝 Sample my listing:', transformedListings[0]);
-        setMyListings(transformedListings);
-      } else {
-        console.log('❌ No success or data in my listings response');
-        setMyListings([]);
-      }
-    } catch (err) {
-      console.error('💥 Error fetching my listings:', err);
-      // Don't set error for my listings as user might not be authenticated
-      setMyListings([]);
-    }
-  }, [activeCategory, searchTerm, sortBy]);
-
-  // Refresh all data
-  const refreshData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      await Promise.all([
-        fetchPublicListings(),
-        fetchMyListings()
+      const [publicResponse, myResponse] = await Promise.all([
+        ListingService.getPublicListings(publicParams),
+        ListingService.getMyListings(myParams)
       ]);
+      
+      // Transform and store listings
+      let newAllListings = [];
+      if (publicResponse.products) {
+        newAllListings = publicResponse.products.map(transformListing);
+      }
+      
+      // Transform my listings
+      let newAllMyListings = [];
+      if (myResponse.products) {
+        newAllMyListings = myResponse.products.map(transformListing);
+      }
+      
+      // Update the complete dataset
+      setAllListings(prev => JSON.stringify(prev) !== JSON.stringify(newAllListings) ? newAllListings : prev);
+      setAllMyListings(prev => JSON.stringify(prev) !== JSON.stringify(newAllMyListings) ? newAllMyListings : prev);
+      
+      // Cache the complete data
+      cacheData(newAllListings, newAllMyListings, currentParams);
+      
+      setLastFetchParams(currentParams);
+      setIsInitialized(true);
     } catch (err) {
-      console.error('Error refreshing data:', err);
+      console.error('Error force refreshing data:', err);
       setError('Failed to refresh data');
+      setAllListings([]);
+      setAllMyListings([]);
     } finally {
       setLoading(false);
     }
-  }, [fetchPublicListings, fetchMyListings]);
+  }, [searchTerm, sortBy, getSortParams, transformListing, cacheData]);
 
-  // Initial data load
+  // Home/Logo refresh - resets filters and forces fresh data
+  const refreshHome = useCallback(async () => {
+    console.log('🏠 Home refresh - resetting all filters and fetching fresh data');
+    
+    // Reset all filters
+    setActiveCategory('all');
+    setSearchTerm('');
+    setSortBy('newest');
+    
+    // Clear cache to force fresh data
+    sessionStorage.removeItem('polymart_dashboard_data');
+    
+    // Force refresh with clean state
+    setLoading(true);
+    setError(null);
+    setIsInitialized(false);
+    
+    try {
+      const publicParams = {
+        // Fetch ALL data with no filters
+        ...getSortParams('newest')
+      };
+      
+      const [publicResponse, myResponse] = await Promise.all([
+        ListingService.getPublicListings(publicParams),
+        ListingService.getMyListings({
+          sort_by: 'newest'
+        })
+      ]);
+      
+      // Transform and store ALL listings
+      let newAllListings = [];
+      if (publicResponse.products) {
+        newAllListings = publicResponse.products.map(transformListing);
+      }
+      
+      let newAllMyListings = [];
+      if (myResponse.products) {
+        newAllMyListings = myResponse.products.map(transformListing);
+      }
+      
+      // Update datasets
+      setAllListings(newAllListings);
+      setAllMyListings(newAllMyListings);
+      
+      // Cache fresh data
+      cacheData(newAllListings, newAllMyListings, { searchTerm: '' });
+      
+      setLastFetchParams({ searchTerm: '' });
+      setIsInitialized(true);
+      
+      console.log('🏠 Home refresh completed');
+    } catch (err) {
+      console.error('Error refreshing home:', err);
+      setError('Failed to refresh data');
+      setAllListings([]);
+      setAllMyListings([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [getSortParams, transformListing, cacheData]);
+
+      // Initial data load and search term changes (category changes are handled client-side)
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
-  // Refetch when filters change
-  useEffect(() => {
-    if (!loading) {
-      fetchPublicListings();
-      fetchMyListings();
-    }
-  }, [activeCategory, searchTerm, sortBy, fetchPublicListings, fetchMyListings, loading]);
-
   return {
-    listings,
-    myListings,
+    listings: filteredListings, // Return filtered and sorted data
+    myListings: filteredMyListings, // Return filtered and sorted data
     loading,
+    searchLoading, // Export search loading state
     error,
     activeCategory,
     setActiveCategory,
@@ -163,7 +369,10 @@ export const useDashboardData = () => {
     setSortBy,
     searchTerm,
     setSearchTerm,
-    refreshData
+    refreshData: forceRefresh, // Export forceRefresh as refreshData for backward compatibility
+    refreshHome, // New function for home/logo refresh
+    clearCache: () => sessionStorage.removeItem('polymart_dashboard_data'),
+    hasData: filteredListings.length > 0 || filteredMyListings.length > 0
   };
 };
 

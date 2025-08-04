@@ -20,36 +20,73 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useNotificationStore } from "../../store/index.js";
 import { UserService } from "../../services/userService";
 
-export default function NavigationDashboard() {
+export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
 // TEMPORARY
 const userID = "5jlgi4i2o"
 
   const navigate = useNavigate();
   const location = useLocation();
   const [firstName, setFirstName] = useState("");
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [showChat, setShowChat] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCreateListing, setShowCreateListing] = useState(false);
 
-  // Get user's first name on component mount
+  // Get user's first name on component mount with caching
   useEffect(() => {
     const loadUserData = async () => {
       try {
         const currentUser = UserService.getCurrentUser();
         if (currentUser) {
-          // Try to get full profile for first name
-          try {
-            const profileResponse = await UserService.getMyProfile();
-            if (profileResponse.success && profileResponse.data) {
-              setFirstName(profileResponse.data.first_name || currentUser.username);
-            } else {
+          // Check if we have cached profile data
+          const cachedProfile = sessionStorage.getItem('user_profile_cache');
+          let cachedData = null;
+          
+          if (cachedProfile) {
+            try {
+              const parsed = JSON.parse(cachedProfile);
+              const cacheAge = Date.now() - parsed.timestamp;
+              // Use cache if it's less than 5 minutes old
+              if (cacheAge < 5 * 60 * 1000) {
+                cachedData = parsed;
+              }
+            } catch (err) {
+              console.warn('Failed to parse cached profile:', err);
+            }
+          }
+
+          if (cachedData) {
+            // Use cached data
+            setFirstName(cachedData.first_name || currentUser.username);
+            setIsLoadingProfile(false);
+            console.log('🔄 Using cached profile data for:', cachedData.first_name);
+          } else {
+            // Fetch fresh data and cache it
+            try {
+              const profileResponse = await UserService.getMyProfile();
+              if (profileResponse.success && profileResponse.data) {
+                const firstName = profileResponse.data.first_name || currentUser.username;
+                setFirstName(firstName);
+                
+                // Cache the profile data
+                const cacheData = {
+                  first_name: firstName,
+                  ...profileResponse.data,
+                  timestamp: Date.now()
+                };
+                sessionStorage.setItem('user_profile_cache', JSON.stringify(cacheData));
+                console.log('📦 Cached fresh profile data for:', firstName);
+              } else {
+                // Fallback to username if profile fetch fails
+                setFirstName(currentUser.username);
+              }
+              setIsLoadingProfile(false);
+            } catch (profileError) {
+              console.log('Could not fetch profile, using username:', profileError);
               // Fallback to username if profile fetch fails
               setFirstName(currentUser.username);
+              setIsLoadingProfile(false);
             }
-          } catch (profileError) {
-            console.log('Could not fetch profile, using username:', profileError);
-            // Fallback to username if profile fetch fails
-            setFirstName(currentUser.username);
           }
         } else {
           // User not authenticated, redirect to login
@@ -121,7 +158,7 @@ const userID = "5jlgi4i2o"
   ];
 
   const bottomNavItems = [
-    { name: firstName, path: "/", icon: "user", hasText: true },
+    { name: isLoadingProfile ? "Loading..." : (firstName || "User"), path: "/", icon: "user", hasText: true },
     {
       name: "Orders & Meet Ups",
       path: "/orders-meetups",
@@ -157,6 +194,10 @@ const userID = "5jlgi4i2o"
       setShowNotifications(true);
     } else if (item.action === "create-listing") {
       setShowCreateListing(true);
+    } else if (item.name === "Home" && onHomeClick) {
+      // Handle Home button click with refresh
+      onHomeClick();
+      navigate(item.path);
     } else {
       navigate(item.path);
     }
@@ -175,8 +216,12 @@ const userID = "5jlgi4i2o"
   };
 
   const handleLogoClick = () => {
+    // Call the refresh function if provided
+    if (onLogoClick) {
+      onLogoClick();
+    }
     // Navigate to dashboard like the Home button does
-    window.location.href = "/dashboard";
+    navigate("/dashboard");
   };
 
   // Helper to check if nav item is active

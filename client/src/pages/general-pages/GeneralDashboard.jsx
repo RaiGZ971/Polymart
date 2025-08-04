@@ -26,6 +26,7 @@ export default function GeneralDashboard() {
     listings,
     myListings,
     loading,
+    searchLoading,
     error,
     activeCategory,
     setActiveCategory,
@@ -33,7 +34,8 @@ export default function GeneralDashboard() {
     setSortBy,
     searchTerm,
     setSearchTerm,
-    refreshData
+    refreshData,
+    refreshHome
   } = useDashboardData();
 
   // Get current user on component mount
@@ -84,10 +86,15 @@ export default function GeneralDashboard() {
     }
   };
 
+  // Cleanup timeout on component unmount (remove timeout logic)
+  useEffect(() => {
+    // No cleanup needed since we removed debouncing
+  }, []);
+
   // Show loading state
   if (loading) {
     return (
-      <MainDashboard>
+      <MainDashboard onLogoClick={refreshHome} onHomeClick={refreshHome}>
         <div className="w-[80%] mt-10 flex justify-center items-center min-h-[400px]">
           <div className="text-lg text-gray-500">Loading...</div>
         </div>
@@ -98,7 +105,7 @@ export default function GeneralDashboard() {
   // Show error state
   if (error) {
     return (
-      <MainDashboard>
+      <MainDashboard onLogoClick={refreshHome} onHomeClick={refreshHome}>
         <div className="w-[80%] mt-10 flex flex-col justify-center items-center min-h-[400px]">
           <div className="text-lg text-red-500 mb-4">Error: {error}</div>
           <button 
@@ -113,7 +120,7 @@ export default function GeneralDashboard() {
   }
 
   return (
-    <MainDashboard>
+    <MainDashboard onLogoClick={refreshHome} onHomeClick={refreshHome}>
       <div className="w-[80%] mt-0 space-y-6">
         <h1 className="text-4xl font-bold text-primary-red mt-10">
           Welcome Back, {currentUser?.username || 'User'}!
@@ -125,11 +132,18 @@ export default function GeneralDashboard() {
       </div>
 
       <div className="w-[80%] mt-10 flex flex-row justify-between items-center">
-        <SearchBar
-          searchTerm={pendingSearch}
-          setSearchTerm={handleSearchInputChange}
-          onKeyDown={handleSearchInputKeyDown}
-        />
+        <div className="relative w-full">
+          <SearchBar
+            searchTerm={pendingSearch}
+            setSearchTerm={handleSearchInputChange}
+            onKeyDown={handleSearchInputKeyDown}
+          />
+          {searchLoading && (
+            <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-red"></div>
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex items-center justify-between w-[80%] mt-10">
         <div className="flex flex-row gap-4 justify-end ">
@@ -162,7 +176,11 @@ export default function GeneralDashboard() {
         />
       </div>
       <div className="w-[80%] min-h-[300px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mt-4 mx-auto">
-        {displayedListings.length === 0 ? (
+        {searchLoading ? (
+          <div className="col-span-full flex flex-col items-center justify-center min-h-[200px]">
+            <div className="text-lg text-gray-500">Searching...</div>
+          </div>
+        ) : displayedListings.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center min-h-[200px]">
             <span className="text-gray-500 text-lg py-12">
               {activeTab === "your-listings" ? "No listings found. Create your first listing!" : "No items matched"}
