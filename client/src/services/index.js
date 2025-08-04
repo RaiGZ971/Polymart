@@ -3,3 +3,8 @@ export { ApiClient } from './apiClient.js';
 export { ReviewService } from './reviewService.js';
 export { NotificationService } from './notificationService.js';
 export { ReportService } from './reportService.js';
+export { AuthService } from './authService.js';
+export { ListingService } from './listingService.js';
+export { OrderService } from './orderService.js';
+export { UserService } from './userService.js';
+export { FileUploadService } from './fileUploadService.js';

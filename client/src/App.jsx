@@ -18,11 +18,11 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<SignUp />} />
-          <Route path="/signin" element={<SignIn />} />
+          <Route path="/sign-in" element={<SignIn />} />
           <Route path="/dashboard" element={<GeneralDashboard />} />
           <Route path="/orders-meetups" element={<OrdersMeetups />} />
           <Route
-            path="/buyer/view-product-details"
+            path="/buyer/view-product-details/:id?"
             element={<ViewProductDetails />}
           />
           {/* Add more routes as needed */}

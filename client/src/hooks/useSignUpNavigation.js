@@ -26,7 +26,29 @@ export const useSignUpNavigation = (
       }
     }
 
-    // Check each field in the current phase
+    // Special validation for step 5 substeps
+    if (currentStep === 5) {
+      if (step5SubStep === 1) {
+        // Only validate that COR file is selected locally (File object)
+        const corValue = formData.cor;
+        const isValidCor = corValue && corValue instanceof File;
+        return isValidCor;
+      } else if (step5SubStep === 2) {
+        // Validate that both Student ID files are selected locally (File objects)
+        const frontValue = formData.studentIdFront;
+        const backValue = formData.studentIdBack;
+        
+        const isValidFront = frontValue && frontValue instanceof File;
+        const isValidBack = backValue && backValue instanceof File;
+        
+        return isValidFront && isValidBack;
+      } else if (step5SubStep === 3) {
+        // Always allow proceeding from the completion screen
+        return true;
+      }
+    }
+
+    // Check each field in the current phase (for non-step-5 phases)
     for (const fieldName of currentPhase.fields) {
       const fieldDef = fieldConfig[fieldName];
       if (!fieldDef) continue;

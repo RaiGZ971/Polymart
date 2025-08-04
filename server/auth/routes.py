@@ -25,6 +25,9 @@ templates = Jinja2Templates(directory="templates")
 class EmailVerificationRequest(BaseModel):
     email: EmailStr
 
+class VerificationSessionRequest(BaseModel):
+    session_token: str
+
 # =============================================
 # EMAIL VERIFICATION ENDPOINTS (STEP 1)
 # =============================================
@@ -82,19 +85,50 @@ async def send_email_verification(request: EmailVerificationRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
+@router.post("/verify-session")
+async def verify_verification_session(request: VerificationSessionRequest):
+    """
+    Verify a verification session token and return the associated email if valid.
+    This is used to securely validate email verification status.
+    """
+    try:
+        from auth.utils import verify_verification_session_token
+        
+        email = verify_verification_session_token(request.session_token)
+        if not email:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid or expired verification session"
+            )
+        
+        # Return the verified email
+        response_data = create_email_verification_response(
+            success=True,
+            message="Verification session valid",
+            email=email,
+            token_sent=True  # This indicates the email was previously verified
+        )
+        
+        return JSONResponse(content=response_data, status_code=200)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
 @router.get("/verify-email")
 async def verify_email_link(token: str = Query(..., description="Verification token from email link")):
     """
     Email verification via link (GET request).
     This endpoint is called when users click the verification link in their email.
-    Redirects to frontend with success/error status.
+    Sets a secure session token and redirects to frontend.
     """
     try:
         # Verify token using the new link verification function
         verification_result = await verify_email_token_by_link(token)
         
-        # Get base URL for redirects (use backend URL for now, update to frontend URL when available)
-        base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
+        # Get frontend URL for redirects
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
         
         if verification_result.get("status") == "success":
             email = verification_result.get("data", {}).get("email", "")
@@ -102,39 +136,37 @@ async def verify_email_link(token: str = Query(..., description="Verification to
             # Check if user already exists with this email
             existing_user = await get_user_by_email(email)
             if existing_user:
-                # User already has a profile, redirect with already verified message
-                success_url = f"{base_url}/auth/email-verified?success=true&email={email}&already_verified=true&message=Email already verified"
-                return RedirectResponse(url=success_url, status_code=302)
+                # User already has a profile, redirect to signin page
+                redirect_url = f"{frontend_url}/signin?message=Email already verified. Please sign in."
+                return RedirectResponse(url=redirect_url, status_code=302)
             else:
-                # Redirect to success page with email parameter
-                success_url = f"{base_url}/auth/email-verified?success=true&email={email}"
-                return RedirectResponse(url=success_url, status_code=302)
+                # Create a secure verification session token
+                from auth.utils import create_verification_session_token
+                session_token = create_verification_session_token(email)
+                
+                # Redirect to signup page with secure session token
+                redirect_url = f"{frontend_url}/signup?session={session_token}"
+                return RedirectResponse(url=redirect_url, status_code=302)
         else:
-            # Redirect to error page with error message
+            # Redirect to signup page with error message
             error_message = verification_result.get("message", "Verification failed")
-            error_url = f"{base_url}/auth/email-verified?success=false&error={error_message}"
-            return RedirectResponse(url=error_url, status_code=302)
+            redirect_url = f"{frontend_url}/signup?verification_error={error_message}"
+            return RedirectResponse(url=redirect_url, status_code=302)
             
     except Exception as e:
-        # Redirect to error page with generic error
-        base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
-        error_url = f"{base_url}/auth/email-verified?success=false&error=Server error occurred"
-        return RedirectResponse(url=error_url, status_code=302)
+        # Redirect to signup page with generic error
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        redirect_url = f"{frontend_url}/signup?verification_error=Server error occurred"
+        return RedirectResponse(url=redirect_url, status_code=302)
 
 @router.get("/email-verified", response_class=HTMLResponse)
 async def email_verified(request: Request):
     """
-    Serves the email verification result page.
-    This page displays success/error messages after email verification and redirects users to continue registration.
+    Legacy endpoint for backward compatibility.
+    Redirects to the frontend signup page.
     """
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
-    backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")
-    
-    return templates.TemplateResponse("email-verified.html", {
-        "request": request,
-        "frontend_url": frontend_url,
-        "backend_url": backend_url
-    })
+    return RedirectResponse(url=f"{frontend_url}/signup", status_code=302)
 
 # =============================================
 # USER REGISTRATION ENDPOINTS (STEP 2-5)
@@ -146,6 +178,9 @@ async def signup(signup_data: SignUp):
     Sign up route that creates a new user. Verification documents should be uploaded separately using /s3/user-documents/submit-verification.
     """
     try:
+        print(f"Received signup request for email: {signup_data.email}")
+        print(f"Full signup data: {signup_data}")
+        
         # Check if email has been verified
         email_verified = await check_email_verification_status(signup_data.email)
         if not email_verified:

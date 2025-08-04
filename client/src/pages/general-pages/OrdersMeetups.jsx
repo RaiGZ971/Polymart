@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   MainDashboard,
   OrdersListingsComponent,
@@ -6,7 +6,10 @@ import {
   ProductDetail,
   Modal,
 } from "@/components";
-import { meetUpLocationsFilter, orderStatus, userOrders } from "@/data";
+import { meetUpLocationsFilter, orderStatus } from "@/data";
+import { useOrdersData } from "../../hooks";
+import { UserService } from "../../services";
+import { useNavigate } from "react-router-dom";
 
 export default function OrdersMeetups() {
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -15,10 +18,35 @@ export default function OrdersMeetups() {
     meetUpLocationsFilter[0]?.value || ""
   );
   const [activeTab, setActiveTab] = useState("orders");
+  const [currentUser, setCurrentUser] = useState(null);
 
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [dialogType, setDialogType] = useState("");
   const [message, setMessage] = useState("");
+
+  const navigate = useNavigate();
+
+  // Use the orders data hook
+  const {
+    orders,
+    loading,
+    error,
+    getFilteredOrders,
+    getCounts,
+    refreshData
+  } = useOrdersData();
+
+  // Get current user on component mount
+  useEffect(() => {
+    const user = UserService.getCurrentUser();
+    setCurrentUser(user);
+    
+    // If user is not authenticated, redirect to login
+    if (!user) {
+      navigate('/sign-in');
+      return;
+    }
+  }, [navigate]);
 
   const handleBack = () => setSelectedOrder(null);
 
@@ -62,30 +90,48 @@ export default function OrdersMeetups() {
   };
 
   // Count for tabs
-  const yourOrdersCount = userOrders.filter(
-    (order) => order.role === "user"
-  ).length;
-  const listingsCount = userOrders.filter(
-    (order) => order.role !== "user"
-  ).length;
+  const { yourOrdersCount, listingsCount } = getCounts();
 
   // Filter data based on activeTab, selectedStatus, and selectedLocation
-  const filteredData = userOrders.filter((order) => {
-    // Tab filter
-    const tabMatch =
-      activeTab === "orders" ? order.role === "user" : order.role !== "user";
-    // Status filter (normalize to lowercase)
-    const statusMatch =
-      selectedStatus === "all" ||
-      (order.status &&
-        order.status.toLowerCase() === selectedStatus.toLowerCase());
-    // Location filter (normalize to lowercase)
-    const locationMatch =
-      selectedLocation === "all" ||
-      (order.location &&
-        order.location.toLowerCase() === selectedLocation.toLowerCase());
-    return tabMatch && statusMatch && locationMatch;
-  });
+  const filteredData = getFilteredOrders(selectedStatus, selectedLocation, activeTab);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <MainDashboard>
+        <div className="flex flex-col w-[80%] min-h-screen mt-10">
+          <h1 className="text-left mb-6 font-bold text-4xl text-primary-red">
+            Orders & Meet Ups
+          </h1>
+          <div className="flex justify-center items-center min-h-[400px]">
+            <div className="text-lg text-gray-500">Loading...</div>
+          </div>
+        </div>
+      </MainDashboard>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <MainDashboard>
+        <div className="flex flex-col w-[80%] min-h-screen mt-10">
+          <h1 className="text-left mb-6 font-bold text-4xl text-primary-red">
+            Orders & Meet Ups
+          </h1>
+          <div className="flex flex-col justify-center items-center min-h-[400px]">
+            <div className="text-lg text-red-500 mb-4">Error: {error}</div>
+            <button 
+              onClick={refreshData}
+              className="px-4 py-2 bg-primary-red text-white rounded hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </MainDashboard>
+    );
+  }
 
   return (
     <MainDashboard>
