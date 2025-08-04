@@ -33,6 +33,41 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     pwd_salt = plain_password + pwd_salt_value
     return hashlib.sha256(pwd_salt.encode()).hexdigest() == hashed_password
 
+def create_verification_session_token(email: str) -> str:
+    """Create a short-lived verification session token for email verification"""
+    secret_key = os.getenv("SECRET_KEY")
+    if not secret_key:
+        raise ValueError("SECRET_KEY environment variable not found")
+    
+    # Token expires in 10 minutes
+    expire = datetime.utcnow() + timedelta(minutes=10)
+    
+    payload = {
+        "email": email,
+        "exp": expire,
+        "iat": datetime.utcnow(),
+        "type": "email_verification_session"
+    }
+    
+    return jwt.encode(payload, secret_key, algorithm="HS256")
+
+def verify_verification_session_token(token: str) -> Optional[str]:
+    """Verify verification session token and return email if valid"""
+    try:
+        secret_key = os.getenv("SECRET_KEY")
+        if not secret_key:
+            raise ValueError("SECRET_KEY environment variable not found")
+        
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+        
+        # Check if it's the correct token type
+        if payload.get("type") != "email_verification_session":
+            return None
+            
+        return payload.get("email")
+    except (jwt.ExpiredSignatureError, jwt.PyJWTError):
+        return None
+
 def create_access_token(user_data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     """Create a JWT access token with user data"""
     secret_key = os.getenv("SECRET_KEY")

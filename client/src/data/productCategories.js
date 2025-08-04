@@ -1,11 +1,11 @@
 const productCategories = [
-  { label: 'Academic Essentials', value: 'academic' },
-  { label: 'Creative Works', value: 'creative' },
-  { label: 'Services', value: 'services' },
-  { label: 'Tech & Gadgets', value: 'technology' },
-  { label: 'Fashion', value: 'fashion' },
-  { label: 'Anik-Anik', value: 'anik' },
-  { label: 'Other', value: 'other' }
+  { label: 'Academic Essentials', value: 'Academic_Essentials' },
+  { label: 'Creative Works', value: 'Creative_Works' },
+  { label: 'Services', value: 'Services' },
+  { label: 'Tech & Gadgets', value: 'Tech_Gadgets' },
+  { label: 'Fashion', value: 'Fashion' },
+  { label: 'Anik-Anik', value: 'Anik-Anik' },
+  { label: 'Other', value: 'Other' }
 ];
 
 // Categories for filtering/browsing (includes "All Categories")

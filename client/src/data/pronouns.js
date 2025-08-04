@@ -1,8 +1,8 @@
 export const pronounsList = [
-  { value: "he/him", label: "HE/HIM" },
-  { value: "she/her", label: "SHE/HER" },
-  { value: "they/them", label: "THEY/THEM" },
-  { value: "prefer-not-to-say", label: "PREFER NOT TO SAY" }
+  { value: "he/him", label: "He/Him" },
+  { value: "she/her", label: "She/Her" },
+  { value: "they/them", label: "They/Them" },
+  { value: "prefer-not-to-say", label: "Prefer Not To Say" }
 ];
 
 export default pronounsList;

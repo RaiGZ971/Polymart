@@ -9,7 +9,7 @@ export default function ProductCard({ order }) {
     priceRange,
     hasPriceRange,
     username,
-    itemsOrdered,
+    itemsOrdered = 0,
     userAvatar,
   } = order || {};
 
@@ -26,6 +26,12 @@ export default function ProductCard({ order }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Handle missing data gracefully
+  const displayImage = productImage || 'https://via.placeholder.com/268x245?text=No+Image';
+  const displayName = productName || 'Untitled Product';
+  const displayUsername = username || 'Unknown User';
+  const displayAvatar = userAvatar || 'https://via.placeholder.com/40x40?text=User';
+
   return (
     <div
       className="w-full h-full bg-white rounded-2xl shadow-md hover:shadow-glow hover:scale-[102%] hover:shadow-gray-400 transition-all duration-200 relative flex flex-col overflow-hidden"
@@ -34,8 +40,8 @@ export default function ProductCard({ order }) {
       {/* Image */}
       <div className="relative w-full h-[245px]">
         <img
-          src={productImage}
-          alt={productName}
+          src={displayImage}
+          alt={displayName}
           className="w-full h-full object-cover rounded-t-2xl"
         />
         {/* Top right icons */}
@@ -75,22 +81,22 @@ export default function ProductCard({ order }) {
       <div className="flex flex-col flex-1 justify-between px-4 py-3">
         <div className="text-left">
           <div className="text-[13px] font-medium text-gray-900 truncate leading-tight">
-            {productName}
+            {displayName}
           </div>
           <div className="text-[18px] font-bold text-primary-red leading-tight">
             {hasPriceRange && priceRange
               ? `PHP ${priceRange.min} - PHP ${priceRange.max}`
-              : `PHP ${productPrice}`}
+              : `PHP ${productPrice || 0}`}
           </div>
         </div>
         <div className="flex items-center justify-between mt-3 gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <img
-              src={userAvatar}
-              alt={username}
+              src={displayAvatar}
+              alt={displayUsername}
               className="rounded-full object-cover flex-shrink-0 w-[18px] h-[18px]"
             />
-            <span className="text-xs text-gray-400 truncate">{username}</span>
+            <span className="text-xs text-gray-400 truncate">{displayUsername}</span>
             <span className="text-xs text-gray-400">·</span>
             <span className="text-xs text-gray-400 whitespace-nowrap">
               {itemsOrdered} items ordered
