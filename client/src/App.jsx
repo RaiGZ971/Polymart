@@ -22,7 +22,7 @@ function App() {
           <Route path="/dashboard" element={<GeneralDashboard />} />
           <Route path="/orders-meetups" element={<OrdersMeetups />} />
           <Route
-            path="/buyer/view-product-details"
+            path="/buyer/view-product-details/:id?"
             element={<ViewProductDetails />}
           />
           {/* Add more routes as needed */}

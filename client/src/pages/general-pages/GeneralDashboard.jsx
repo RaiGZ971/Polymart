@@ -70,7 +70,8 @@ export default function GeneralDashboard() {
   const displayedListings = activeTab === "your-listings" ? myListings : listings;
 
   const handleProductClick = (product) => {
-    navigate("/buyer/view-product-details", { state: { order: product } });
+    const listingId = product.listing_id || product.id;
+    navigate(`/buyer/view-product-details/${listingId}`, { state: { order: product } });
   };
 
   const handleSearchInputChange = (value) => {
