@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChatService } from '../../services/index.js';
 import { formattedMessages } from '../../utils/formattedMessages.js';
 
-export const useContacts = (userID) => {
+export const getContacts = (userID) => {
   return useQuery({
     queryKey: ['contacts', userID],
     queryFn: () => ChatService.getContacts(userID),
@@ -10,7 +10,7 @@ export const useContacts = (userID) => {
   });
 };
 
-export const useMessages = (senderID, receiverID) => {
+export const getMessages = (senderID, receiverID) => {
   return useQuery({
     queryKey: ['messages', senderID, receiverID],
     queryFn: async () => {

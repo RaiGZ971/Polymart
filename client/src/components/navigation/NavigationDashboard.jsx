@@ -10,22 +10,22 @@ import {
   Bell,
   MessageCircle,
   Heart,
-} from "lucide-react";
-import Logo from "../../assets/PolymartLogo.png";
-import { useEffect, useState } from "react";
-import ChatApp from "../chat/ChatApp";
-import NotificationOverlay from "../notifications/NotificationOverlay";
-import CreateListingComponent from "../CreateListingComponent";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useNotificationStore } from "../../store/index.js";
+} from 'lucide-react';
+import Logo from '../../assets/PolymartLogo.png';
+import { useEffect, useState } from 'react';
+import ChatApp from '../chat/ChatApp';
+import NotificationOverlay from '../notifications/NotificationOverlay';
+import CreateListingComponent from '../CreateListingComponent';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { getUserNotification } from './queries/navigationQueries';
 
 export default function NavigationDashboard() {
-// TEMPORARY
-const userID = "5jlgi4i2o"
+  // TEMPORARY
+  const userID = '5jlgi4i2o';
 
   const navigate = useNavigate();
   const location = useLocation();
-  const firstName = "Jianna";
+  const firstName = 'Jianna';
   const [showChat, setShowChat] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCreateListing, setShowCreateListing] = useState(false);
@@ -53,7 +53,11 @@ const userID = "5jlgi4i2o"
   //   },
   // ];
 
-  const { notifications, fetchNotifications } = useNotificationStore();
+  const {
+    data: notifications = [],
+    isLoading: notificationLoading,
+    error: notificationError,
+  } = getUserNotification(userID);
 
   const iconMap = {
     home: Home,
@@ -70,58 +74,58 @@ const userID = "5jlgi4i2o"
   };
 
   const leftNavItems = [
-    { name: "Customer Service", path: "/", icon: "headphones" },
-    { name: "Help", path: "/", icon: "help" },
+    { name: 'Customer Service', path: '/', icon: 'headphones' },
+    { name: 'Help', path: '/', icon: 'help' },
   ];
 
   const rightNavItems = [
-    { name: "Home", path: "/dashboard", icon: "home" },
+    { name: 'Home', path: '/dashboard', icon: 'home' },
     {
-      name: "Create New Listing",
-      path: "/",
-      icon: "plus",
-      action: "create-listing",
+      name: 'Create New Listing',
+      path: '/',
+      icon: 'plus',
+      action: 'create-listing',
     },
-    { name: "Manage Listing", path: "/", icon: "box" },
-    { name: "Sign Out", path: "/", icon: "logout" },
+    { name: 'Manage Listing', path: '/', icon: 'box' },
+    { name: 'Sign Out', path: '/', icon: 'logout' },
   ];
 
   const bottomNavItems = [
-    { name: firstName, path: "/", icon: "user", hasText: true },
+    { name: firstName, path: '/', icon: 'user', hasText: true },
     {
-      name: "Orders & Meet Ups",
-      path: "/orders-meetups",
-      icon: "map",
+      name: 'Orders & Meet Ups',
+      path: '/orders-meetups',
+      icon: 'map',
       hasText: true,
     },
     {
-      name: "Liked Items",
-      path: "/liked-items",
-      icon: "heart",
+      name: 'Liked Items',
+      path: '/liked-items',
+      icon: 'heart',
       hasText: false,
     },
     {
-      name: "Notifications",
-      path: "/",
-      icon: "bell",
+      name: 'Notifications',
+      path: '/',
+      icon: 'bell',
       hasText: false,
-      action: "notifications",
+      action: 'notifications',
     },
     {
-      name: "Messages",
-      path: "/",
-      icon: "message",
+      name: 'Messages',
+      path: '/',
+      icon: 'message',
       hasText: false,
-      action: "chat",
+      action: 'chat',
     },
   ];
 
   const handleItemClick = (item) => {
-    if (item.action === "chat") {
+    if (item.action === 'chat') {
       setShowChat(true);
-    } else if (item.action === "notifications") {
+    } else if (item.action === 'notifications') {
       setShowNotifications(true);
-    } else if (item.action === "create-listing") {
+    } else if (item.action === 'create-listing') {
       setShowCreateListing(true);
     } else {
       navigate(item.path);
@@ -143,25 +147,21 @@ const userID = "5jlgi4i2o"
   const handleLogoClick = () => {
     if (onLogoClick) {
       onLogoClick();
-    } else if (variant === "landing") {
-      const homeElement = document.getElementById("home");
+    } else if (variant === 'landing') {
+      const homeElement = document.getElementById('home');
       if (homeElement) {
-        homeElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        homeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     } else {
-      window.location.href = "/";
+      window.location.href = '/';
     }
   };
 
   // Helper to check if nav item is active
   const isActive = (item) => {
     // For demo, match by path (customize as needed)
-    return item.path !== "/" && location.pathname.startsWith(item.path);
+    return item.path !== '/' && location.pathname.startsWith(item.path);
   };
-
-  useEffect(() => {
-    fetchNotifications(userID);
-  }, [userID])
 
   return (
     <div>
@@ -240,14 +240,14 @@ const userID = "5jlgi4i2o"
               <div
                 key={index}
                 className={`cursor-pointer group hover:text-hover-red transition-colors duration-200 ${
-                  item.hasText ? "flex items-center gap-2" : ""
-                } ${active ? "text-primary-red font-bold" : ""}`}
+                  item.hasText ? 'flex items-center gap-2' : ''
+                } ${active ? 'text-primary-red font-bold' : ''}`}
                 onClick={() => handleItemClick(item)}
               >
                 <IconComponent
                   size={22}
                   className={`group-hover:text-hover-red transition-colors duration-200 ${
-                    active ? "text-primary-red" : "text-gray-800"
+                    active ? 'text-primary-red' : 'text-gray-800'
                   }`}
                 />
                 {item.hasText && item.name}
@@ -273,7 +273,7 @@ const userID = "5jlgi4i2o"
                             animate-fade-in
                             animate-scale-in"
             style={{
-              animation: "fadeScaleIn 0.3s cubic-bezier(0.4,0,0.2,1)",
+              animation: 'fadeScaleIn 0.3s cubic-bezier(0.4,0,0.2,1)',
             }}
           >
             <CreateListingComponent onClose={handleCloseCreateListing} />
@@ -285,8 +285,8 @@ const userID = "5jlgi4i2o"
       <div
         className={`fixed inset-0 z-50 transition-opacity duration-300 ${
           showChat
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+            ? 'opacity-100 pointer-events-auto'
+            : 'opacity-0 pointer-events-none'
         }`}
       >
         {/* Background overlay */}
@@ -295,7 +295,7 @@ const userID = "5jlgi4i2o"
         {/* Chat panel sliding from right */}
         <div
           className={`absolute right-0 top-0 h-full w-[30%] bg-white shadow-2xl transition-transform duration-500 ease-in-out rounded-tl-2xl rounded-bl-2xl ${
-            showChat ? "translate-x-0" : "translate-x-full"
+            showChat ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
           <ChatApp initialChatId="6l5j431j3456h845" onClose={handleCloseChat} />
@@ -306,8 +306,8 @@ const userID = "5jlgi4i2o"
       <div
         className={`fixed inset-0 z-50 transition-opacity duration-300 ${
           showNotifications
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+            ? 'opacity-100 pointer-events-auto'
+            : 'opacity-0 pointer-events-none'
         }`}
       >
         {/* Background overlay */}
@@ -316,7 +316,7 @@ const userID = "5jlgi4i2o"
         {/* Notifications panel sliding from right */}
         <div
           className={`absolute right-0 top-0 h-full w-[30%] bg-white shadow-2xl transition-transform duration-500 ease-in-out rounded-tl-2xl rounded-bl-2xl flex items-center justify-center ${
-            showNotifications ? "translate-x-0" : "translate-x-full"
+            showNotifications ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
           <NotificationOverlay
