@@ -12,14 +12,18 @@ import {
   Heart,
 } from "lucide-react";
 import Logo from "../../assets/PolymartLogo.png";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import ChatApp from "../chat/ChatApp";
 import NotificationOverlay from "../notifications/NotificationOverlay";
 import CreateListingComponent from "../CreateListingComponent";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useNotificationStore } from "../../store/index.js";
 import { UserService } from "../../services/userService";
 
 export default function NavigationDashboard() {
+// TEMPORARY
+const userID = "5jlgi4i2o"
+
   const navigate = useNavigate();
   const location = useLocation();
   const [firstName, setFirstName] = useState("");
@@ -61,27 +65,29 @@ export default function NavigationDashboard() {
   }, [navigate]);
 
   // Sample notifications data - you can move this to a hook later
-  const notifications = [
-    {
-      type: "meetup",
-      title: "Meetup Reminder",
-      time: "2 hours ago",
-      message: "Your meetup with @buyer123 is scheduled for tomorrow at 2 PM.",
-      details: "Location: SM North EDSA\nProduct: Gaming Chair",
-    },
-    {
-      type: "listing-approved",
-      title: "Listing Approved",
-      time: "5 hours ago",
-      message: "Your listing 'Gaming Mouse' has been approved and is now live!",
-    },
-    {
-      type: "message",
-      title: "New Message",
-      time: "1 day ago",
-      message: "You have a new message from @seller456 about your order.",
-    },
-  ];
+  // const notifications = [
+  //   {
+  //     type: "meetup",
+  //     title: "Meetup Reminder",
+  //     time: "2 hours ago",
+  //     message: "Your meetup with @buyer123 is scheduled for tomorrow at 2 PM.",
+  //     details: "Location: SM North EDSA\nProduct: Gaming Chair",
+  //   },
+  //   {
+  //     type: "listing-approved",
+  //     title: "Listing Approved",
+  //     time: "5 hours ago",
+  //     message: "Your listing 'Gaming Mouse' has been approved and is now live!",
+  //   },
+  //   {
+  //     type: "message",
+  //     title: "New Message",
+  //     time: "1 day ago",
+  //     message: "You have a new message from @seller456 about your order.",
+  //   },
+  // ];
+
+  const { notifications, fetchNotifications } = useNotificationStore();
 
   const iconMap = {
     home: Home,
@@ -178,6 +184,10 @@ export default function NavigationDashboard() {
     // For demo, match by path (customize as needed)
     return item.path !== "/" && location.pathname.startsWith(item.path);
   };
+
+  useEffect(() => {
+    fetchNotifications(userID);
+  }, [userID])
 
   return (
     <div>

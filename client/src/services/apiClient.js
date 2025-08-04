@@ -50,6 +50,10 @@ export class ApiClient {
         });
     }
 
+    static async putStatus(endpoint){
+        return this.request(endpoint, { method: 'PUT' });
+    }
+
     static async patch(endpoint, data){
         return this.request(endpoint, {
             method: 'PATCH',
@@ -59,5 +63,12 @@ export class ApiClient {
 
     static async delete(endpoint){
         return this.request(endpoint, { method: 'DELETE'})
+    }
+
+    static async deleteData(endpoint, data){
+        return this.request(endpoint, {
+            method: 'DELETE',
+            body: JSON.stringify(data)
+        });
     }
 }
