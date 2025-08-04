@@ -1,0 +1,154 @@
+// verify email first
+
+{
+  "username": "reymel_sardenia",
+  "first_name": "Reymel",
+  "middle_name": "Garcia",
+  "last_name": "Sardenia",
+  "email": "sardeniareymel@gmail.com",
+  "password": "password",
+  "birthdate": "2001-05-15",
+  "pronouns": "he/him",
+  "contact_number": "+639123456789",
+  "course": "Computer Science",
+  "university_branch": "UP Diliman",
+  "college": "College of Engineering",
+  "student_number": "2023",
+  "bio": "Computer Science student passionate about technology and programming."
+}
+
+{
+  "username": "reymel_sardenia2022",
+  "first_name": "Reymel",
+  "middle_name": "Garcia",
+  "last_name": "Sardenia", 
+  "email": "sardeniareymel1@gmail.com",
+  "password": "password",
+  "birthdate": "2000-08-20",
+  "pronouns": "he/him",
+  "contact_number": "+639876543210",
+  "course": "Information Technology",
+  "university_branch": "UP Diliman",
+  "college": "College of Engineering",
+  "student_number": "2022",
+  "bio": "IT student interested in web development and cybersecurity."
+}
+// then login
+
+...
+
+// add a listing
+// listing test 1
+{
+  "name": "Advanced Calculus Textbook - 12th Edition",
+  "description": "Barely used calculus textbook for Math 53/54. Includes solutions manual and online access code. Perfect condition with minimal highlighting.",
+  "category": "Academic_Essentials",
+  "tags": "textbook, calculus, math, engineering, solutions manual",
+  "price_min": 2500.0,
+  "price_max": 3000.0,
+  "total_stock": 1,
+  "seller_meetup_locations": ["UP Diliman Main Library", "Melchor Hall", "UPLB Baker Hall"],
+  "meetup_time_slots": [
+    {
+      "start_time": "2025-07-26T10:00:00",
+      "end_time": "2025-07-26T12:00:00"
+    },
+    {
+      "start_time": "2025-07-27T14:00:00",
+      "end_time": "2025-07-27T16:00:00"
+    }
+  ]
+}
+// listing test 2
+{
+  "name": "MacBook Pro 13-inch M1 2021",
+  "description": "Excellent condition MacBook Pro with M1 chip, 8GB RAM, 256GB SSD. Includes original charger, box, and documentation. Battery health at 95%. Perfect for programming and design work.",
+  "category": "Tech_Gadgets",
+  "tags": "laptop, macbook, apple, m1, programming, design",
+  "price_min": 45000.0,
+  "price_max": 50000.0,
+  "total_stock": 1,
+  "seller_meetup_locations": ["UP Diliman Engineering Library", "Quezon City Circle", "SM North EDSA"],
+  "meetup_time_slots": [
+    {
+      "start_time": "2025-07-28T09:00:00",
+      "end_time": "2025-07-28T11:00:00"
+    },
+    {
+      "start_time": "2025-07-29T15:00:00",
+      "end_time": "2025-07-29T17:00:00"
+    }
+  ]
+}
+
+
+listing test 3 - Fixed Price
+{
+  "name": "UP Diliman Engineering College Hoodie - Medium",
+  "description": "Official UP Engineering hoodie in excellent condition. Size Medium, navy blue color. Worn only a few times, no stains or damage. Perfect for representing your college pride!",
+  "category": "Fashion",
+  "tags": "hoodie, UP, engineering, college, navy blue, medium",
+  "price_min": 800.0,
+  "total_stock": 1,
+  "seller_meetup_locations": ["UP Diliman Engineering Complex", "Melchor Hall", "UP Shopping Center"],
+  "meetup_time_slots": [
+    {
+      "start_time": "2025-07-26T12:00:00",
+      "end_time": "2025-07-26T14:00:00"
+    },
+    {
+      "start_time": "2025-07-28T16:00:00",
+      "end_time": "2025-07-28T18:00:00"
+    }
+  ]
+}
+
+// listing test 4 - Price Range
+{
+  "name": "Used MacBook Pro 13-inch M1 2021 - Negotiable",
+  "description": "Excellent condition MacBook Pro with M1 chip, 8GB RAM, 256GB SSD. Price is negotiable within the specified range based on condition assessment.",
+  "category": "Tech_Gadgets",
+  "tags": "laptop, macbook, apple, m1, negotiable, used",
+  "price_min": 45000.0,
+  "price_max": 50000.0,
+  "total_stock": 1,
+  "seller_meetup_locations": ["UP Diliman Engineering Library", "Quezon City Circle", "SM North EDSA"],
+  "meetup_time_slots": [
+    {
+      "start_time": "2025-07-28T09:00:00",
+      "end_time": "2025-07-28T11:00:00"
+    }
+  ]
+}
+    
+// test orders
+// Order for fixed-price listing (no buyer_requested_price allowed)
+{
+  "listing_id": 3,
+  "quantity": 1,
+  "transaction_method": "meet_up",
+  "payment_method": "cash"
+}
+
+// Order for price range listing (buyer_requested_price allowed and required)
+{
+  "listing_id": 4,
+  "quantity": 1,
+  "transaction_method": "meet_up",
+  "payment_method": "gcash",
+  "buyer_requested_price": 47000.0
+}
+
+// Update meetup details (after order creation)
+// PATCH /supabase/orders/{order_id}/meetup
+{
+  "location": "UP Diliman Main Library - 2nd Floor Study Area",
+  "scheduled_at": "2025-07-27T14:00:00"
+}
+
+// Buyer confirms meetup (no body needed)
+// PATCH /supabase/orders/{order_id}/meetup/confirm
+
+// Seller confirms meetup (no body needed)
+// PATCH /supabase/orders/{order_id}/meetup/confirm
+}

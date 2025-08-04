@@ -57,7 +57,7 @@ export default function NavigationBar({
       <Button
         variant="darkred"
         className="ml-10"
-        onClick={onSignUpClick || (() => (window.location.href = "/signin"))}
+        onClick={onSignUpClick || (() => (window.location.href = "/sign-in"))}
       >
         Sign In
       </Button>

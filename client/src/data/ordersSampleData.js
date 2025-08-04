@@ -12,7 +12,7 @@ const ordersSampleData = [
     location: "Lagoon",
     remark: "None",
     role: "user",
-    category: "creative",
+    category: "Creative_Works",
     productDescription:
       "This handmade crocheted photocard holder is crafted with premium yarn and attention to detail, making it the perfect accessory for K-pop fans and collectors. Its durable construction ensures your photocards are protected from wear and tear, while the cute and colorful design adds a personal touch to your collection. Each holder is unique and can fit standard photocard sizes, making it both functional and stylish for everyday use or as a thoughtful gift.",
     stock: 10,
@@ -163,7 +163,7 @@ const ordersSampleData = [
     location: "Grandstand",
     remark: "",
     role: "user",
-    category: "anik",
+    category: "Anik-Anik",
     productDescription:
       "Brighten up your belongings with this pack of 10 cute and waterproof stickers! Each sticker is printed on high-quality vinyl, making them resistant to water, fading, and scratches. Perfect for decorating laptops, water bottles, notebooks, phone cases, and more. The designs are original and exclusive, ensuring your items stand out with a touch of personality and fun. Great for gifting or personalizing your everyday essentials.",
     stock: 30,
@@ -233,7 +233,7 @@ const ordersSampleData = [
     location: "Library",
     remark: "",
     role: "user",
-    category: "academic",
+    category: "Academic_Essentials",
     productDescription:
       "Stay organized and excel in your studies with this set of 3 math notebooks. Each notebook features grid pages that are ideal for solving equations, drawing graphs, and taking detailed notes. The durable covers protect your notes from damage, while the compact size makes them easy to carry in your bag. Perfect for students of all levels who want to keep their math work neat and accessible.",
     stock: 15,

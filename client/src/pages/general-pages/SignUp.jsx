@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 import {
   NavigationBar,
@@ -13,6 +14,7 @@ import {
 } from "@/components";
 
 import { fieldConfig, phaseConfig } from "../../data";
+import { AuthService, FileUploadService } from "../../services";
 
 import { useSignUpNavigation } from "../../hooks/useSignUpNavigation";
 import { useEmailVerification } from "../../hooks/useEmailVerification";
@@ -22,6 +24,9 @@ import { useFileUpload } from "../../hooks/useFileUpload";
 import { useFormData } from "../../hooks/useFormData";
 
 export default function SignUp() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
   // Define steps array
   const steps = [
     "Email Verification",
@@ -42,19 +47,176 @@ export default function SignUp() {
     resetFields,
   } = useFormData();
 
-  const handleSubmit = () => {
-    console.log("Form submitted:", formData);
+  const handleSubmit = async () => {
+    try {
+      console.log("Raw form data:", formData);
+      
+      // Validate required fields before sending
+      const requiredFields = {
+        username: formData.username,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        birthDate: formData.birthDate,
+        contactNumber: formData.contactNumber,
+        course: formData.course,
+        universityBranch: formData.universityBranch,
+        college: formData.college,
+        studentID: formData.studentID,
+      };
+
+      // Check for missing required fields
+      const missingFields = Object.entries(requiredFields)
+        .filter(([key, value]) => !value || value.trim() === '')
+        .map(([key, value]) => key);
+
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+
+      // Transform form data to match backend API
+      const signupData = {
+        username: formData.username?.trim(),
+        first_name: formData.firstName?.trim(),
+        middle_name: formData.middleName?.trim() || "",
+        last_name: formData.lastName?.trim(),
+        email: formData.email?.trim(),
+        password: formData.password,
+        birthdate: formData.birthDate, // ISO date string YYYY-MM-DD
+        contact_number: formData.contactNumber?.trim(),
+        course: formData.course?.trim(),
+        university_branch: formData.universityBranch?.trim(),
+        college: formData.college?.trim(),
+        student_number: formData.studentID?.trim(),
+        pronouns: formData.pronouns?.trim() || "",
+        bio: formData.bio?.trim() || ""
+      };
+
+      console.log("Transformed signup data being sent:", signupData);
+
+      // Step 1: Create user account
+      const result = await AuthService.signUp(signupData);
+      
+      if (!result.success) {
+        throw new Error(result.message || "Signup failed");
+      }
+
+      console.log("Signup successful:", result);
+
+      // Step 2: Login to get authentication token for file uploads
+      const loginData = {
+        student_number: formData.studentID?.trim(),
+        password: formData.password
+      };
+
+      const loginResult = await AuthService.login(loginData);
+      
+      if (!loginResult.success) {
+        throw new Error("Failed to authenticate after signup");
+      }
+
+      console.log("Auto-login successful");
+
+      // Step 3: Upload profile picture if provided
+      if (formData.profilePicture && formData.profilePicture instanceof File) {
+        try {
+          console.log("Uploading profile picture...");
+          const profilePhotoResult = await FileUploadService.uploadProfilePhoto(formData.profilePicture);
+          console.log("Profile picture uploaded successfully:", profilePhotoResult);
+        } catch (error) {
+          console.error("Profile picture upload failed:", error);
+          // Continue with signup even if profile picture upload fails
+          alert(`Profile picture upload failed: ${error.message}. You can add it later from your profile.`);
+        }
+      }
+
+      // Step 4: Upload verification documents if provided
+      const hasVerificationDocs = formData.studentIdFront && formData.studentIdBack && formData.cor;
+      if (hasVerificationDocs) {
+        try {
+          console.log("Uploading verification documents...");
+          const documents = {
+            studentIdFront: formData.studentIdFront,
+            studentIdBack: formData.studentIdBack,
+            cor: formData.cor
+          };
+          const verificationResult = await FileUploadService.uploadVerificationDocuments(documents);
+          console.log("Verification documents uploaded successfully:", verificationResult);
+        } catch (error) {
+          console.error("Verification documents upload failed:", error);
+          // Continue with signup even if verification documents upload fails
+          alert(`Verification documents upload failed: ${error.message}. You can submit them later from your profile.`);
+        }
+      }
+
+      // Step 5: Redirect to dashboard or success page
+      alert("Account created successfully! Welcome to PolyMart!");
+      navigate('/dashboard');
+      
+    } catch (error) {
+      console.error("Signup error:", error);
+      alert(`Signup failed: ${error.message}`);
+    }
   };
 
   // Use the email verification hook
   const {
     emailVerificationStep,
+    setEmailVerificationStep,
     handleSendVerification,
     handleResendVerification,
     handleChangeEmail,
     handleTestVerification,
     getEmailVerificationTitle,
+    loading,
+    error,
+    setError
   } = useEmailVerification();
+
+  // Handle URL parameters for email verification
+  useEffect(() => {
+    const sessionToken = searchParams.get('session');
+    const verificationError = searchParams.get('verification_error');
+
+    if (sessionToken) {
+      // Verify the session token with the backend
+      const verifySession = async () => {
+        try {
+          setError(null);
+          const result = await AuthService.verifyVerificationSession(sessionToken);
+          
+          if (result.success && result.data?.email) {
+            // Session is valid, set email and mark as verified
+            setFormData(prev => ({ ...prev, email: result.data.email }));
+            setEmailVerificationStep('verified');
+            
+            // Clean up URL by removing the session parameter
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.delete('session');
+            window.history.replaceState({}, '', newUrl);
+          } else {
+            throw new Error('Invalid verification session');
+          }
+        } catch (error) {
+          console.error('Session verification failed:', error);
+          setError(`Email verification failed: ${error.message}`);
+          setEmailVerificationStep('failed');
+          
+          // Clean up URL
+          const newUrl = new URL(window.location);
+          newUrl.searchParams.delete('session');
+          window.history.replaceState({}, '', newUrl);
+        }
+      };
+      
+      verifySession();
+    } else if (verificationError) {
+      // Show error message
+      setError(`Email verification failed: ${decodeURIComponent(verificationError)}`);
+      setEmailVerificationStep('failed');
+    }
+  }, [searchParams, setFormData, setEmailVerificationStep, setError]);
 
   // Use the navigation hook
   const {
@@ -65,6 +227,7 @@ export default function SignUp() {
     canGoBack,
     canGoForward,
     getNextButtonText,
+    setCurrentStep,
   } = useSignUpNavigation(
     emailVerificationStep,
     handleSubmit,
@@ -72,6 +235,15 @@ export default function SignUp() {
     fieldConfig,
     phaseConfig
   );
+
+  // Auto-advance to step 2 if email is verified via session
+  useEffect(() => {
+    const sessionToken = searchParams.get('session');
+    if (sessionToken && emailVerificationStep === 'verified' && currentStep === 1) {
+      // Small delay to ensure state is updated
+      setTimeout(() => setCurrentStep(2), 100);
+    }
+  }, [emailVerificationStep, currentStep, searchParams, setCurrentStep]);
 
   // Use the file upload hook
   const { handleFileChange, removeFile, getFilePreviewURL } = useFileUpload(
@@ -147,6 +319,8 @@ export default function SignUp() {
       handleResendVerificationWithEmail,
       handleChangeEmailWithReset,
       handleTestVerification,
+      loading,
+      error,
     }
   );
 

@@ -29,6 +29,7 @@ async def get_product_listings(
     search: Optional[str] = Query(None, description="Search in product name and description"),
     min_price: Optional[float] = Query(None, ge=0, description="Minimum price filter"),
     max_price: Optional[float] = Query(None, ge=0, description="Maximum price filter"),
+    sort_by: Optional[str] = Query("newest", description="Sort by: newest, date_oldest, name_a_z, name_z_a, price_low_high, price_high_low"),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -47,7 +48,8 @@ async def get_product_listings(
             category=category,
             search=search,
             min_price=min_price,
-            max_price=max_price
+            max_price=max_price,
+            sort_by=sort_by
         )
         
         if not listings_data["listings"]:
@@ -80,6 +82,7 @@ async def get_my_listings(
     category: Optional[str] = Query(None, description="Filter by category"),
     search: Optional[str] = Query(None, description="Search in product name and description"),
     status: Optional[str] = Query(None, description="Filter by status (active, inactive, sold_out, archived)"),
+    sort_by: Optional[str] = Query("newest", description="Sort by: newest, date_oldest, name_a_z, name_z_a, price_low_high, price_high_low"),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -95,7 +98,8 @@ async def get_my_listings(
             user_id=current_user["user_id"],
             category=category,
             search=search,
-            status=status
+            status=status,
+            sort_by=sort_by
         )
 
         if not listings_data:
