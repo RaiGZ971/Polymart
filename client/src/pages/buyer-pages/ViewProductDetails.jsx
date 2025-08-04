@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   MainDashboard,
   PlaceOrder,
@@ -11,12 +11,13 @@ import {
   ChatApp,
   Modal,
 } from "../../components";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, Flag, Heart, ShoppingBag } from "lucide-react";
 import productCategories from "../../data/productCategories";
 import { stallbanner, pupmap } from "../../assets";
 import meetUpLocations from "../../data/meetUpLocations";
 import timeSlots from "../../data/timeSlots";
+import { ListingService } from "../../services/listingService";
 
 const getCategoryLabel = (value) => {
   const found = productCategories.find((cat) => cat.value === value);
@@ -34,8 +35,16 @@ function getCalendarValue(order) {
 export default function ViewProductDetails() {
   const location = useLocation();
   const navigate = useNavigate();
-  const order = location.state?.order;
+  const params = useParams();
+  
+  // Get listing ID from URL params or fallback to passed state
+  const listingId = params.id || location.state?.order?.listing_id || location.state?.order?.id;
+  const initialOrder = location.state?.order;
   const currentUser = location.state?.currentUser;
+  
+  const [order, setOrder] = useState(initialOrder);
+  const [loading, setLoading] = useState(!initialOrder);
+  const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [showPlaceOrder, setShowPlaceOrder] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
@@ -46,19 +55,92 @@ export default function ViewProductDetails() {
   const [offerMessage, setOfferMessage] = useState("");
   const [customOrder, setCustomOrder] = useState(null);
 
+  // Fetch listing data if we don't have it or if we have a listing ID
+  useEffect(() => {
+    const fetchListingData = async () => {
+      if (!listingId) {
+        setError("No listing ID provided");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await ListingService.getListingById(listingId);
+        if (response.success && response.data) {
+          // Transform the data to match the expected structure
+          const listing = response.data;
+          const hasRange = listing.price_min !== null && listing.price_max !== null && listing.price_min !== listing.price_max;
+          
+          const transformedOrder = {
+            ...listing,
+            id: listing.listing_id,
+            productName: listing.name,
+            productPrice: listing.price_min,
+            priceRange: hasRange ? {
+              min: listing.price_min,
+              max: listing.price_max
+            } : null,
+            hasPriceRange: hasRange,
+            username: listing.user_profile?.username,
+            userAvatar: listing.seller_profile_photo_url || 'https://via.placeholder.com/40x40?text=User',
+            productImage: listing.images && listing.images.length > 0 
+              ? listing.images.find(img => img.is_primary)?.image_url || listing.images[0].image_url
+              : 'https://via.placeholder.com/268x245?text=No+Image',
+            images: listing.images || [],
+            itemsOrdered: listing.sold_count || 0,
+            category: listing.category,
+            productDescription: listing.description,
+            status: listing.status,
+            created_at: listing.created_at,
+            tags: listing.tags,
+            stock: listing.total_stock,
+            meetupLocations: listing.seller_meetup_locations || [],
+            paymentMethods: listing.payment_methods || [],
+            reviews: [] // TODO: Add reviews from API
+          };
+          
+          setOrder(transformedOrder);
+        } else {
+          setError("Failed to fetch listing data");
+        }
+      } catch (err) {
+        console.error('Error fetching listing:', err);
+        setError("Failed to load listing details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Only fetch if we don't have order data
+    if (!order && listingId) {
+      fetchListingData();
+    }
+  }, [listingId]);
+
   const averageRating =
-    order.reviews && order.reviews.length > 0
+    order?.reviews && order.reviews.length > 0
       ? Math.round(
           order.reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
             order.reviews.length
         )
       : 0;
 
-  if (!order) {
+  if (loading) {
     return (
       <MainDashboard>
         <div className="w-full flex justify-center items-center min-h-screen">
-          <p className="text-lg text-gray-500">No product data found.</p>
+          <p className="text-lg text-gray-500">Loading product details...</p>
+        </div>
+      </MainDashboard>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <MainDashboard>
+        <div className="w-full flex justify-center items-center min-h-screen">
+          <p className="text-lg text-gray-500">{error || "No product data found."}</p>
         </div>
       </MainDashboard>
     );
@@ -82,7 +164,10 @@ export default function ViewProductDetails() {
         <div className="flex flex-row gap-12 items-center">
           {/* Left: Image Carousel */}
           <div className="w-1/2">
-            <ImageCarousel />
+            <ImageCarousel 
+              images={order.images || []} 
+              productName={order.productName || order.name}
+            />
           </div>
           {/* Right: Product Details & User Actions */}
           <div className="w-1/2 text-left space-y-5">
@@ -102,7 +187,7 @@ export default function ViewProductDetails() {
                   </button>
                 </div>
                 <h1 className="text-4xl flex flex-wrap font-bold">
-                  {order.productName}
+                  {order.productName || order.name}
                 </h1>
               </div>
               {/* Price & Average Rating */}
@@ -115,7 +200,7 @@ export default function ViewProductDetails() {
                 <div className="flex flex-col items-end">
                   <StaticRatingStars value={averageRating} />
                   <p className="text-sm font-semibold text-gray-800 mt-0.5">
-                    {averageRating} stars | {order.sold} reviews
+                    {averageRating} stars | {order.sold_count || order.itemsOrdered || 0} reviews
                   </p>
                 </div>
               </div>
@@ -125,7 +210,7 @@ export default function ViewProductDetails() {
                   Product Description
                 </p>
                 <p className="text-sm text-gray-800">
-                  {order.productDescription || "No description provided."}
+                  {order.productDescription || order.description || "No description provided."}
                 </p>
               </div>
             </div>
@@ -133,7 +218,7 @@ export default function ViewProductDetails() {
               {/* User Actions */}
               <div className="flex flex-row gap-1 text-base">
                 <p className="font-semibold text-primary-red">Availability:</p>
-                <p className=" text-gray-800">{order.stock ?? 20} in stock</p>
+                <p className=" text-gray-800">{order.stock || order.total_stock || 0} in stock</p>
               </div>
               <div className="flex flex-row gap-2 text-base">
                 <p className="font-semibold text-primary-red">
@@ -142,10 +227,10 @@ export default function ViewProductDetails() {
                 <QuantityPicker
                   value={quantity}
                   min={1}
-                  max={order.stock ?? 1}
+                  max={order.stock || order.total_stock || 1}
                   onChange={(val) => {
-                    if (val > (order.stock ?? 1)) {
-                      setQuantity(order.stock ?? 1);
+                    if (val > (order.stock || order.total_stock || 1)) {
+                      setQuantity(order.stock || order.total_stock || 1);
                     } else {
                       setQuantity(val);
                     }
@@ -191,7 +276,7 @@ export default function ViewProductDetails() {
               </h1>
               <p className="text-gray-500 text-sm">
                 {order.reviews ? order.reviews.length : 0} reviews |{" "}
-                {order.sold} items sold
+                {order.sold_count || order.itemsOrdered || 0} items sold
               </p>
             </div>
 
@@ -285,8 +370,8 @@ export default function ViewProductDetails() {
                 Seller’s available meet-up locations are listed below
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
-                {order.meetupLocations && order.meetupLocations.length > 0 ? (
-                  order.meetupLocations.map((loc, idx) => (
+                {order.meetupLocations || order.seller_meetup_locations ? (
+                  (order.meetupLocations || order.seller_meetup_locations).map((loc, idx) => (
                     <GrayTag key={idx} text={loc} />
                   ))
                 ) : (
@@ -319,12 +404,12 @@ export default function ViewProductDetails() {
                 All payment transactions are made during meet ups
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
-                {order.meetupLocations && order.meetupLocations.length > 0 ? (
-                  order.paymentMethods.map((loc, idx) => (
-                    <GrayTag key={idx} text={loc} />
+                {order.paymentMethods || order.payment_methods ? (
+                  (order.paymentMethods || order.payment_methods).map((method, idx) => (
+                    <GrayTag key={idx} text={method} />
                   ))
                 ) : (
-                  <GrayTag text="No locations listed" />
+                  <GrayTag text="No payment methods listed" />
                 )}
               </div>
             </div>

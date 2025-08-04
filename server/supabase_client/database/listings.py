@@ -57,7 +57,8 @@ async def get_listing_by_id(user_id: int, listing_id: int, include_seller_info: 
                 seller_meetup_locations,
                 transaction_methods,
                 payment_methods,
-                user_profile!inner(username)
+                user_profile!inner(username),
+                listing_images(image_id, image_url, is_primary)
             """
         else:
             select_fields = "*"
@@ -99,7 +100,8 @@ async def get_public_listings(user_id: int, page: int = 1, page_size: int = 20,
             seller_meetup_locations,
             transaction_methods,
             payment_methods,
-            user_profile!inner(username)
+            user_profile!inner(username),
+            listing_images(image_id, image_url, is_primary)
         """).eq("status", "active").neq("seller_id", user_id)
         
         # Apply filters
@@ -175,7 +177,8 @@ async def get_user_listings(user_id: int, category: Optional[str] = None,
             seller_meetup_locations,
             transaction_methods,
             payment_methods,
-            user_profile!inner(username)
+            user_profile!inner(username),
+            listing_images(image_id, image_url, is_primary)
         """).eq("seller_id", user_id)
         
         # Apply filters

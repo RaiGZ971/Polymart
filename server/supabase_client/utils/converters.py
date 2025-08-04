@@ -42,8 +42,24 @@ async def convert_listing_to_product(supabase, listing: Dict[str, Any]) -> Produ
     Convert a database listing record to a ProductListing object.
     Includes fetching and processing associated images.
     """
-    # Get images for this listing
-    images = await get_images_for_listing(supabase, listing["listing_id"])
+    # Use existing images from JOIN query if available, otherwise fetch separately
+    images = []
+    if "listing_images" in listing and listing["listing_images"]:
+        # Use images from JOIN query
+        image_urls = [img["image_url"] for img in listing["listing_images"]]
+        proper_urls = ensure_proper_image_urls(image_urls, is_private=False)
+        
+        images = [
+            ListingImage(
+                image_id=img["image_id"],
+                image_url=proper_url,
+                is_primary=img["is_primary"]
+            )
+            for img, proper_url in zip(listing["listing_images"], proper_urls)
+        ]
+    else:
+        # Fallback to separate query if not included in JOIN
+        images = await get_images_for_listing(supabase, listing["listing_id"])
     
     # Extract seller username from join or use seller_id as fallback
     seller_username = str(listing["seller_id"])

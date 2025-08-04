@@ -27,11 +27,12 @@ export const useDashboardData = () => {
         max: listing.price_max
       } : null,
       hasPriceRange: hasRange,
-      username: listing.seller_username,
+      username: listing.user_profile?.username || listing.seller_username,
       userAvatar: listing.seller_profile_photo_url || 'https://via.placeholder.com/40x40?text=User',
       productImage: listing.images && listing.images.length > 0 
         ? listing.images.find(img => img.is_primary)?.image_url || listing.images[0].image_url
         : 'https://via.placeholder.com/268x245?text=No+Image',
+      images: listing.images || [],
       itemsOrdered: listing.sold_count || 0,
       
       // Additional data that might be needed
