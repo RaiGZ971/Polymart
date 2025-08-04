@@ -1,2 +1,2 @@
-export { useNotificationStore } from './notificationStore.js';
-export { useAppStore } from './appStore.js';
+export { useAuthStore } from './appStore.js';
+export { useContactStore } from './contactStore.js';

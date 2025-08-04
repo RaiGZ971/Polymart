@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { WebSocketService } from '../services/websocketService';
-import { useContacts, useMessages } from './queries/useChatQueries';
+import { getContacts, getMessages } from './queries/useChatQueries';
 
 export function useChat(userID) {
   const [chats] = useState([
@@ -72,13 +72,13 @@ export function useChat(userID) {
     data: contacts = [],
     isLoading: contactsLoading,
     error: contactsError,
-  } = useContacts(userID);
+  } = getContacts(userID);
 
   const {
     data: messages = [],
     isLoading: messagesLoading,
     error: messagesError,
-  } = useMessages(userID, currentChatID);
+  } = getMessages(userID, currentChatID);
 
   // Get latest message for each chat
   const getLatestMessage = (chatId) => {
