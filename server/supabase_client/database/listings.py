@@ -57,7 +57,8 @@ async def get_listing_by_id(user_id: int, listing_id: int, include_seller_info: 
                 seller_meetup_locations,
                 transaction_methods,
                 payment_methods,
-                user_profile!inner(username)
+                user_profile!inner(username),
+                listing_images(image_id, image_url, is_primary)
             """
         else:
             select_fields = "*"
@@ -73,7 +74,8 @@ async def get_listing_by_id(user_id: int, listing_id: int, include_seller_info: 
 
 async def get_public_listings(user_id: int, page: int = 1, page_size: int = 20, 
                              category: Optional[str] = None, search: Optional[str] = None,
-                             min_price: Optional[float] = None, max_price: Optional[float] = None) -> Dict[str, Any]:
+                             min_price: Optional[float] = None, max_price: Optional[float] = None,
+                             sort_by: Optional[str] = "newest") -> Dict[str, Any]:
     """
     Get public listings (excluding user's own listings).
     """
@@ -98,7 +100,8 @@ async def get_public_listings(user_id: int, page: int = 1, page_size: int = 20,
             seller_meetup_locations,
             transaction_methods,
             payment_methods,
-            user_profile!inner(username)
+            user_profile!inner(username),
+            listing_images(image_id, image_url, is_primary)
         """).eq("status", "active").neq("seller_id", user_id)
         
         # Apply filters
@@ -106,8 +109,9 @@ async def get_public_listings(user_id: int, page: int = 1, page_size: int = 20,
             query = query.eq("category", category)
         
         if search:
-            # Search in name and description
-            query = query.or_(f"name.ilike.%{search}%,description.ilike.%{search}%")
+            # Search in name field only to avoid or_ method complications
+            search_pattern = f"%{search}%"
+            query = query.ilike("name", search_pattern)
         
         if min_price is not None:
             query = query.gte("price_min", min_price)
@@ -119,9 +123,23 @@ async def get_public_listings(user_id: int, page: int = 1, page_size: int = 20,
         count_result = query.execute()
         total_count = len(count_result.data) if count_result.data else 0
         
+        # Apply sorting
+        if sort_by == "price_low_high":
+            query = query.order("price_min", desc=False)
+        elif sort_by == "price_high_low":
+            query = query.order("price_min", desc=True)
+        elif sort_by == "name_a_z":
+            query = query.order("name", desc=False)
+        elif sort_by == "name_z_a":
+            query = query.order("name", desc=True)
+        elif sort_by == "date_oldest":
+            query = query.order("created_at", desc=False)
+        else:  # Default to newest (date_newest)
+            query = query.order("created_at", desc=True)
+        
         # Apply pagination
         offset = calculate_pagination_offset(page, page_size)
-        query = query.order("created_at", desc=True).range(offset, offset + page_size - 1)
+        query = query.range(offset, offset + page_size - 1)
         
         result = query.execute()
         
@@ -134,7 +152,8 @@ async def get_public_listings(user_id: int, page: int = 1, page_size: int = 20,
 
 
 async def get_user_listings(user_id: int, category: Optional[str] = None, 
-                           search: Optional[str] = None, status: Optional[str] = None) -> List[Dict[str, Any]]:
+                           search: Optional[str] = None, status: Optional[str] = None,
+                           sort_by: Optional[str] = "newest") -> List[Dict[str, Any]]:
     """
     Get user's own listings.
     """
@@ -158,7 +177,8 @@ async def get_user_listings(user_id: int, category: Optional[str] = None,
             seller_meetup_locations,
             transaction_methods,
             payment_methods,
-            user_profile!inner(username)
+            user_profile!inner(username),
+            listing_images(image_id, image_url, is_primary)
         """).eq("seller_id", user_id)
         
         # Apply filters
@@ -166,12 +186,28 @@ async def get_user_listings(user_id: int, category: Optional[str] = None,
             query = query.eq("category", category)
         
         if search:
-            query = query.or_(f"name.ilike.%{search}%,description.ilike.%{search}%")
+            # Search in name field only (avoiding or_ method issues)
+            search_pattern = f"%{search}%"
+            query = query.ilike("name", search_pattern)
         
         if status:
             query = query.eq("status", status)
         
-        result = query.order("created_at", desc=True).execute()
+        # Apply sorting
+        if sort_by == "price_low_high":
+            query = query.order("price_min", desc=False)
+        elif sort_by == "price_high_low":
+            query = query.order("price_min", desc=True)
+        elif sort_by == "name_a_z":
+            query = query.order("name", desc=False)
+        elif sort_by == "name_z_a":
+            query = query.order("name", desc=True)
+        elif sort_by == "date_oldest":
+            query = query.order("created_at", desc=False)
+        else:  # Default to newest (date_newest)
+            query = query.order("created_at", desc=True)
+        
+        result = query.execute()
         
         return result.data if result.data else []
     except Exception as e:
@@ -313,8 +349,9 @@ def apply_listing_filters(query, category: Optional[str] = None, search: Optiona
         query = query.eq("status", status)
     
     if search:
-        # Search in name and description
-        query = query.or_(f"name.ilike.%{search}%,description.ilike.%{search}%")
+        # Search in name field only (avoiding or_ method issues)
+        search_pattern = f"%{search}%"
+        query = query.ilike("name", search_pattern)
     
     if min_price is not None:
         query = query.gte("price_min", min_price)

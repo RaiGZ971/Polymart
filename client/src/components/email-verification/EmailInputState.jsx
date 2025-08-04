@@ -1,7 +1,7 @@
 import { Textfield } from "../index";
 import { Button } from "@/components";
 
-export const EmailInputState = ({ email, onChange, onSendVerification }) => {
+export const EmailInputState = ({ email, onChange, onSendVerification, loading, error }) => {
   const isValidEmail = email.includes("@");
 
   return (
@@ -18,13 +18,21 @@ export const EmailInputState = ({ email, onChange, onSendVerification }) => {
             : ""
         }
       />
+      
+      {/* Display API error if exists */}
+      {error && (
+        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+      
       <div className="flex justify-end mt-6">
         <Button
           variant="darkred"
           onClick={onSendVerification}
-          disabled={!isValidEmail}
+          disabled={!isValidEmail || loading}
         >
-          SEND VERIFICATION EMAIL
+          {loading ? 'SENDING...' : 'SEND VERIFICATION EMAIL'}
         </Button>
       </div>
     </>

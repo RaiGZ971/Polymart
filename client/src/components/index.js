@@ -1,4 +1,5 @@
 export { default as Textfield } from "./form-elements/Textfield";
+export { default as PasswordField } from "./form-elements/PasswordField";
 export { default as NavigationBar } from "./navigation/NavigationBar";
 export { default as Dropdown } from "./form-elements/Dropdown";
 export { default as DateDropdown } from "./form-elements/DateDropdown";
