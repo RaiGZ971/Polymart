@@ -67,6 +67,8 @@ class ProductListing(BaseModel):
     listing_id: int
     seller_id: int
     seller_username: str
+    seller_listing_count: int = 0
+    seller_profile_photo_url: Optional[str] = None
     name: str
     description: Optional[str]
     category: str

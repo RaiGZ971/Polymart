@@ -39,29 +39,25 @@ async def get_listing_by_id(user_id: int, listing_id: int, include_seller_info: 
     try:
         supabase = get_authenticated_client(user_id)
         
-        if include_seller_info:
-            select_fields = """
-                listing_id,
-                seller_id,
-                name,
-                description,
-                category,
-                tags,
-                price_min,
-                price_max,
-                total_stock,
-                sold_count,
-                status,
-                created_at,
-                updated_at,
-                seller_meetup_locations,
-                transaction_methods,
-                payment_methods,
-                user_profile!inner(username),
-                listing_images(image_id, image_url, is_primary)
-            """
-        else:
-            select_fields = "*"
+        # Simplified select without JOIN - let converter handle user profile fetching
+        select_fields = """
+            listing_id,
+            seller_id,
+            name,
+            description,
+            category,
+            tags,
+            price_min,
+            price_max,
+            total_stock,
+            sold_count,
+            status,
+            created_at,
+            updated_at,
+            seller_meetup_locations,
+            transaction_methods,
+            payment_methods
+        """
         
         result = supabase.table("listings").select(select_fields).eq("listing_id", listing_id).execute()
         
@@ -82,7 +78,7 @@ async def get_public_listings(user_id: int, page: int = 1, page_size: int = 20,
     try:
         supabase = get_authenticated_client(user_id)
         
-        # Build base query excluding user's own listings
+        # Build base query excluding user's own listings - simplified without JOIN
         query = supabase.table("listings").select("""
             listing_id,
             seller_id,
@@ -99,9 +95,7 @@ async def get_public_listings(user_id: int, page: int = 1, page_size: int = 20,
             updated_at,
             seller_meetup_locations,
             transaction_methods,
-            payment_methods,
-            user_profile!inner(username),
-            listing_images(image_id, image_url, is_primary)
+            payment_methods
         """).eq("status", "active").neq("seller_id", user_id)
         
         # Apply filters
@@ -160,6 +154,7 @@ async def get_user_listings(user_id: int, category: Optional[str] = None,
     try:
         supabase = get_authenticated_client(user_id)
         
+        # Simplified query without JOIN - let converter handle user profile fetching
         query = supabase.table("listings").select("""
             listing_id,
             seller_id,
@@ -176,9 +171,7 @@ async def get_user_listings(user_id: int, category: Optional[str] = None,
             updated_at,
             seller_meetup_locations,
             transaction_methods,
-            payment_methods,
-            user_profile!inner(username),
-            listing_images(image_id, image_url, is_primary)
+            payment_methods
         """).eq("seller_id", user_id)
         
         # Apply filters
@@ -381,7 +374,7 @@ def build_user_listings_query(supabase, user_id: int):
 
 
 def build_listing_detail_query(supabase, listing_id: int):
-    """Build query for fetching a single listing with seller username."""
+    """Build query for fetching a single listing - simplified without JOIN."""
     return supabase.table("listings").select("""
         listing_id,
         seller_id,
@@ -398,6 +391,5 @@ def build_listing_detail_query(supabase, listing_id: int):
         updated_at,
         seller_meetup_locations,
         transaction_methods,
-        payment_methods,
-        user_profile!inner(username)
+        payment_methods
     """).eq("listing_id", listing_id).eq("status", "active").not_.is_("seller_id", "null")
