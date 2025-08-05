@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { StaticRatingStars } from "@/components";
-import { ThumbsUp } from "lucide-react";
-import { reviewData } from "../../data/reviewData";
+import { useState } from 'react';
+import { StaticRatingStars } from '@/components';
+import { ThumbsUp } from 'lucide-react';
+import { reviewData } from '../../data/reviewData';
 
 export default function ReviewComponent({ review = reviewData }) {
   const [rating, setRating] = useState(review.rating);
@@ -53,16 +53,16 @@ export default function ReviewComponent({ review = reviewData }) {
         <div className="flex flex-col text-right">
           <p
             className={`text-xs font-semibold cursor-pointer hover:underline ${
-              helpful ? "text-primary-red" : "text-gray-800"
+              helpful ? 'text-primary-red' : 'text-gray-800'
             }`}
             onClick={handleHelpfulClick}
           >
             <ThumbsUp
               className={`w-4 h-4 inline mr-1 -mt-1 ${
-                helpful ? "text-primary-red" : "text-gray-600"
+                helpful ? 'text-primary-red' : 'text-gray-600'
               }`}
             />
-            {helpful ? "Marked as Helpful" : "Mark as Helpful"}
+            {helpful ? 'Marked as Helpful' : 'Mark as Helpful'}
           </p>
           <p className="text-xs text-gray-400">
             ({helpfulCount} PUPians found this helpful)

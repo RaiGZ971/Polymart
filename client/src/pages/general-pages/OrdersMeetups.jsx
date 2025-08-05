@@ -1,46 +1,43 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   MainDashboard,
   OrdersListingsComponent,
   DropdownFilter,
   ProductDetail,
   Modal,
-} from "@/components";
-import { meetUpLocationsFilter, orderStatus } from "@/data";
-import { useOrdersData } from "../../hooks";
-import { UserService } from "../../services";
-import { useNavigate } from "react-router-dom";
+} from '@/components';
+import { meetUpLocationsFilter, orderStatus } from '@/data';
+import { useOrdersData } from '../../hooks';
+import { UserService } from '../../services';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/authStore.js';
 
 export default function OrdersMeetups() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState(orderStatus[0].value);
   const [selectedLocation, setSelectedLocation] = useState(
-    meetUpLocationsFilter[0]?.value || ""
+    meetUpLocationsFilter[0]?.value || ''
   );
-  const [activeTab, setActiveTab] = useState("orders");
+  const [activeTab, setActiveTab] = useState('orders');
   const [currentUser, setCurrentUser] = useState(null);
 
   const [showMessageDialog, setShowMessageDialog] = useState(false);
-  const [dialogType, setDialogType] = useState("");
-  const [message, setMessage] = useState("");
+  const [dialogType, setDialogType] = useState('');
+  const [message, setMessage] = useState('');
+
+  const { token } = useAuthStore();
 
   const navigate = useNavigate();
 
   // Use the orders data hook
-  const {
-    orders,
-    loading,
-    error,
-    getFilteredOrders,
-    getCounts,
-    refreshData
-  } = useOrdersData();
+  const { orders, loading, error, getFilteredOrders, getCounts, refreshData } =
+    useOrdersData();
 
   // Get current user on component mount
   useEffect(() => {
-    const user = UserService.getCurrentUser();
+    const user = UserService.getCurrentUser(token);
     setCurrentUser(user);
-    
+
     // If user is not authenticated, redirect to login
     if (!user) {
       navigate('/sign-in');
@@ -60,15 +57,15 @@ export default function OrdersMeetups() {
 
   // Handle accept order action
   const handleAcceptOrder = () => {
-    setDialogType("accept");
-    setMessage("");
+    setDialogType('accept');
+    setMessage('');
     setShowMessageDialog(true);
   };
 
   // Handle reject order action
   const handleRejectOrder = () => {
-    setDialogType("reject");
-    setMessage("");
+    setDialogType('reject');
+    setMessage('');
     setShowMessageDialog(true);
   };
 
@@ -79,21 +76,25 @@ export default function OrdersMeetups() {
 
     // Close dialog and reset state
     setShowMessageDialog(false);
-    setMessage("");
+    setMessage('');
   };
 
   // Handle message dialog close
   const handleMessageClose = () => {
     setShowMessageDialog(false);
-    setMessage("");
-    setDialogType("");
+    setMessage('');
+    setDialogType('');
   };
 
   // Count for tabs
   const { yourOrdersCount, listingsCount } = getCounts();
 
   // Filter data based on activeTab, selectedStatus, and selectedLocation
-  const filteredData = getFilteredOrders(selectedStatus, selectedLocation, activeTab);
+  const filteredData = getFilteredOrders(
+    selectedStatus,
+    selectedLocation,
+    activeTab
+  );
 
   // Show loading state
   if (loading) {
@@ -121,7 +122,7 @@ export default function OrdersMeetups() {
           </h1>
           <div className="flex flex-col justify-center items-center min-h-[400px]">
             <div className="text-lg text-red-500 mb-4">Error: {error}</div>
-            <button 
+            <button
               onClick={refreshData}
               className="px-4 py-2 bg-primary-red text-white rounded hover:bg-red-700"
             >
@@ -144,22 +145,22 @@ export default function OrdersMeetups() {
             <div className="flex flex-row gap-4">
               <button
                 className={`font-semibold ${
-                  activeTab === "orders"
-                    ? "text-primary-red underline"
-                    : "text-gray-400 hover:text-primary-red"
+                  activeTab === 'orders'
+                    ? 'text-primary-red underline'
+                    : 'text-gray-400 hover:text-primary-red'
                 }`}
-                onClick={() => setActiveTab("orders")}
+                onClick={() => setActiveTab('orders')}
               >
                 Your Orders ({yourOrdersCount})
               </button>
               <span className="font-semibold text-gray-400">|</span>
               <button
                 className={`font-semibold ${
-                  activeTab === "listings"
-                    ? "text-primary-red underline"
-                    : "text-gray-400 hover:text-primary-red"
+                  activeTab === 'listings'
+                    ? 'text-primary-red underline'
+                    : 'text-gray-400 hover:text-primary-red'
                 }`}
-                onClick={() => setActiveTab("listings")}
+                onClick={() => setActiveTab('listings')}
               >
                 From Your Listings ({listingsCount})
               </button>
@@ -212,11 +213,11 @@ export default function OrdersMeetups() {
         onClose={handleMessageClose}
         onConfirm={handleMessageConfirm}
         type="message"
-        title={dialogType === "accept" ? "Accept Order" : "Reject Order"}
+        title={dialogType === 'accept' ? 'Accept Order' : 'Reject Order'}
         description={
-          dialogType === "accept"
-            ? "If you accept order, the order process will proceed."
-            : "Once you reject order, no further actions are allowed. Are you sure you want to proceed?"
+          dialogType === 'accept'
+            ? 'If you accept order, the order process will proceed.'
+            : 'Once you reject order, no further actions are allowed. Are you sure you want to proceed?'
         }
       />
     </MainDashboard>

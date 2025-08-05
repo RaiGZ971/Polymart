@@ -10,24 +10,23 @@ import {
   Bell,
   MessageCircle,
   Heart,
-} from "lucide-react";
-import Logo from "../../assets/PolymartLogo.png";
-import { useEffect, useState } from "react";
-import ChatApp from "../chat/ChatApp";
-import NotificationOverlay from "../notifications/NotificationOverlay";
-import CreateListingComponent from "../CreateListingComponent";
-import { useNavigate, useLocation } from "react-router-dom";
+} from 'lucide-react';
+import Logo from '../../assets/PolymartLogo.png';
+import { useEffect, useState } from 'react';
+import ChatApp from '../chat/ChatApp';
+import NotificationOverlay from '../notifications/NotificationOverlay';
+import CreateListingComponent from '../CreateListingComponent';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getUserNotification } from './queries/navigationQueries';
-import { UserService } from "../../services/userService";
+import { UserService } from '../../services/userService';
+import { useAuthStore } from '../../store/authStore.js';
 import { AuthService } from "../../services/authService";
 
 export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
-// TEMPORARY
-const userID = "5jlgi4i2o"
-
+  const { currentUser: userID, token } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const [firstName, setFirstName] = useState("");
+  const [firstName, setFirstName] = useState('');
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [showChat, setShowChat] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -37,12 +36,12 @@ const userID = "5jlgi4i2o"
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const currentUser = UserService.getCurrentUser();
+        const currentUser = UserService.getCurrentUser(token);
         if (currentUser) {
           // Check if we have cached profile data
           const cachedProfile = sessionStorage.getItem('user_profile_cache');
           let cachedData = null;
-          
+
           if (cachedProfile) {
             try {
               const parsed = JSON.parse(cachedProfile);
@@ -60,22 +59,29 @@ const userID = "5jlgi4i2o"
             // Use cached data
             setFirstName(cachedData.first_name || currentUser.username);
             setIsLoadingProfile(false);
-            console.log('🔄 Using cached profile data for:', cachedData.first_name);
+            console.log(
+              '🔄 Using cached profile data for:',
+              cachedData.first_name
+            );
           } else {
             // Fetch fresh data and cache it
             try {
               const profileResponse = await UserService.getMyProfile();
               if (profileResponse.success && profileResponse.data) {
-                const firstName = profileResponse.data.first_name || currentUser.username;
+                const firstName =
+                  profileResponse.data.first_name || currentUser.username;
                 setFirstName(firstName);
-                
+
                 // Cache the profile data
                 const cacheData = {
                   first_name: firstName,
                   ...profileResponse.data,
-                  timestamp: Date.now()
+                  timestamp: Date.now(),
                 };
-                sessionStorage.setItem('user_profile_cache', JSON.stringify(cacheData));
+                sessionStorage.setItem(
+                  'user_profile_cache',
+                  JSON.stringify(cacheData)
+                );
                 console.log('📦 Cached fresh profile data for:', firstName);
               } else {
                 // Fallback to username if profile fetch fails
@@ -83,7 +89,10 @@ const userID = "5jlgi4i2o"
               }
               setIsLoadingProfile(false);
             } catch (profileError) {
-              console.log('Could not fetch profile, using username:', profileError);
+              console.log(
+                'Could not fetch profile, using username:',
+                profileError
+              );
               // Fallback to username if profile fetch fails
               setFirstName(currentUser.username);
               setIsLoadingProfile(false);
@@ -242,7 +251,7 @@ const userID = "5jlgi4i2o"
       onLogoClick();
     }
     // Navigate to dashboard like the Home button does
-    navigate("/dashboard");
+    navigate('/dashboard');
   };
 
   // Helper to check if nav item is active
@@ -386,7 +395,7 @@ const userID = "5jlgi4i2o"
             showChat ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
-          <ChatApp initialChatId="6l5j431j3456h845" onClose={handleCloseChat} />
+          <ChatApp onClose={handleCloseChat} />
         </div>
       </div>
 

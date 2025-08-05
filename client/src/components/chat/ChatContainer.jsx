@@ -1,19 +1,21 @@
-import { useState, useEffect } from "react";
-import MessageList from "./MessageList";
-import ChatInput from "./ChatInput";
-import { Flag, ChevronLeft, Send } from "lucide-react";
-import { useChat } from "../../hooks/useChat";
-import { useProductInfo } from "../../hooks/useProductInfo";
+import { useState, useEffect } from 'react';
+import MessageList from './MessageList';
+import ChatInput from './ChatInput';
+import { Flag, ChevronLeft, Send } from 'lucide-react';
+import { useChat } from '../../hooks/useChat';
+import { useProductInfo } from '../../hooks/useProductInfo';
 
-const ChatContainer = ({ userID, chatData, onBack }) => {
-  const username = chatData?.username || "nintendocicc";
-  const avatarUrl = chatData?.avatarUrl || "/path/to/avatar.jpg";
-  const productImageUrl = chatData?.productImage || "/path/to/product-image.jpg";
+const ChatContainer = ({ chatData, onBack }) => {
+  const username = chatData?.username || 'nintendocicc';
+  const avatarUrl = chatData?.avatarUrl || '/path/to/avatar.jpg';
+  const productImageUrl =
+    chatData?.productImage || '/path/to/product-image.jpg';
   const chatId = chatData?.id;
 
-  const { messages, addMessage, addBotResponse, selectChat } = useChat(userID);
+  const { messages, addMessage, addBotResponse, selectChat } = useChat();
   const productInfo = useProductInfo(chatId);
-  const { productName, productPrice, meetUpPlace, meetUpDay, meetUpTime } = productInfo;
+  const { productName, productPrice, meetUpPlace, meetUpDay, meetUpTime } =
+    productInfo;
   const productImage = productImageUrl;
 
   // Select this chat when component mounts
@@ -58,7 +60,7 @@ const ChatContainer = ({ userID, chatData, onBack }) => {
           </div>
           <div>
             <p className="text-xs">
-              {meetUpPlace} | {meetUpDay} | {meetUpTime}{" "}
+              {meetUpPlace} | {meetUpDay} | {meetUpTime}{' '}
             </p>
           </div>
         </div>

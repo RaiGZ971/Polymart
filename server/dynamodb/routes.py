@@ -301,16 +301,22 @@ async def get_contacts(user_id: str, current_user: dict = Depends(get_current_us
         seen = set()
 
         roomIDs = []
+        latestMessages = []
 
         for item in sortedItems:
             room_id = item.get("room_id")
             if room_id not in seen:
                 seen.add(room_id)
                 roomIDs.append(room_id)
+                latestMessages.append({
+                    "message": item.get("content") or "sent a message",
+                    "sent": item.get("updated_at"),
+                    "isUnread": item.get("read_status") 
+                    })
 
         contacts = [roomID.replace(user_id, "") for roomID in roomIDs]
 
-        return {"contacts": contacts}
+        return {"contacts": contacts, "latest_messages": latestMessages}
     
     except ClientError as e:
         raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch rooms in hackybara-message: {e.response["Error"]["Message"]}")
