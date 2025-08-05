@@ -121,22 +121,18 @@ async def create_order(
 
 @router.get("/orders", response_model=OrdersResponse)
 async def get_user_orders(
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(20, ge=1, le=100, description="Number of items per page"),
     status: Optional[str] = Query(None, description="Filter by order status"),
     as_buyer: Optional[bool] = Query(None, description="Get orders as buyer (True) or seller (False)"),
     current_user: dict = Depends(get_current_user)
 ):
     """
     Get user's orders - both as buyer and seller.
-    Supports pagination and filtering by status and role.
+    Supports filtering by status and role.
     """
     try:
-        # Get user orders with pagination and filters
+        # Get user orders with filters
         orders_data = await order_db.get_user_orders(
             user_id=current_user["user_id"],
-            page=page,
-            page_size=page_size,
             status=status,
             as_buyer=as_buyer
         )
@@ -147,9 +143,7 @@ async def get_user_orders(
         
         return OrdersResponse(
             orders=orders_response,
-            total_count=orders_data["total_count"],
-            page=page,
-            page_size=page_size
+            total_count=orders_data["total_count"]
         )
         
     except HTTPException:
