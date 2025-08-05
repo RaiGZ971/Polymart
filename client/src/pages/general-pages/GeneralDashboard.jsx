@@ -96,18 +96,7 @@ export default function GeneralDashboard() {
     // No cleanup needed since we removed debouncing
   }, []);
 
-  // Show loading state
-  if (loading) {
-    return (
-      <MainDashboard onLogoClick={refreshHome} onHomeClick={refreshHome}>
-        <div className="w-[80%] mt-10 flex justify-center items-center min-h-[400px]">
-          <div className="text-lg text-gray-500">Loading...</div>
-        </div>
-      </MainDashboard>
-    );
-  }
-
-  // Show error state
+  // Show error state only (loading is handled inline)
   if (error) {
     return (
       <MainDashboard onLogoClick={refreshHome} onHomeClick={refreshHome}>
@@ -181,7 +170,11 @@ export default function GeneralDashboard() {
         />
       </div>
       <div className="w-[80%] min-h-[300px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mt-4 mx-auto">
-        {searchLoading ? (
+        {loading ? (
+          <div className="col-span-full flex flex-col items-center justify-center min-h-[200px]">
+            <div className="text-lg text-gray-500">Loading listings...</div>
+          </div>
+        ) : searchLoading ? (
           <div className="col-span-full flex flex-col items-center justify-center min-h-[200px]">
             <div className="text-lg text-gray-500">Searching...</div>
           </div>
