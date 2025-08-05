@@ -61,15 +61,35 @@ async def convert_listing_to_product(supabase, listing: Dict[str, Any]) -> Produ
         # Fallback to separate query if not included in JOIN
         images = await get_images_for_listing(supabase, listing["listing_id"])
     
-    # Extract seller username from join or use seller_id as fallback
+    # Extract seller username and profile info using direct query
     seller_username = str(listing["seller_id"])
-    if "user_profile" in listing and listing["user_profile"]:
-        seller_username = listing["user_profile"]["username"]
+    seller_profile_photo_url = None
+    
+    # Fetch user profile data directly (no JOIN dependency)
+    try:
+        user_result = supabase.table("user_profile").select("username, profile_photo_url").eq("user_id", listing["seller_id"]).execute()
+        if user_result.data and len(user_result.data) > 0:
+            user_data = user_result.data[0]
+            seller_username = user_data["username"]
+            seller_profile_photo_url = user_data.get("profile_photo_url")
+    except Exception as e:
+        print(f"Warning: Could not fetch user profile for seller_id {listing['seller_id']}: {e}")
+    
+    # Get seller listing count
+    seller_listing_count = 0
+    try:
+        seller_stats = supabase.table("listings").select("listing_id").eq("seller_id", listing["seller_id"]).eq("status", "active").execute()
+        seller_listing_count = len(seller_stats.data) if seller_stats.data else 0
+    except Exception:
+        # If we can't get the count, just use 0
+        pass
     
     return ProductListing(
         listing_id=listing["listing_id"],
         seller_id=listing["seller_id"],
         seller_username=seller_username,
+        seller_listing_count=seller_listing_count,
+        seller_profile_photo_url=seller_profile_photo_url,
         name=listing["name"],
         description=listing["description"],
         category=listing["category"],
@@ -104,11 +124,8 @@ async def convert_order_to_response(supabase, order_data: Dict[str, Any]) -> Ord
     Convert a database order record to an Order object.
     Includes fetching and processing associated listing and meetup data.
     """
-    # Get listing data for this order
-    listing_result = supabase.table("product_listings").select("""
-        *,
-        user_profile:seller_id (username)
-    """).eq("listing_id", order_data["listing_id"]).single().execute()
+    # Get listing data for this order - simplified without JOIN
+    listing_result = supabase.table("product_listings").select("*").eq("listing_id", order_data["listing_id"]).single().execute()
     
     listing = None
     if listing_result.data:
