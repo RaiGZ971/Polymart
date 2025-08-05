@@ -13,14 +13,16 @@ export class AuthService {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ session_token: sessionToken })
+        body: JSON.stringify({ session_token: sessionToken }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP error status: ${response.status}`);
+        throw new Error(
+          errorData.detail || `HTTP error status: ${response.status}`
+        );
       }
 
       return await response.json();
@@ -42,14 +44,16 @@ export class AuthService {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP error status: ${response.status}`);
+        throw new Error(
+          errorData.detail || `HTTP error status: ${response.status}`
+        );
       }
 
       return await response.json();
@@ -67,22 +71,26 @@ export class AuthService {
   static async signUp(userData) {
     try {
       console.log('Sending signup data:', userData);
-      
+
       // Use direct fetch to avoid authentication headers for signup
       const url = `${API_BASE}/auth/signup`;
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userData)
+        body: JSON.stringify(userData),
       });
 
       const responseData = await response.json().catch(() => ({}));
       console.log('Signup response:', response.status, responseData);
 
       if (!response.ok) {
-        throw new Error(responseData.detail || responseData.message || `HTTP error status: ${response.status}`);
+        throw new Error(
+          responseData.detail ||
+            responseData.message ||
+            `HTTP error status: ${response.status}`
+        );
       }
 
       return responseData;
@@ -100,12 +108,7 @@ export class AuthService {
   static async login(loginData) {
     try {
       const response = await ApiClient.post('/auth/login', loginData);
-      
-      // Store the token if login is successful
-      if (response.success && response.data?.access_token) {
-        localStorage.setItem('authToken', response.data.access_token);
-      }
-      
+
       return response;
     } catch (error) {
       console.error('Login failed:', error);
@@ -113,26 +116,26 @@ export class AuthService {
     }
   }
 
-  /**
-   * Logout user
-   */
-  static logout() {
-    localStorage.removeItem('authToken');
-  }
+  // /**
+  //  * Logout user
+  //  */
+  // static logout() {
+  //   localStorage.removeItem('authToken');
+  // }
 
-  /**
-   * Check if user is authenticated
-   * @returns {boolean} True if user has a valid token
-   */
-  static isAuthenticated() {
-    return !!localStorage.getItem('authToken');
-  }
+  // /**
+  //  * Check if user is authenticated
+  //  * @returns {boolean} True if user has a valid token
+  //  */
+  // static isAuthenticated() {
+  //   return !!localStorage.getItem('authToken');
+  // }
 
-  /**
-   * Get current user token
-   * @returns {string|null} The auth token or null
-   */
-  static getToken() {
-    return localStorage.getItem('authToken');
-  }
+  // /**
+  //  * Get current user token
+  //  * @returns {string|null} The auth token or null
+  //  */
+  // static getToken() {
+  //   return localStorage.getItem('authToken');
+  // }
 }

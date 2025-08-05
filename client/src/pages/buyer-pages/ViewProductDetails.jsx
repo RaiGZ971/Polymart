@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from 'react';
 import {
   MainDashboard,
   PlaceOrder,
@@ -10,14 +10,15 @@ import {
   ReviewComponent,
   ChatApp,
   Modal,
-} from "../../components";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, Flag, Heart, ShoppingBag } from "lucide-react";
-import productCategories from "../../data/productCategories";
-import { stallbanner, pupmap } from "../../assets";
-import meetUpLocations from "../../data/meetUpLocations";
-import timeSlots from "../../data/timeSlots";
-import { ListingService } from "../../services/listingService";
+} from '../../components';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { ChevronLeft, Flag, Heart, ShoppingBag } from 'lucide-react';
+import productCategories from '../../data/productCategories';
+import { stallbanner, pupmap } from '../../assets';
+import meetUpLocations from '../../data/meetUpLocations';
+import timeSlots from '../../data/timeSlots';
+import { getListing, getProductReview } from './queries/productDetailsQueries';
+import { getUsersDetails } from '../../queries/index.js';
 
 const getCategoryLabel = (value) => {
   const found = productCategories.find((cat) => cat.value === value);
@@ -36,97 +37,62 @@ export default function ViewProductDetails() {
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
-  
+
   // Get listing ID from URL params or fallback to passed state
-  const listingId = params.id || location.state?.order?.listing_id || location.state?.order?.id;
-  const initialOrder = location.state?.order;
+  const listingId =
+    params.id || location.state?.order?.listing_id || location.state?.order?.id;
   const currentUser = location.state?.currentUser;
-  
-  const [order, setOrder] = useState(initialOrder);
-  const [loading, setLoading] = useState(!initialOrder);
-  const [error, setError] = useState(null);
+
   const [quantity, setQuantity] = useState(1);
   const [showPlaceOrder, setShowPlaceOrder] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
-  const [offerPrice, setOfferPrice] = useState("");
-  const [offerMessage, setOfferMessage] = useState("");
+  const [offerPrice, setOfferPrice] = useState('');
+  const [offerMessage, setOfferMessage] = useState('');
   const [customOrder, setCustomOrder] = useState(null);
 
-  // Fetch listing data if we don't have it or if we have a listing ID
-  useEffect(() => {
-    const fetchListingData = async () => {
-      if (!listingId) {
-        setError("No listing ID provided");
-        setLoading(false);
-        return;
-      }
+  const {
+    data: order = {},
+    isLoading: orderLoading,
+    error: orderError,
+  } = getListing(listingId);
 
-      try {
-        setLoading(true);
-        const response = await ListingService.getListingById(listingId);
-        if (response.success && response.data) {
-          // Transform the data to match the expected structure
-          const listing = response.data;
-          const hasRange = listing.price_min !== null && listing.price_max !== null && listing.price_min !== listing.price_max;
-          
-          const transformedOrder = {
-            ...listing,
-            id: listing.listing_id,
-            productName: listing.name,
-            productPrice: listing.price_min,
-            priceRange: hasRange ? {
-              min: listing.price_min,
-              max: listing.price_max
-            } : null,
-            hasPriceRange: hasRange,
-            username: listing.user_profile?.username,
-            userAvatar: listing.seller_profile_photo_url || 'https://via.placeholder.com/40x40?text=User',
-            productImage: listing.images && listing.images.length > 0 
-              ? listing.images.find(img => img.is_primary)?.image_url || listing.images[0].image_url
-              : 'https://via.placeholder.com/268x245?text=No+Image',
-            images: listing.images || [],
-            itemsOrdered: listing.sold_count || 0,
-            category: listing.category,
-            productDescription: listing.description,
-            status: listing.status,
-            created_at: listing.created_at,
-            tags: listing.tags,
-            stock: listing.total_stock,
-            meetupLocations: listing.seller_meetup_locations || [],
-            paymentMethods: listing.payment_methods || [],
-            reviews: [] // TODO: Add reviews from API
-          };
-          
-          setOrder(transformedOrder);
-        } else {
-          setError("Failed to fetch listing data");
-        }
-      } catch (err) {
-        console.error('Error fetching listing:', err);
-        setError("Failed to load listing details");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { data: rawReviews = [] } = getProductReview(
+    order.seller_id,
+    listingId
+  );
 
-    // Only fetch if we don't have order data
-    if (!order && listingId) {
-      fetchListingData();
-    }
-  }, [listingId]);
+  const reviewerIDs = useMemo(() => {
+    return rawReviews.map((review) => review.user?.userID);
+  }, [rawReviews]);
 
-  const averageRating =
-    order?.reviews && order.reviews.length > 0
-      ? Math.round(
-          order.reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
-            order.reviews.length
-        )
-      : 0;
+  const userResults = getUsersDetails(reviewerIDs);
 
-  if (loading) {
+  const usersData = userResults.map((result) => result.data);
+
+  const reviews = useMemo(() => {
+    if (!rawReviews.length || !usersData.length) return [];
+
+    return rawReviews.map((rawReview, index) => ({
+      ...rawReview,
+      user: {
+        ...rawReview.user,
+        name: usersData[index]?.username,
+        avatar: usersData[index]?.profile_photo_url,
+      },
+    }));
+  }, [rawReviews, usersData]);
+
+  const averageRating = useMemo(() => {
+    if (!reviews || reviews.length === 0) return 0;
+    return Math.round(
+      reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
+    );
+  }, [reviews]);
+
+  if (orderLoading) {
     return (
       <MainDashboard>
         <div className="w-full flex justify-center items-center min-h-screen">
@@ -136,11 +102,13 @@ export default function ViewProductDetails() {
     );
   }
 
-  if (error || !order) {
+  if (orderError) {
     return (
       <MainDashboard>
         <div className="w-full flex justify-center items-center min-h-screen">
-          <p className="text-lg text-gray-500">{error || "No product data found."}</p>
+          <p className="text-lg text-gray-500">
+            {orderError.message || 'No product data found.'}
+          </p>
         </div>
       </MainDashboard>
     );
@@ -164,8 +132,8 @@ export default function ViewProductDetails() {
         <div className="flex flex-row gap-12 items-center">
           {/* Left: Image Carousel */}
           <div className="w-1/2">
-            <ImageCarousel 
-              images={order.images || []} 
+            <ImageCarousel
+              images={order.images || []}
               productName={order.productName || order.name}
             />
           </div>
@@ -200,7 +168,8 @@ export default function ViewProductDetails() {
                 <div className="flex flex-col items-end">
                   <StaticRatingStars value={averageRating} />
                   <p className="text-sm font-semibold text-gray-800 mt-0.5">
-                    {averageRating} stars | {order.sold_count || order.itemsOrdered || 0} reviews
+                    {averageRating} stars |{' '}
+                    {order.sold_count || order.itemsOrdered || 0} reviews
                   </p>
                 </div>
               </div>
@@ -210,7 +179,9 @@ export default function ViewProductDetails() {
                   Product Description
                 </p>
                 <p className="text-sm text-gray-800">
-                  {order.productDescription || order.description || "No description provided."}
+                  {order.productDescription ||
+                    order.description ||
+                    'No description provided.'}
                 </p>
               </div>
             </div>
@@ -218,11 +189,13 @@ export default function ViewProductDetails() {
               {/* User Actions */}
               <div className="flex flex-row gap-1 text-base">
                 <p className="font-semibold text-primary-red">Availability:</p>
-                <p className=" text-gray-800">{order.stock || order.total_stock || 0} in stock</p>
+                <p className=" text-gray-800">
+                  {order.stock || order.total_stock || 0} in stock
+                </p>
               </div>
               <div className="flex flex-row gap-2 text-base">
                 <p className="font-semibold text-primary-red">
-                  Item Quantity:{" "}
+                  Item Quantity:{' '}
                 </p>
                 <QuantityPicker
                   value={quantity}
@@ -243,7 +216,7 @@ export default function ViewProductDetails() {
               className="hover:bg-primary-red hover:text-white px-4 py-2 rounded-full bg-white border-2 
                   border-primary-red transition-colors text-primary-red font-bold w-full"
               onClick={() => {
-                console.log("Place Order clicked", order.hasPriceRange);
+                console.log('Place Order clicked', order.hasPriceRange);
                 if (order.hasPriceRange) {
                   setShowOfferModal(true);
                 } else {
@@ -275,22 +248,21 @@ export default function ViewProductDetails() {
                 Reviews:
               </h1>
               <p className="text-gray-500 text-sm">
-                {order.reviews ? order.reviews.length : 0} reviews |{" "}
+                {reviews ? reviews.length : 0} reviews |{' '}
                 {order.sold_count || order.itemsOrdered || 0} items sold
               </p>
             </div>
 
             {/* Review Section */}
             <div className="mt-4 space-y-4">
-              {order.reviews && order.reviews.length > 0 ? (
+              {reviews && reviews.length > 0 ? (
                 <>
-                  {(showAllReviews
-                    ? order.reviews
-                    : order.reviews.slice(0, 5)
-                  ).map((review, idx) => (
-                    <ReviewComponent key={idx} review={review} />
-                  ))}
-                  {!showAllReviews && order.reviews.length > 5 && (
+                  {(showAllReviews ? reviews : reviews.slice(0, 5)).map(
+                    (review, idx) => (
+                      <ReviewComponent key={idx} review={review} />
+                    )
+                  )}
+                  {!showAllReviews && reviews.length > 5 && (
                     <button
                       className="text-primary-red font-semibold hover:underline mt-2"
                       onClick={() => setShowAllReviews(true)}
@@ -316,7 +288,7 @@ export default function ViewProductDetails() {
                       src={stallbanner}
                       alt="Stall Banner"
                       className="w-full h-full object-cover"
-                      style={{ pointerEvents: "none" }}
+                      style={{ pointerEvents: 'none' }}
                     />
                   </div>
                   {/* User Image */}
@@ -371,9 +343,9 @@ export default function ViewProductDetails() {
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 {order.meetupLocations || order.seller_meetup_locations ? (
-                  (order.meetupLocations || order.seller_meetup_locations).map((loc, idx) => (
-                    <GrayTag key={idx} text={loc} />
-                  ))
+                  (order.meetupLocations || order.seller_meetup_locations).map(
+                    (loc, idx) => <GrayTag key={idx} text={loc} />
+                  )
                 ) : (
                   <GrayTag text="No locations listed" />
                 )}
@@ -398,16 +370,16 @@ export default function ViewProductDetails() {
             {/* Payment Method */}
             <div className="flex flex-col text-left mt-10">
               <h1 className="text-primary-red font-semibold text-base">
-                Available Payment Methods{" "}
+                Available Payment Methods{' '}
               </h1>
               <p className="text-sm text-gray-500">
                 All payment transactions are made during meet ups
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 {order.paymentMethods || order.payment_methods ? (
-                  (order.paymentMethods || order.payment_methods).map((method, idx) => (
-                    <GrayTag key={idx} text={method} />
-                  ))
+                  (order.paymentMethods || order.payment_methods).map(
+                    (method, idx) => <GrayTag key={idx} text={method} />
+                  )
                 ) : (
                   <GrayTag text="No payment methods listed" />
                 )}
@@ -479,7 +451,7 @@ export default function ViewProductDetails() {
         title="Make an Offer"
         description={
           <>
-            This listing has a flexible price range of{" "}
+            This listing has a flexible price range of{' '}
             <strong>
               ₱{order.priceRange?.min}–₱{order.priceRange?.max}
             </strong>
@@ -501,7 +473,7 @@ export default function ViewProductDetails() {
           const min = Number(order.priceRange?.min) || 0;
           const max = Number(order.priceRange?.max) || 0;
           const num = Number(offerPrice);
-          if (isNaN(num) || offerPrice === "" || num < min || num > max) {
+          if (isNaN(num) || offerPrice === '' || num < min || num > max) {
             alert(`Offer price must be between ₱${min} and ₱${max}.`);
             return;
           }
