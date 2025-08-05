@@ -82,8 +82,9 @@ export default function ViewProductDetails() {
               max: listing.price_max
             } : null,
             hasPriceRange: hasRange,
-            username: listing.user_profile?.username,
+            username: listing.seller_username,
             userAvatar: listing.seller_profile_photo_url || 'https://via.placeholder.com/40x40?text=User',
+            seller_listing_count: listing.seller_listing_count,
             productImage: listing.images && listing.images.length > 0 
               ? listing.images.find(img => img.is_primary)?.image_url || listing.images[0].image_url
               : 'https://via.placeholder.com/268x245?text=No+Image',
@@ -321,17 +322,16 @@ export default function ViewProductDetails() {
                   </div>
                   {/* User Image */}
                   <img
-                    src="https://picsum.photos/247/245"
+                    src={order.userAvatar || "https://picsum.photos/247/245"}
                     alt="User Image"
                     className="w-full h-full rounded-full object-cover z-0"
                   />
                 </div>
                 <div className="text-left pl-3">
-                  <p className="font-bold text-lg">{order.username}</p>
+                  <p className="font-bold text-lg">{order.username || 'Unknown Seller'}</p>
                   <p className="text-gray-500 text-sm">PUP Sta Mesa | CCIS</p>
                   <p className="text-xs text-gray-800 mt-2">
-                    5 Listings | <span className="text-yellow-400">★</span> 4.5
-                    stars
+                    {order.seller_listing_count || 0} Listings | <span className="text-yellow-400">★</span> 4.5 stars
                   </p>
                 </div>
               </div>

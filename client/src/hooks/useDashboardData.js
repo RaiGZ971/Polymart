@@ -1,56 +1,29 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ListingService } from '../services/listingService';
+import { UserService } from '../services/userService';
 
 export const useDashboardData = () => {
-  // Try to load cached data from sessionStorage
-  const loadCachedData = () => {
-    try {
-      const cached = sessionStorage.getItem('polymart_dashboard_data');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        const cacheAge = Date.now() - parsed.timestamp;
-        // Use cache if it's less than 5 minutes old
-        if (cacheAge < 5 * 60 * 1000) {
-          return parsed;
-        }
-      }
-    } catch (err) {
-      console.warn('Failed to load cached data:', err);
-    }
-    return null;
-  };
-
-  const cachedData = loadCachedData();
+  // Get current user for user change detection
+  const getCurrentUser = () => UserService.getCurrentUser();
+  const [currentUserId, setCurrentUserId] = useState(getCurrentUser()?.user_id || null);
   
-  // Store ALL listings (unfiltered) for client-side filtering
-  const [allListings, setAllListings] = useState(cachedData?.allListings || []);
-  const [allMyListings, setAllMyListings] = useState(cachedData?.allMyListings || []);
-  const [loading, setLoading] = useState(!cachedData);
+  // Store ALL listings (unfiltered) for client-side filtering - NO CACHING
+  const [allListings, setAllListings] = useState([]);
+  const [allMyListings, setAllMyListings] = useState([]);
+  const [loading, setLoading] = useState(true); // Always start with loading since no cache
   const [searchLoading, setSearchLoading] = useState(false); // Separate loading state for search
   const [error, setError] = useState(null);
-  const [activeCategory, setActiveCategory] = useState(cachedData?.activeCategory || 'all');
-  const [sortBy, setSortBy] = useState(cachedData?.sortBy || 'newest');
-  const [searchTerm, setSearchTerm] = useState(cachedData?.searchTerm || '');
-  const [lastFetchParams, setLastFetchParams] = useState(cachedData?.lastFetchParams || null);
-  const [isInitialized, setIsInitialized] = useState(!!cachedData);
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [lastFetchParams, setLastFetchParams] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-    // Cache data to sessionStorage
-  const cacheData = useCallback((newAllListings, newAllMyListings, params) => {
-    try {
-      const dataToCache = {
-        allListings: newAllListings, // Store complete datasets
-        allMyListings: newAllMyListings,
-        activeCategory: activeCategory, // Store current category separately
-        sortBy: sortBy, // Cache current sortBy separately
-        searchTerm: params.searchTerm,
-        lastFetchParams: params,
-        timestamp: Date.now()
-      };
-      sessionStorage.setItem('polymart_dashboard_data', JSON.stringify(dataToCache));
-    } catch (err) {
-      console.warn('Failed to cache data:', err);
-    }
-  }, [activeCategory, sortBy]);
+  // NO MORE CACHING - Data is always fresh from server
+  const cacheData = useCallback(() => {
+    // Removed caching for real-time data accuracy
+    console.log('� Caching disabled - using fresh data only');
+  }, []);
 
   // Transform API listing data to match ProductCard component expectations
   const transformListing = (listing) => {
@@ -158,91 +131,21 @@ export const useDashboardData = () => {
     };
   };
 
-  // Refresh all data with smart caching 
-  const refreshData = useCallback(async () => {
-    const currentParams = { searchTerm }; // Only search term triggers refetch, not category
+  // Fetch fresh data - always gets latest from server
+  const fetchData = useCallback(async (isSearchOperation = false) => {
+    const currentParams = { searchTerm };
     
-    // Check if we need to refetch (only if search changed or we haven't initialized)
-    const paramsChanged = JSON.stringify(currentParams) !== JSON.stringify(lastFetchParams);
+    console.log('📊 Fetching fresh data - searchTerm:', searchTerm, 'isSearch:', isSearchOperation);
     
-    if (!isInitialized || paramsChanged) {
-      console.log('📊 Refreshing data - initialized:', isInitialized, 'paramsChanged:', paramsChanged);
-      
-      // Use search loading for search operations, main loading for initial load
-      if (isInitialized) {
-        setSearchLoading(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-      
-      try {
-        console.log('🔍 Fetching listings with search term:', searchTerm);
-        
-        const publicParams = {
-          // Include search term if it exists, otherwise fetch all
-          ...(searchTerm ? { search: searchTerm } : {}),
-          ...getSortParams(sortBy)
-        };
-        
-        const myParams = {
-          ...(searchTerm ? { search: searchTerm } : {}),
-          sort_by: sortBy
-        };
-        
-        const [publicResponse, myResponse] = await Promise.all([
-          ListingService.getPublicListings(publicParams),
-          ListingService.getMyListings(myParams)
-        ]);
-        
-        // Transform and store listings
-        let newAllListings = [];
-        if (publicResponse.products) {
-          newAllListings = publicResponse.products.map(transformListing);
-        }
-        
-        let newAllMyListings = [];
-        if (myResponse.products) {
-          newAllMyListings = myResponse.products.map(transformListing);
-        }
-        
-        // Update the complete dataset
-        setAllListings(prev => JSON.stringify(prev) !== JSON.stringify(newAllListings) ? newAllListings : prev);
-        setAllMyListings(prev => JSON.stringify(prev) !== JSON.stringify(newAllMyListings) ? newAllMyListings : prev);
-        
-        // Cache the complete data
-        cacheData(newAllListings, newAllMyListings, currentParams);
-        
-        setLastFetchParams(currentParams);
-        setIsInitialized(true);
-      } catch (err) {
-        console.error('Error refreshing data:', err);
-        setError('Failed to refresh data');
-        setAllListings([]);
-        setAllMyListings([]);
-      } finally {
-        if (isInitialized) {
-          setSearchLoading(false);
-        } else {
-          setLoading(false);
-        }
-      }
+    // Use search loading for search operations, main loading for initial load
+    if (isSearchOperation) {
+      setSearchLoading(true);
     } else {
-      console.log('📋 Using cached data, no refresh needed');
+      setLoading(true);
     }
-  }, [searchTerm, isInitialized, lastFetchParams, sortBy, getSortParams, transformListing, cacheData]);
-
-  // Force refresh - always fetches new data
-  const forceRefresh = useCallback(async () => {
-    setLoading(true);
     setError(null);
-    setIsInitialized(false); // Reset initialization to force fetch
     
     try {
-      const currentParams = { searchTerm };
-      
-      console.log('🔄 Force refreshing data with search term:', searchTerm);
-      
       const publicParams = {
         // Include search term if it exists, otherwise fetch all
         ...(searchTerm ? { search: searchTerm } : {}),
@@ -265,30 +168,54 @@ export const useDashboardData = () => {
         newAllListings = publicResponse.products.map(transformListing);
       }
       
-      // Transform my listings
       let newAllMyListings = [];
       if (myResponse.products) {
         newAllMyListings = myResponse.products.map(transformListing);
       }
       
       // Update the complete dataset
-      setAllListings(prev => JSON.stringify(prev) !== JSON.stringify(newAllListings) ? newAllListings : prev);
-      setAllMyListings(prev => JSON.stringify(prev) !== JSON.stringify(newAllMyListings) ? newAllMyListings : prev);
-      
-      // Cache the complete data
-      cacheData(newAllListings, newAllMyListings, currentParams);
-      
+      setAllListings(newAllListings);
+      setAllMyListings(newAllMyListings);
       setLastFetchParams(currentParams);
       setIsInitialized(true);
+      
+      console.log('✅ Fresh data loaded:', {
+        publicCount: newAllListings.length,
+        myCount: newAllMyListings.length
+      });
+      
     } catch (err) {
-      console.error('Error force refreshing data:', err);
-      setError('Failed to refresh data');
+      console.error('Error fetching data:', err);
+      setError('Failed to fetch data');
       setAllListings([]);
       setAllMyListings([]);
     } finally {
-      setLoading(false);
+      if (isSearchOperation) {
+        setSearchLoading(false);
+      } else {
+        setLoading(false);
+      }
     }
-  }, [searchTerm, sortBy, getSortParams, transformListing, cacheData]);
+  }, [searchTerm, sortBy, getSortParams, transformListing]);
+
+  // Refresh data with search detection
+  const refreshData = useCallback(async () => {
+    const currentParams = { searchTerm };
+    const paramsChanged = JSON.stringify(currentParams) !== JSON.stringify(lastFetchParams);
+    
+    if (!isInitialized || paramsChanged) {
+      await fetchData(isInitialized && paramsChanged); // Pass true if it's a search operation
+    } else {
+      console.log('📋 No refresh needed, params unchanged');
+    }
+  }, [fetchData, isInitialized, lastFetchParams, searchTerm]);
+
+  // Force refresh - always fetches new data
+  const forceRefresh = useCallback(async () => {
+    console.log('🔄 Force refresh requested');
+    setIsInitialized(false); // Reset initialization to force fetch
+    await fetchData(false);
+  }, [fetchData]);
 
   // Home/Logo refresh - resets filters and forces fresh data
   const refreshHome = useCallback(async () => {
@@ -298,64 +225,58 @@ export const useDashboardData = () => {
     setActiveCategory('all');
     setSearchTerm('');
     setSortBy('newest');
-    
-    // Clear cache to force fresh data
-    sessionStorage.removeItem('polymart_dashboard_data');
-    
-    // Force refresh with clean state
-    setLoading(true);
-    setError(null);
     setIsInitialized(false);
     
-    try {
-      const publicParams = {
-        // Fetch ALL data with no filters
-        ...getSortParams('newest')
-      };
-      
-      const [publicResponse, myResponse] = await Promise.all([
-        ListingService.getPublicListings(publicParams),
-        ListingService.getMyListings({
-          sort_by: 'newest'
-        })
-      ]);
-      
-      // Transform and store ALL listings
-      let newAllListings = [];
-      if (publicResponse.products) {
-        newAllListings = publicResponse.products.map(transformListing);
-      }
-      
-      let newAllMyListings = [];
-      if (myResponse.products) {
-        newAllMyListings = myResponse.products.map(transformListing);
-      }
-      
-      // Update datasets
-      setAllListings(newAllListings);
-      setAllMyListings(newAllMyListings);
-      
-      // Cache fresh data
-      cacheData(newAllListings, newAllMyListings, { searchTerm: '' });
-      
-      setLastFetchParams({ searchTerm: '' });
-      setIsInitialized(true);
-      
-      console.log('🏠 Home refresh completed');
-    } catch (err) {
-      console.error('Error refreshing home:', err);
-      setError('Failed to refresh data');
-      setAllListings([]);
-      setAllMyListings([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [getSortParams, transformListing, cacheData]);
+    // Fetch fresh data with clean state
+    await fetchData(false);
+    
+    console.log('🏠 Home refresh completed');
+  }, [fetchData]);
 
-      // Initial data load and search term changes (category changes are handled client-side)
+  // Monitor user changes and reset data when user changes
   useEffect(() => {
-    refreshData();
-  }, [refreshData]);
+    const checkUserChange = () => {
+      const newUser = getCurrentUser();
+      const newUserId = newUser?.user_id || null;
+      
+      if (currentUserId !== newUserId) {
+        console.log('👤 User changed:', {
+          oldUserId: currentUserId,
+          newUserId: newUserId
+        });
+        
+        // Reset all state when user changes (including logout)
+        console.log('🔄 Resetting state for user change...');
+        setAllListings([]);
+        setAllMyListings([]);
+        setActiveCategory('all');
+        setSortBy('newest');
+        setSearchTerm('');
+        setLastFetchParams(null);
+        setIsInitialized(false);
+        setLoading(true);
+        setError(null);
+        
+        // Update current user ID
+        setCurrentUserId(newUserId);
+        
+        console.log('✅ State reset for user change');
+      }
+    };
+    
+    // Check immediately and then periodically
+    checkUserChange();
+    const interval = setInterval(checkUserChange, 1000); // Check every second
+    
+    return () => clearInterval(interval);
+  }, [currentUserId, getCurrentUser]);
+
+  // Initial data load and search term changes
+  useEffect(() => {
+    if (currentUserId) { // Only fetch if there's a current user
+      refreshData();
+    }
+  }, [refreshData, currentUserId]);
 
   return {
     listings: filteredListings, // Return filtered and sorted data
@@ -371,7 +292,18 @@ export const useDashboardData = () => {
     setSearchTerm,
     refreshData: forceRefresh, // Export forceRefresh as refreshData for backward compatibility
     refreshHome, // New function for home/logo refresh
-    clearCache: () => sessionStorage.removeItem('polymart_dashboard_data'),
+    clearCache: () => {
+      // Since we don't use cache anymore, this just resets state
+      console.log('🧹 Clearing state (no cache to clear)...');
+      setAllListings([]);
+      setAllMyListings([]);
+      setActiveCategory('all');
+      setSortBy('newest');
+      setSearchTerm('');
+      setLastFetchParams(null);
+      setIsInitialized(false);
+      console.log('✅ State cleared');
+    },
     hasData: filteredListings.length > 0 || filteredMyListings.length > 0
   };
 };

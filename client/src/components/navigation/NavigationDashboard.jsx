@@ -19,6 +19,7 @@ import CreateListingComponent from "../CreateListingComponent";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useNotificationStore } from "../../store/index.js";
 import { UserService } from "../../services/userService";
+import { AuthService } from "../../services/authService";
 
 export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
 // TEMPORARY
@@ -194,6 +195,8 @@ const userID = "5jlgi4i2o"
       setShowNotifications(true);
     } else if (item.action === "create-listing") {
       setShowCreateListing(true);
+    } else if (item.name === "Sign Out") {
+      handleLogout();
     } else if (item.name === "Home" && onHomeClick) {
       // Handle Home button click with refresh
       onHomeClick();
@@ -201,6 +204,20 @@ const userID = "5jlgi4i2o"
     } else {
       navigate(item.path);
     }
+  };
+
+  const handleLogout = () => {
+    console.log('🚪 NavigationDashboard.handleLogout() called');
+    
+    // Clear authentication token via AuthService (this also clears cache)
+    console.log('🔐 Calling AuthService.logout()...');
+    AuthService.logout();
+    
+    console.log('🔄 Redirecting to sign-in...');
+    // Redirect to sign-in page
+    navigate('/sign-in');
+    
+    console.log('✅ NavigationDashboard.handleLogout() completed');
   };
 
   const handleCloseChat = () => {
