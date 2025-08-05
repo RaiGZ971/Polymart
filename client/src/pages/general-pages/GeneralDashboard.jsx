@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   SearchBar,
   CategoryFilter,
@@ -8,16 +8,17 @@ import {
   Add,
   CreateListingComponent,
   MainDashboard,
-} from "../../components";
-import { sortOptions } from "../../data";
-import { useDashboardData } from "../../hooks";
-import { UserService } from "../../services";
-import { useNavigate } from "react-router-dom";
+} from '../../components';
+import { sortOptions } from '../../data';
+import { useDashboardData } from '../../hooks';
+import { UserService } from '../../services';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/authStore.js';
 
 export default function GeneralDashboard() {
   const [showCreateListing, setShowCreateListing] = useState(false);
-  const [activeTab, setActiveTab] = useState("all-listings");
-  const [pendingSearch, setPendingSearch] = useState("");
+  const [activeTab, setActiveTab] = useState('all-listings');
+  const [pendingSearch, setPendingSearch] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
 
@@ -35,26 +36,27 @@ export default function GeneralDashboard() {
     searchTerm,
     setSearchTerm,
     refreshData,
-    refreshHome
+    refreshHome,
   } = useDashboardData();
+
+  const { currentUser: user, token, isAuthenticated } = useAuthStore();
 
   // Get current user on component mount
   useEffect(() => {
-    const user = UserService.getCurrentUser();
-    const token = localStorage.getItem('authToken');
-    
     console.log('🔑 Authentication check:', {
       user,
       hasToken: !!token,
       token: token ? token.substring(0, 20) + '...' : null,
-      isAuthenticated: UserService.isAuthenticated()
+      isAuthenticated,
     });
-    
+
     setCurrentUser(user);
-    
+
     // If user is not authenticated, redirect to login
     if (!user || !UserService.isAuthenticated()) {
-      console.log('❌ No user found or not authenticated, should redirect to sign-in');
+      console.log(
+        '❌ No user found or not authenticated, should redirect to sign-in'
+      );
       navigate('/sign-in');
       return;
     }
@@ -69,11 +71,14 @@ export default function GeneralDashboard() {
   };
 
   // Get the appropriate data based on active tab
-  const displayedListings = activeTab === "your-listings" ? myListings : listings;
+  const displayedListings =
+    activeTab === 'your-listings' ? myListings : listings;
 
   const handleProductClick = (product) => {
     const listingId = product.listing_id || product.id;
-    navigate(`/buyer/view-product-details/${listingId}`, { state: { order: product } });
+    navigate(`/buyer/view-product-details/${listingId}`, {
+      state: { order: product },
+    });
   };
 
   const handleSearchInputChange = (value) => {
@@ -81,7 +86,7 @@ export default function GeneralDashboard() {
   };
 
   const handleSearchInputKeyDown = (e) => {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       setSearchTerm(pendingSearch);
     }
   };
@@ -108,7 +113,7 @@ export default function GeneralDashboard() {
       <MainDashboard onLogoClick={refreshHome} onHomeClick={refreshHome}>
         <div className="w-[80%] mt-10 flex flex-col justify-center items-center min-h-[400px]">
           <div className="text-lg text-red-500 mb-4">Error: {error}</div>
-          <button 
+          <button
             onClick={refreshData}
             className="px-4 py-2 bg-primary-red text-white rounded hover:bg-red-700"
           >
@@ -149,22 +154,22 @@ export default function GeneralDashboard() {
         <div className="flex flex-row gap-4 justify-end ">
           <button
             className={`font-semibold ${
-              activeTab === "all-listings"
-                ? "text-primary-red underline"
-                : "text-gray-400 hover:text-primary-red"
+              activeTab === 'all-listings'
+                ? 'text-primary-red underline'
+                : 'text-gray-400 hover:text-primary-red'
             }`}
-            onClick={() => setActiveTab("all-listings")}
+            onClick={() => setActiveTab('all-listings')}
           >
             All Listings
           </button>
           <span className="font-semibold text-gray-400">|</span>
           <button
             className={`font-semibold ${
-              activeTab === "your-listings"
-                ? "text-primary-red underline"
-                : "text-gray-400 hover:text-primary-red"
+              activeTab === 'your-listings'
+                ? 'text-primary-red underline'
+                : 'text-gray-400 hover:text-primary-red'
             }`}
-            onClick={() => setActiveTab("your-listings")}
+            onClick={() => setActiveTab('your-listings')}
           >
             Your Listings
           </button>
@@ -183,12 +188,14 @@ export default function GeneralDashboard() {
         ) : displayedListings.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center min-h-[200px]">
             <span className="text-gray-500 text-lg py-12">
-              {activeTab === "your-listings" ? "No listings found. Create your first listing!" : "No items matched"}
+              {activeTab === 'your-listings'
+                ? 'No listings found. Create your first listing!'
+                : 'No items matched'}
             </span>
           </div>
         ) : (
           <>
-            {activeTab === "your-listings" && (
+            {activeTab === 'your-listings' && (
               <div className="h-full">
                 <Add
                   text="Add a new listing"
@@ -218,7 +225,7 @@ export default function GeneralDashboard() {
                             animate-fade-in
                             animate-scale-in"
             style={{
-              animation: "fadeScaleIn 0.3s cubic-bezier(0.4,0,0.2,1)",
+              animation: 'fadeScaleIn 0.3s cubic-bezier(0.4,0,0.2,1)',
             }}
           >
             <CreateListingComponent

@@ -1,38 +1,39 @@
-import { useState, useEffect } from "react";
-import ChatPreview from "./ChatPreview";
-import ChatContainer from "./ChatContainer";
+import { useState, useEffect } from 'react';
+import ChatPreview from './ChatPreview';
+import ChatContainer from './ChatContainer';
+import { useAuthStore } from '../../store/authStore.js';
 
 export default function ChatApp({
-  initialChatId = null,
-  initialView = "preview",
+  initialView = 'preview',
   initialChatData = null,
   onClose,
   fromOrderDetails = false, // <-- add default value
 }) {
+  const { currentUser: initialChatId } = useAuthStore();
   const [currentView, setCurrentView] = useState(initialView);
   const [selectedChat, setSelectedChat] = useState(initialChatData);
 
   // If initialChatId is provided, start with that chat open
   useEffect(() => {
-    if (initialChatId && initialView === "chat" && initialChatData) {
-      setCurrentView("chat");
+    if (initialChatId && initialView === 'chat' && initialChatData) {
+      setCurrentView('chat');
       setSelectedChat(initialChatData);
     }
   }, [initialChatId, initialView, initialChatData]);
 
   const handleChatSelect = (chat) => {
     setSelectedChat(chat); // Store the entire chat object
-    setCurrentView("chat"); // Switch to chat view
+    setCurrentView('chat'); // Switch to chat view
   };
 
   const handleBack = () => {
-    if (currentView === "chat") {
+    if (currentView === 'chat') {
       if (fromOrderDetails) {
         // Close the chat modal and go back to order details
         if (onClose) onClose();
       } else {
         // Go back to chat preview
-        setCurrentView("preview");
+        setCurrentView('preview');
         setSelectedChat(null);
       }
     } else {
@@ -45,14 +46,13 @@ export default function ChatApp({
 
   return (
     <div className="h-full">
-      {currentView === "preview" ? (
+      {currentView === 'preview' ? (
         <ChatPreview
           onChatSelect={handleChatSelect} // Pass chat object
           onBack={handleBack}
         />
       ) : (
         <ChatContainer
-          userID={initialChatId}
           chatData={selectedChat} // Pass the selected chat data
           onBack={handleBack}
         />
