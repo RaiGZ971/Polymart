@@ -116,12 +116,39 @@ export class AuthService {
     }
   }
 
-  // /**
-  //  * Logout user
-  //  */
-  // static logout() {
-  //   localStorage.removeItem('authToken');
-  // }
+
+  /**
+   * Logout user and clear all cached data
+   */
+  static logout() {
+    console.log('🚪 AuthService.logout() called');
+    
+    // Check what's in storage before clearing
+    const authToken = localStorage.getItem('authToken');
+    const profileCache = sessionStorage.getItem('user_profile_cache');
+    
+    console.log('📦 Storage before logout:', {
+      hasAuthToken: !!authToken,
+      hasProfileCache: !!profileCache
+    });
+    
+    // Remove authentication token
+    localStorage.removeItem('authToken');
+    
+    // Clear profile cache (dashboard cache is no longer used)
+    sessionStorage.removeItem('user_profile_cache');
+    
+    // Verify clearing worked
+    const authTokenAfter = localStorage.getItem('authToken');
+    const profileCacheAfter = sessionStorage.getItem('user_profile_cache');
+    
+    console.log('🗑️ Storage after logout:', {
+      authTokenCleared: !authTokenAfter,
+      profileCacheCleared: !profileCacheAfter
+    });
+    
+    console.log('✅ AuthService.logout() completed');
+  }
 
   // /**
   //  * Check if user is authenticated
