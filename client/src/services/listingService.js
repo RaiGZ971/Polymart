@@ -1,4 +1,5 @@
 import { ApiClient } from './apiClient.js';
+import { UserService } from './userService.js';
 
 export class ListingService {
   /**
@@ -50,6 +51,30 @@ export class ListingService {
    */
   static async getMyListings(params = {}) {
     try {
+      const currentUser = UserService.getCurrentUser();
+      if (!currentUser || !currentUser.user_id) {
+        throw new Error('No authenticated user found');
+      }
+
+      return await this.getUserListings(currentUser.user_id, params);
+    } catch (error) {
+      console.error('Failed to fetch user listings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get listings for a specific user by user ID
+   * @param {string} userId - The user ID
+   * @param {Object} params - Query parameters
+   * @param {string} params.category - Filter by category
+   * @param {string} params.search - Search term
+   * @param {string} params.status - Filter by status (active, inactive, sold_out, archived)
+   * @param {string} params.sort_by - Sort by option (newest, date_oldest, name_a_z, name_z_a, price_low_high, price_high_low)
+   * @returns {Promise<Object>} Response with user's listings data
+   */
+  static async getUserListings(userId, params = {}) {
+    try {
       const queryParams = new URLSearchParams();
       
       // Add category filter if provided (skip 'all' as it means no filter)
@@ -61,7 +86,7 @@ export class ListingService {
       if (params.status) queryParams.append('status', params.status);
       if (params.sort_by) queryParams.append('sort_by', params.sort_by);
       
-      const endpoint = `/supabase/listings/my-listings${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+      const endpoint = `/supabase/listings/user/${userId}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
       return await ApiClient.get(endpoint);
     } catch (error) {
       console.error('Failed to fetch user listings:', error);

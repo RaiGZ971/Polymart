@@ -77,8 +77,9 @@ async def get_product_listings(
         print(f"Error fetching product listings: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch product listings: {str(e)}")
 
-@router.get("/listings/my-listings", response_model=ProductListingsResponse)
-async def get_my_listings(
+@router.get("/listings/user/{user_id}", response_model=ProductListingsResponse)
+async def get_user_listings(
+    user_id: str,
     category: Optional[str] = Query(None, description="Filter by category"),
     search: Optional[str] = Query(None, description="Search in product name and description"),
     status: Optional[str] = Query(None, description="Filter by status (active, inactive, sold_out, archived)"),
@@ -86,21 +87,39 @@ async def get_my_listings(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Get the current user's own product listings. Returns all listings without pagination.
+    Get product listings for a specific user by user ID. 
+    If requesting own listings, returns all listings including private ones.
+    If requesting another user's listings, returns only public/active listings.
     """
     try:
         # Validate parameters
         validate_category(category)
         validate_status(status)
 
+        # Check if requesting own listings or another user's listings
+        is_own_listings = user_id == current_user["user_id"]
+        
         # Get user's listings using database function
-        listings_data = await listings_db.get_user_listings(
-            user_id=current_user["user_id"],
-            category=category,
-            search=search,
-            status=status,
-            sort_by=sort_by
-        )
+        if is_own_listings:
+            # For own listings, get all listings regardless of status
+            listings_data = await listings_db.get_user_listings(
+                user_id=user_id,
+                category=category,
+                search=search,
+                status=status,
+                sort_by=sort_by
+            )
+        else:
+            # For other users' listings, only get public/active listings
+            # Filter to only active status if no specific status is requested
+            filtered_status = status if status else "active"
+            listings_data = await listings_db.get_user_listings(
+                user_id=user_id,
+                category=category,
+                search=search,
+                status=filtered_status,
+                sort_by=sort_by
+            )
 
         if not listings_data:
             return ProductListingsResponse(
