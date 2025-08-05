@@ -146,8 +146,8 @@ const userID = "5jlgi4i2o"
   };
 
   const leftNavItems = [
-    { name: 'Customer Service', path: '/', icon: 'headphones' },
-    { name: 'Help', path: '/', icon: 'help' },
+    { name: 'Customer Service', path: '/customer-service', icon: 'headphones' },
+    { name: 'Help', path: '/help', icon: 'help' },
   ];
 
   const rightNavItems = [
@@ -158,12 +158,12 @@ const userID = "5jlgi4i2o"
       icon: 'plus',
       action: 'create-listing',
     },
-    { name: 'Manage Listing', path: '/', icon: 'box' },
+    { name: 'Manage Listing', path: '/manage-listing', icon: 'box' },
     { name: 'Sign Out', path: '/', icon: 'logout' },
   ];
 
   const bottomNavItems = [
-    { name: isLoadingProfile ? "Loading..." : (firstName || "User"), path: "/", icon: "user", hasText: true },
+    { name: isLoadingProfile ? "Loading..." : (firstName || "User"), path: "/profile", icon: "user", hasText: true },
     {
       name: 'Orders & Meet Ups',
       path: '/orders-meetups',
