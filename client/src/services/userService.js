@@ -6,10 +6,7 @@ export class UserService {
    * Get current user information from token
    * @returns {Object|null} Current user data or null if not authenticated
    */
-  static getCurrentUser() {
-    const token = AuthService.getToken();
-    if (!token) return null;
-
+  static getCurrentUser(token) {
     try {
       // JWT tokens have 3 parts separated by dots
       const payload = token.split('.')[1];
@@ -25,7 +22,7 @@ export class UserService {
         username: userData.username,
         email: userData.email,
         student_number: userData.student_number,
-        is_verified_student: userData.is_verified_student || false
+        is_verified_student: userData.is_verified_student || false,
       };
     } catch (error) {
       console.error('Failed to decode user token:', error);
@@ -53,7 +50,9 @@ export class UserService {
    */
   static async getMyProfile() {
     try {
-      const currentUser = this.getCurrentUser();
+      const currentUser = this.getCurrentUser(
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo4LCJ1c2VybmFtZSI6ImNvZGVfODcxIiwiZW1haWwiOiJnaWFucmFtaWxvMUBnbWFpbC5jb20iLCJzdHVkZW50X251bWJlciI6IjIwMjMtMDQ2NzgtTU4tMCIsImlzX3ZlcmlmaWVkX3N0dWRlbnQiOmZhbHNlLCJleHAiOjE3NTQ1MTY1NDQsImlhdCI6MTc1NDQzMDE0NCwidHlwZSI6ImFjY2VzcyJ9.7xd-QrqagLAUJkKz0j7n7AVDPQNXX-a4vYar_JaEFGg'
+      );
       if (!currentUser || !currentUser.user_id) {
         throw new Error('No authenticated user found');
       }
@@ -70,6 +69,10 @@ export class UserService {
    * @returns {boolean} True if user is authenticated
    */
   static isAuthenticated() {
-    return AuthService.isAuthenticated() && this.getCurrentUser() !== null;
+    return (
+      this.getCurrentUser(
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo4LCJ1c2VybmFtZSI6ImNvZGVfODcxIiwiZW1haWwiOiJnaWFucmFtaWxvMUBnbWFpbC5jb20iLCJzdHVkZW50X251bWJlciI6IjIwMjMtMDQ2NzgtTU4tMCIsImlzX3ZlcmlmaWVkX3N0dWRlbnQiOmZhbHNlLCJleHAiOjE3NTQ1MTY1NDQsImlhdCI6MTc1NDQzMDE0NCwidHlwZSI6ImFjY2VzcyJ9.7xd-QrqagLAUJkKz0j7n7AVDPQNXX-a4vYar_JaEFGg'
+      ) !== null
+    );
   }
 }

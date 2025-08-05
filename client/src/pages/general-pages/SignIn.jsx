@@ -1,18 +1,20 @@
-import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { NavigationBar, Footer, Textfield, PasswordField } from "@/components";
-import { stall } from "@/assets";
-import { AuthService } from "../../services/authService";
+import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { NavigationBar, Footer, Textfield, PasswordField } from '@/components';
+import { stall } from '@/assets';
+import { postLogin } from './queries/signInQueries';
+import { useAuthStore } from '../../store/authStore.js';
 
 export default function SignIn() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    studentId: "",
-    password: "",
+    studentId: '',
+    password: '',
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  const { setUser } = useAuthStore();
+  const { mutateAsync, isSuccess, isLoading: loading, error } = postLogin();
 
   // Handle messages from redirects
   useEffect(() => {
@@ -25,41 +27,33 @@ export default function SignIn() {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     // Clear error when user starts typing
-    if (error) setError("");
+    if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!form.studentId || !form.password) {
-      setError("Please fill in all fields");
+      setError('Please fill in all fields');
       return;
     }
 
-    try {
-      setLoading(true);
-      setError("");
-      
-      const loginData = {
-        student_number: form.studentId,
-        password: form.password
-      };
+    const loginData = {
+      student_number: form.studentId,
+      password: form.password,
+    };
 
-      const result = await AuthService.login(loginData);
-      
-      if (result.success) {
-        // Redirect to dashboard on successful login
-        navigate('/dashboard');
-      } else {
-        setError(result.message || "Login failed");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      setError(error.message || "Login failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    const userData = await mutateAsync(loginData);
+
+    setUser(userData.data.user.user_id, userData.data.access_token);
+    navigate('/dashboard');
+
+    console.log(userData);
   };
+
+  if (error) {
+    console.error('login error:', error.message);
+  }
 
   return (
     <div className="w-full h-screen bg-white flex flex-col items-center font-montserrat">
@@ -135,7 +129,7 @@ export default function SignIn() {
               </button>
 
               <p className="text-xs text-gray-500">
-                Not part of the community yet?{" "}
+                Not part of the community yet?{' '}
                 <a href="/signup" className="text-primary-red hover:underline">
                   Sign Up
                 </a>

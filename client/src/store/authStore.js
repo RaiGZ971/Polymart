@@ -4,19 +4,35 @@ import { persist } from 'zustand/middleware';
 export const useAuthStore = create(
   persist((set, get) => ({
     currentUser: null,
+    token: null,
     isAuthenticated: false,
+    data: {},
 
-    setUser: (user) => set({ currentUser: user, isAuthenticated: true }),
-    logout: () => ({
-      currentUser: null,
-      isAuthenticated: false,
-      currentChatID: null,
-    }),
+    setUser: (user, token) => {
+      set({
+        token: token,
+        currentUser: user,
+        isAuthenticated: true,
+      });
+    },
+
+    setData: (data) => {
+      set({ data: data });
+    },
+
+    logout: () => {
+      set({
+        currentUser: null,
+        token: null,
+        isAuthenticated: false,
+      });
+    },
   })),
   {
-    name: 'polymart-user-stete',
+    name: 'polymart-user-state',
     partialize: (state) => ({
       currentUser: state.currentUser,
+      token: state.token,
       isAuthenticated: state.isAuthenticated,
     }),
   }
