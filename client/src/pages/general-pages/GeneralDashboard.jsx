@@ -14,10 +14,11 @@ import { useDashboardData } from '../../hooks';
 import { UserService } from '../../services';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore.js';
+import { useDashboardStore } from '../../store/dashboardStore.js';
 
 export default function GeneralDashboard() {
   const [showCreateListing, setShowCreateListing] = useState(false);
-  const [activeTab, setActiveTab] = useState('all-listings');
+  const { activeTab, setActiveTab } = useDashboardStore(); // Use persistent store
   const [pendingSearch, setPendingSearch] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
@@ -53,7 +54,7 @@ export default function GeneralDashboard() {
     setCurrentUser(user);
 
     // If user is not authenticated, redirect to login
-    if (!user || !UserService.isAuthenticated()) {
+    if (!user || !UserService.isAuthenticated(token)) {
       console.log(
         '❌ No user found or not authenticated, should redirect to sign-in'
       );

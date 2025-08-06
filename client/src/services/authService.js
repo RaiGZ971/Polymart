@@ -123,46 +123,27 @@ export class AuthService {
   static logout() {
     console.log('🚪 AuthService.logout() called');
     
-    // Check what's in storage before clearing
-    const authToken = localStorage.getItem('authToken');
-    const profileCache = sessionStorage.getItem('user_profile_cache');
-    
-    console.log('📦 Storage before logout:', {
-      hasAuthToken: !!authToken,
-      hasProfileCache: !!profileCache
-    });
-    
-    // Remove authentication token
-    localStorage.removeItem('authToken');
-    
-    // Clear profile cache (dashboard cache is no longer used)
+    // Clear profile cache from sessionStorage
     sessionStorage.removeItem('user_profile_cache');
     
-    // Verify clearing worked
-    const authTokenAfter = localStorage.getItem('authToken');
-    const profileCacheAfter = sessionStorage.getItem('user_profile_cache');
+    // Clear any legacy localStorage tokens if they exist
+    localStorage.removeItem('authToken');
     
-    console.log('🗑️ Storage after logout:', {
-      authTokenCleared: !authTokenAfter,
-      profileCacheCleared: !profileCacheAfter
+    // Force clear all Zustand persisted stores from localStorage
+    localStorage.removeItem('polymart-dashboard-state');
+    localStorage.removeItem('polymart-contact-state');
+    localStorage.removeItem('polymart-user-state');
+    
+    // Double-check and clear any remaining polymart-related keys
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('polymart-')) {
+        console.log(`🗑️ Removing additional key: ${key}`);
+        localStorage.removeItem(key);
+      }
     });
     
-    console.log('✅ AuthService.logout() completed');
+    console.log('🧹 Cleared cached data and stores on logout');
   }
 
-  // /**
-  //  * Check if user is authenticated
-  //  * @returns {boolean} True if user has a valid token
-  //  */
-  // static isAuthenticated() {
-  //   return !!localStorage.getItem('authToken');
-  // }
-
-  // /**
-  //  * Get current user token
-  //  * @returns {string|null} The auth token or null
-  //  */
-  // static getToken() {
-  //   return localStorage.getItem('authToken');
-  // }
 }

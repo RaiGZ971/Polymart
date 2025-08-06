@@ -48,11 +48,9 @@ export class UserService {
    * Get current user's own profile
    * @returns {Promise<Object>} Response with current user's profile data
    */
-  static async getMyProfile() {
-    try {
-      const currentUser = this.getCurrentUser(
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo4LCJ1c2VybmFtZSI6ImNvZGVfODcxIiwiZW1haWwiOiJnaWFucmFtaWxvMUBnbWFpbC5jb20iLCJzdHVkZW50X251bWJlciI6IjIwMjMtMDQ2NzgtTU4tMCIsImlzX3ZlcmlmaWVkX3N0dWRlbnQiOmZhbHNlLCJleHAiOjE3NTQ1MTY1NDQsImlhdCI6MTc1NDQzMDE0NCwidHlwZSI6ImFjY2VzcyJ9.7xd-QrqagLAUJkKz0j7n7AVDPQNXX-a4vYar_JaEFGg'
-      );
+  static async getMyProfile(token) { 
+    try {      
+      const currentUser = this.getCurrentUser(token);
       if (!currentUser || !currentUser.user_id) {
         throw new Error('No authenticated user found');
       }
@@ -68,11 +66,9 @@ export class UserService {
    * Check if current user is authenticated
    * @returns {boolean} True if user is authenticated
    */
-  static isAuthenticated() {
+  static isAuthenticated(token) {
     return (
-      this.getCurrentUser(
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo4LCJ1c2VybmFtZSI6ImNvZGVfODcxIiwiZW1haWwiOiJnaWFucmFtaWxvMUBnbWFpbC5jb20iLCJzdHVkZW50X251bWJlciI6IjIwMjMtMDQ2NzgtTU4tMCIsImlzX3ZlcmlmaWVkX3N0dWRlbnQiOmZhbHNlLCJleHAiOjE3NTQ1MTY1NDQsImlhdCI6MTc1NDQzMDE0NCwidHlwZSI6ImFjY2VzcyJ9.7xd-QrqagLAUJkKz0j7n7AVDPQNXX-a4vYar_JaEFGg'
-      ) !== null
+      token && this.getCurrentUser(token) !== null
     );
   }
 }

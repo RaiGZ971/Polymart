@@ -1,37 +1,57 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { ListingService } from '../services/listingService';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { usePublicListings, useMyListings } from './queries/useListingQueries';
 import { UserService } from '../services/userService';
 import { useAuthStore } from '../store/authStore.js';
+import { useDashboardStore } from '../store/dashboardStore.js';
 
 export const useDashboardData = () => {
   // Get current user for user change detection
-
   const { token } = useAuthStore();
+  const { 
+    activeCategory, 
+    setActiveCategory,
+    sortBy,
+    setSortBy,
+    searchTerm,
+    setSearchTerm 
+  } = useDashboardStore();
   const getCurrentUser = () => UserService.getCurrentUser(token);
   const [currentUserId, setCurrentUserId] = useState(
     getCurrentUser()?.user_id || null
   );
 
-  // Store ALL listings (unfiltered) for client-side filtering - NO CACHING
-  const [allListings, setAllListings] = useState([]);
-  const [allMyListings, setAllMyListings] = useState([]);
-  const [loading, setLoading] = useState(true); // Always start with loading since no cache
-  const [searchLoading, setSearchLoading] = useState(false); // Separate loading state for search
-  const [error, setError] = useState(null);
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [sortBy, setSortBy] = useState('newest');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [lastFetchParams, setLastFetchParams] = useState(null);
-  const [isInitialized, setIsInitialized] = useState(false);
+  // Build query parameters based on current state
+  const publicParams = useMemo(() => ({
+    ...(searchTerm ? { search: searchTerm } : {}),
+    sort_by: sortBy,
+  }), [searchTerm, sortBy]);
 
-  // NO MORE CACHING - Data is always fresh from server
-  const cacheData = useCallback(() => {
-    // Removed caching for real-time data accuracy
-    console.log('� Caching disabled - using fresh data only');
-  }, []);
+  const myParams = useMemo(() => ({
+    ...(searchTerm ? { search: searchTerm } : {}),
+    sort_by: sortBy,
+  }), [searchTerm, sortBy]);
+
+  // Use TanStack Query hooks
+  const {
+    data: publicResponse = {},
+    isLoading: publicLoading,
+    isError: publicError,
+    error: publicErrorDetails,
+    refetch: refetchPublic,
+    isFetching: publicFetching,
+  } = usePublicListings(publicParams);
+
+  const {
+    data: myResponse = {},
+    isLoading: myLoading,
+    isError: myError,
+    error: myErrorDetails,
+    refetch: refetchMy,
+    isFetching: myFetching,
+  } = useMyListings(myParams, token);
 
   // Transform API listing data to match ProductCard component expectations
-  const transformListing = (listing) => {
+  const transformListing = useCallback((listing) => {
     const hasRange =
       listing.price_min !== null &&
       listing.price_max !== null &&
@@ -71,7 +91,25 @@ export const useDashboardData = () => {
       created_at: listing.created_at,
       tags: listing.tags,
     };
-  };
+  }, []);
+
+  // Transform server data to client format
+  const allListings = useMemo(() => {
+    const products = publicResponse.products || [];
+    return products.map(transformListing);
+  }, [publicResponse, transformListing]);
+
+  const allMyListings = useMemo(() => {
+    const products = myResponse.products || [];
+    return products.map(transformListing);
+  }, [myResponse, transformListing]);
+
+  // Loading and error states
+  const loading = publicLoading || myLoading;
+  const searchLoading = publicFetching || myFetching;
+  const error = publicError || myError 
+    ? (publicErrorDetails?.message || myErrorDetails?.message || 'Failed to fetch listings')
+    : null;
 
   // Client-side sorting function
   const sortListings = useCallback((listingsToSort, sortOption) => {
@@ -108,6 +146,7 @@ export const useDashboardData = () => {
 
   // Client-side filtering function
   const filterListings = useCallback((listingsToFilter, category) => {
+    // If category is 'all', return all listings
     if (category === 'all') {
       return listingsToFilter;
     }
@@ -170,124 +209,23 @@ export const useDashboardData = () => {
     sortListings,
   ]);
 
-  // Convert sort option to API parameters (for server-side sorting when fetching new data)
-  const getSortParams = (sortOption) => {
-    return {
-      sort_by: sortOption,
-    };
-  };
-
-  // Fetch fresh data - always gets latest from server
-  const fetchData = useCallback(
-    async (isSearchOperation = false) => {
-      const currentParams = { searchTerm };
-
-      console.log(
-        '📊 Fetching fresh data - searchTerm:',
-        searchTerm,
-        'isSearch:',
-        isSearchOperation
-      );
-
-      // Use search loading for search operations, main loading for initial load
-      if (isSearchOperation) {
-        setSearchLoading(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-
-      try {
-        const publicParams = {
-          // Include search term if it exists, otherwise fetch all
-          ...(searchTerm ? { search: searchTerm } : {}),
-          ...getSortParams(sortBy),
-        };
-
-        const myParams = {
-          ...(searchTerm ? { search: searchTerm } : {}),
-          sort_by: sortBy,
-        };
-
-        const [publicResponse, myResponse] = await Promise.all([
-          ListingService.getPublicListings(publicParams),
-          ListingService.getMyListings(myParams),
-        ]);
-
-        // Transform and store listings
-        let newAllListings = [];
-        if (publicResponse.products) {
-          newAllListings = publicResponse.products.map(transformListing);
-        }
-
-        let newAllMyListings = [];
-        if (myResponse.products) {
-          newAllMyListings = myResponse.products.map(transformListing);
-        }
-
-        // Update the complete dataset
-        setAllListings(newAllListings);
-        setAllMyListings(newAllMyListings);
-        setLastFetchParams(currentParams);
-        setIsInitialized(true);
-
-        console.log('✅ Fresh data loaded:', {
-          publicCount: newAllListings.length,
-          myCount: newAllMyListings.length,
-        });
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to fetch data');
-        setAllListings([]);
-        setAllMyListings([]);
-      } finally {
-        if (isSearchOperation) {
-          setSearchLoading(false);
-        } else {
-          setLoading(false);
-        }
-      }
-    },
-    [searchTerm, sortBy, getSortParams, transformListing]
-  );
-
-  // Refresh data with search detection
+  // Refetch functions
   const refreshData = useCallback(async () => {
-    const currentParams = { searchTerm };
-    const paramsChanged =
-      JSON.stringify(currentParams) !== JSON.stringify(lastFetchParams);
+    console.log('🔄 Manual refresh triggered');
+    await Promise.all([refetchPublic(), refetchMy()]);
+  }, [refetchPublic, refetchMy]);
 
-    if (!isInitialized || paramsChanged) {
-      await fetchData(isInitialized && paramsChanged); // Pass true if it's a search operation
-    } else {
-      console.log('📋 No refresh needed, params unchanged');
-    }
-  }, [fetchData, isInitialized, lastFetchParams, searchTerm]);
-
-  // Force refresh - always fetches new data
-  const forceRefresh = useCallback(async () => {
-    console.log('🔄 Force refresh requested');
-    setIsInitialized(false); // Reset initialization to force fetch
-    await fetchData(false);
-  }, [fetchData]);
-
-  // Home/Logo refresh - resets filters and forces fresh data
   const refreshHome = useCallback(async () => {
-    console.log(
-      '🏠 Home refresh - resetting all filters and fetching fresh data'
-    );
-
+    console.log('🏠 Home refresh - resetting filters and refetching');
+    
     // Reset all filters
     setActiveCategory('all');
     setSearchTerm('');
     setSortBy('newest');
-    setIsInitialized(false);
-
-    // Fetch fresh data with clean state
-    await fetchData(false);
-
-    console.log('🏠 Home refresh completed');
-  }, [fetchData]);
+    
+    // Refetch data
+    await Promise.all([refetchPublic(), refetchMy()]);
+  }, [refetchPublic, refetchMy]);
 
   // Monitor user changes and reset data when user changes
   useEffect(() => {
@@ -302,16 +240,10 @@ export const useDashboardData = () => {
         });
 
         // Reset all state when user changes (including logout)
-        console.log('🔄 Resetting state for user change...');
-        setAllListings([]);
-        setAllMyListings([]);
+        console.log('🔄 Resetting filters for user change...');
         setActiveCategory('all');
         setSortBy('newest');
         setSearchTerm('');
-        setLastFetchParams(null);
-        setIsInitialized(false);
-        setLoading(true);
-        setError(null);
 
         // Update current user ID
         setCurrentUserId(newUserId);
@@ -327,19 +259,11 @@ export const useDashboardData = () => {
     return () => clearInterval(interval);
   }, [currentUserId, getCurrentUser]);
 
-  // Initial data load and search term changes
-  useEffect(() => {
-    if (currentUserId) {
-      // Only fetch if there's a current user
-      refreshData();
-    }
-  }, [refreshData, currentUserId]);
-
   return {
     listings: filteredListings, // Return filtered and sorted data
     myListings: filteredMyListings, // Return filtered and sorted data
     loading,
-    searchLoading, // Export search loading state
+    searchLoading, // Export search loading state  
     error,
     activeCategory,
     setActiveCategory,
@@ -347,19 +271,12 @@ export const useDashboardData = () => {
     setSortBy,
     searchTerm,
     setSearchTerm,
-    refreshData: forceRefresh, // Export forceRefresh as refreshData for backward compatibility
-    refreshHome, // New function for home/logo refresh
+    refreshData, // Manual refresh function
+    refreshHome, // Home/logo refresh function
     clearCache: () => {
-      // Since we don't use cache anymore, this just resets state
-      console.log('🧹 Clearing state (no cache to clear)...');
-      setAllListings([]);
-      setAllMyListings([]);
-      setActiveCategory('all');
-      setSortBy('newest');
-      setSearchTerm('');
-      setLastFetchParams(null);
-      setIsInitialized(false);
-      console.log('✅ State cleared');
+      // With TanStack Query, we don't need to manually clear cache
+      // The query client handles this automatically
+      console.log('🧹 Cache clearing handled by TanStack Query');
     },
     hasData: filteredListings.length > 0 || filteredMyListings.length > 0,
   };

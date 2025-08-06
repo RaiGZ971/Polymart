@@ -16,7 +16,7 @@ export const formattedListing = (listing) => {
         }
       : null,
     hasPriceRange: hasRange,
-    username: listing.user_profile?.username,
+    username: listing.user_profile?.username || listing.seller_username,
     userAvatar:
       listing.seller_profile_photo_url ||
       'https://via.placeholder.com/40x40?text=User',

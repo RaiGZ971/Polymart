@@ -41,17 +41,14 @@ export class ListingService {
   }
 
   /**
-   * Get current user's own listings
+   * Get current user's listings
    * @param {Object} params - Query parameters
-   * @param {string} params.category - Filter by category
-   * @param {string} params.search - Search term
-   * @param {string} params.status - Filter by status (active, inactive, sold_out, archived)
-   * @param {string} params.sort_by - Sort by option (newest, date_oldest, name_a_z, name_z_a, price_low_high, price_high_low)
+   * @param {string} token - User authentication token
    * @returns {Promise<Object>} Response with user's listings data
    */
-  static async getMyListings(params = {}) {
+  static async getMyListings(params = {}, token) {
     try {
-      const currentUser = UserService.getCurrentUser();
+      const currentUser = UserService.getCurrentUser(token);
       if (!currentUser || !currentUser.user_id) {
         throw new Error('No authenticated user found');
       }
@@ -133,6 +130,49 @@ export class ListingService {
       return await ApiClient.patch(`/supabase/listings/${listingId}/status`, { status });
     } catch (error) {
       console.error('Failed to update listing status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get single listing by ID
+   * @param {number} listingId - The listing ID
+   * @returns {Promise<Object>} Response with listing data
+   */
+  static async getListingById(listingId) {
+    try {
+      return await ApiClient.get(`/supabase/listings/${listingId}`);
+    } catch (error) {
+      console.error('Failed to fetch listing:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update listing data
+   * @param {number} listingId - The listing ID
+   * @param {Object} data - Updated listing data
+   * @returns {Promise<Object>} Response with updated listing data
+   */
+  static async updateListing(listingId, data) {
+    try {
+      return await ApiClient.put(`/supabase/listings/${listingId}`, data);
+    } catch (error) {
+      console.error('Failed to update listing:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete listing
+   * @param {number} listingId - The listing ID
+   * @returns {Promise<Object>} Response with deletion confirmation
+   */
+  static async deleteListing(listingId) {
+    try {
+      return await ApiClient.delete(`/supabase/listings/${listingId}`);
+    } catch (error) {
+      console.error('Failed to delete listing:', error);
       throw error;
     }
   }

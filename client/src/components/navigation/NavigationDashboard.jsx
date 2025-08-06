@@ -20,10 +20,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getUserNotification } from './queries/navigationQueries';
 import { UserService } from '../../services/userService';
 import { useAuthStore } from '../../store/authStore.js';
+import { useDashboardStore } from '../../store/dashboardStore.js';
+import { useContactStore } from '../../store/contactStore.js';
 import { AuthService } from "../../services/authService";
 
 export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
-  const { currentUser: userID, token } = useAuthStore();
+  const { currentUser: userID, token, logout: authLogout } = useAuthStore();
+  const { reset: resetDashboard } = useDashboardStore();
+  const { reset: resetContacts } = useContactStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [firstName, setFirstName] = useState('');
@@ -66,7 +70,7 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
           } else {
             // Fetch fresh data and cache it
             try {
-              const profileResponse = await UserService.getMyProfile();
+              const profileResponse = await UserService.getMyProfile(token);
               if (profileResponse.success && profileResponse.data) {
                 const firstName =
                   profileResponse.data.first_name || currentUser.username;
@@ -168,7 +172,7 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
       action: 'create-listing',
     },
     { name: 'Manage Listing', path: '/manage-listing', icon: 'box' },
-    { name: 'Sign Out', path: '/', icon: 'logout' },
+    { name: 'Sign Out', icon: 'logout', action: 'logout' },
   ];
 
   const bottomNavItems = [
@@ -208,7 +212,7 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
       setShowNotifications(true);
     } else if (item.action === 'create-listing') {
       setShowCreateListing(true);
-    } else if (item.name === "Sign Out") {
+    } else if (item.action === 'logout') {
       handleLogout();
     } else if (item.name === "Home" && onHomeClick) {
       // Handle Home button click with refresh
@@ -219,12 +223,26 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     console.log('🚪 NavigationDashboard.handleLogout() called');
     
-    // Clear authentication token via AuthService (this also clears cache)
-    console.log('🔐 Calling AuthService.logout()...');
+    // First, reset in-memory Zustand stores to prevent them from persisting back to localStorage
+    console.log('🔄 Resetting Zustand stores first...');
+    authLogout(); // Reset auth store
+    resetDashboard(); // Reset dashboard store
+    resetContacts(); // Reset contact store
+    
+    // Small delay to ensure store resets are processed
+    await new Promise(resolve => setTimeout(resolve, 10));
+    
+    // Then clear localStorage and sessionStorage via AuthService
+    console.log('🔐 Calling AuthService.logout() to clear storage...');
     AuthService.logout();
+    
+    // Force clear localStorage again in case of any race conditions
+    console.log('🔄 Double-checking localStorage cleanup...');
+    localStorage.clear(); // Nuclear option - clears everything
+    sessionStorage.clear(); // Clear all session storage too
     
     console.log('🔄 Redirecting to sign-in...');
     // Redirect to sign-in page
