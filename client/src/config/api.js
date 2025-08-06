@@ -1,3 +1,5 @@
+import { useAuthStore } from '../store/authStore.js';
+
 const API_CONFIG = {
     development: {
         API_BASE: "http://localhost:8000",
@@ -19,12 +21,12 @@ export const getHeaders = (includeAuth = true) => {
     };
 
     if(includeAuth){
-        const token = localStorage.getItem('authToken');
+        const token = useAuthStore.getState().token;
         if(token) {
             headers['Authorization'] = `Bearer ${token}`;
             console.log('🔑 Adding auth header with token:', token.substring(0, 20) + '...');
         } else {
-            console.log('❌ No auth token found in localStorage');
+            console.log('❌ No auth token found in Zustand store');
         }
     }
 

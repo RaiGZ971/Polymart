@@ -45,7 +45,7 @@ export default function SignIn() {
 
     const userData = await mutateAsync(loginData);
 
-    setUser(userData.data.user.user_id, userData.data.access_token);
+    setUser(userData.data.user, userData.data.access_token);
     navigate('/dashboard');
 
     console.log(userData);

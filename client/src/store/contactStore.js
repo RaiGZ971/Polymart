@@ -6,6 +6,8 @@ export const useContactStore = create(
     contacts: [],
 
     setContacts: (data) => set({ contacts: data }),
+    
+    reset: () => set({ contacts: [] }),
   })),
   {
     name: 'polymart-contact-state',

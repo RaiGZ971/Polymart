@@ -1,4 +1,5 @@
 import { ApiClient } from './apiClient.js';
+import { useAuthStore } from '../store/authStore.js';
 
 export class FileUploadService {
   /**
@@ -15,7 +16,7 @@ export class FileUploadService {
       const response = await fetch(`${ApiClient.getBaseURL()}/s3/user-documents/profile-photo`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          'Authorization': `Bearer ${useAuthStore.getState().token}`
         },
         body: formData
       });
@@ -51,7 +52,7 @@ export class FileUploadService {
       const response = await fetch(`${ApiClient.getBaseURL()}/s3/user-documents/verification-documents`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          'Authorization': `Bearer ${useAuthStore.getState().token}`
         },
         body: formData
       });
