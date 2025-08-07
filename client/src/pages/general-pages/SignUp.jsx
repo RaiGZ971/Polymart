@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
 import {
@@ -22,10 +22,15 @@ import { useEmailVerificationRenderer } from "../../hooks/useEmailVerificationRe
 import { useFieldRenderer } from "../../hooks/useFieldRenderer";
 import { useFileUpload } from "../../hooks/useFileUpload";
 import { useFormData } from "../../hooks/useFormData";
+import { useAuthStore } from "../../store/authStore.js";
 
 export default function SignUp() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const hasAutoAdvanced = useRef(false);
+  
+  // Get setUser from Zustand store to store auth token
+  const { setUser } = useAuthStore();
   
   // Define steps array
   const steps = [
@@ -117,6 +122,10 @@ export default function SignUp() {
       }
 
       console.log("Auto-login successful");
+
+      // Store the authentication token in Zustand store
+      setUser(loginResult.data.user, loginResult.data.access_token);
+      console.log("🔑 Token stored in Zustand store after signup");
 
       // Step 3: Upload profile picture if provided
       if (formData.profilePicture && formData.profilePicture instanceof File) {
@@ -236,14 +245,17 @@ export default function SignUp() {
     phaseConfig
   );
 
-  // Auto-advance to step 2 if email is verified via session
+  // Auto-advance to step 2 if email is verified via session (only when coming from email link)
   useEffect(() => {
     const sessionToken = searchParams.get('session');
-    if (sessionToken && emailVerificationStep === 'verified' && currentStep === 1) {
+    // Only auto-advance if there's a session token (coming from email verification)
+    // and email is verified and currently on step 1 and we haven't auto-advanced before
+    if (sessionToken && emailVerificationStep === 'verified' && currentStep === 1 && !hasAutoAdvanced.current) {
+      hasAutoAdvanced.current = true;
       // Small delay to ensure state is updated
       setTimeout(() => setCurrentStep(2), 100);
     }
-  }, [emailVerificationStep, currentStep, searchParams, setCurrentStep]);
+  }, [emailVerificationStep, searchParams, setCurrentStep]); // Removed currentStep from dependencies
 
   // Use the file upload hook
   const { handleFileChange, removeFile, getFilePreviewURL } = useFileUpload(

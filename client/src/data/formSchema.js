@@ -110,7 +110,11 @@ export const fieldConfig = {
     required: true, 
     uppercase: true,
     type: 'text',
-    component: 'textfield'
+    component: 'textfield',
+    validation: {
+      pattern: /^20\d{2}-\d{5}-[A-Za-z]{2}-\d$/,
+      message: "Invalid ID format (e.g., 2023-12345-MN-1)"
+    }
   },
   universityBranch: {
     label: "University Branch",

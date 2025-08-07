@@ -8,6 +8,7 @@ export default function Textfield({
   onChange,
   value = "",
   integerOnly = false,
+  validation = null,
   ...props
 }) {
   const [isFocused, setIsFocused] = useState(false);
@@ -29,6 +30,13 @@ export default function Textfield({
       !Number.isInteger(Number(inputValue))
     ) {
       setInternalError(`${label} must be a whole number.`);
+    } else if (
+      validation &&
+      validation.pattern &&
+      inputValue &&
+      !validation.pattern.test(inputValue)
+    ) {
+      setInternalError(validation.message || `${label} format is invalid.`);
     } else {
       setInternalError("");
     }

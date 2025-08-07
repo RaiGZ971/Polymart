@@ -18,6 +18,7 @@ export const useFieldRenderer = (formData, fieldConfig, handlers) => {
       integerOnly: config.integerOnly,
       studID: config.studID,
       type: config.type === "password" ? "password" : undefined,
+      validation: config.validation,
     };
   };
 
