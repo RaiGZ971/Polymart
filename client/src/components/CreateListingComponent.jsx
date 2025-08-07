@@ -3,6 +3,8 @@ import { useListingForm } from "../hooks/useListingForm";
 import { useListingFieldRenderer } from "../hooks/useListingFieldRenderer";
 import { ImageUploader } from "../components";
 import { listingFieldConfig } from "../data/listingSchema";
+import { transformListingDataForAPI, validateListingData } from "../utils/listingTransform";
+import { ListingService } from "../services/listingService";
 import PUPMap from "../assets/pupmap.png";
 import { ChevronLeft } from "lucide-react";
 import Modal from "./shared/Modal";
@@ -33,21 +35,56 @@ export default function CreateListingComponent({ onClose }) {
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const handleSubmit = () => {
-    const isValid = validateForm();
+    // Use the enhanced validation
+    const validation = validateListingData(listingData);
     
-    if (isValid) {
+    if (validation.isValid) {
+      setSubmitError(null);
       setShowConfirm(true);
+    } else {
+      // Update errors state with validation errors
+      setErrors(validation.errors);
     }
   };
 
-  const handleConfirm = () => {
-    // Place your submit logic here (e.g., API call)
+  const handleConfirm = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
     
-    // Close confirmation modal and show success modal
-    setShowConfirm(false);
-    setShowSuccess(true);
+    try {
+      // Transform the frontend data to backend format
+      const transformedData = transformListingDataForAPI(listingData);
+      
+      // Create listing with images
+      const result = await ListingService.createListingWithImages(
+        transformedData,
+        listingData.productImages
+      );
+      
+      if (result.success) {
+        // Close confirmation modal and show success modal
+        setShowConfirm(false);
+        setShowSuccess(true);
+        
+        // Check if image upload had issues
+        if (result.data.images && !result.data.images.success) {
+          console.warn('Listing created but image upload failed:', result.data.images.error);
+        }
+      } else {
+        throw new Error(result.message || 'Failed to create listing');
+      }
+      
+    } catch (error) {
+      console.error('Failed to submit listing:', error);
+      setSubmitError(error.message || 'Failed to create listing. Please try again.');
+      setShowConfirm(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSuccessConfirm = () => {
@@ -195,26 +232,38 @@ export default function CreateListingComponent({ onClose }) {
             <button
               className="w-full text-primary-red font-semibold py-2 border-2 border-primary-red rounded-full hover:bg-primary-red hover:border-none hover:text-white transition-colors duration-200"
               onClick={handleCancel}
+              disabled={isSubmitting}
             >
               Cancel
             </button>
           </div>
           <div className="w-[20%]">
             <button
-              className="w-full font-semibold bg-primary-red text-white py-2 rounded-full hover:bg-hover-red transition-colors duration-200"
+              className="w-full font-semibold bg-primary-red text-white py-2 rounded-full hover:bg-hover-red transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleSubmit}
+              disabled={isSubmitting}
             >
-              Submit
+              {isSubmitting ? 'Submitting...' : 'Submit'}
             </button>
           </div>
         </div>
+        
+        {/* Error Message */}
+        {submitError && (
+          <div className="w-full p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{submitError}</p>
+          </div>
+        )}
+        
         <Modal
           isOpen={showConfirm}
-          onClose={() => setShowConfirm(false)}
+          onClose={() => !isSubmitting && setShowConfirm(false)}
           onConfirm={handleConfirm}
           type="confirmation"
           title="Submit Listing?"
           description="You're almost done! Please make sure all your product details are correct before submitting. Once submitted, your listing will be sent for review and made visible to other users (if applicable)."
+          confirmText={isSubmitting ? "Submitting..." : "Submit"}
+          disabled={isSubmitting}
         />
         
         <Modal

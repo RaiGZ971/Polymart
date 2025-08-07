@@ -2,6 +2,87 @@ import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import timeSlots from "../../data/timeSlots";
 
+// Import the simplification functions from the utils
+const parseTimeValue = (timeStr) => {
+  const match = timeStr.match(/^(\d{1,2})(am|pm)$/i);
+  if (!match) {
+    return 0;
+  }
+  
+  let hours = parseInt(match[1], 10);
+  const period = match[2].toLowerCase();
+  
+  if (period === 'am') {
+    if (hours === 12) {
+      hours = 0;
+    }
+  } else {
+    if (hours !== 12) {
+      hours += 12;
+    }
+  }
+  
+  return hours;
+};
+
+const simplifyTimeSlots = (schedules) => {
+  const simplifiedSchedules = [];
+  
+  schedules.forEach(schedule => {
+    if (!schedule.date || !schedule.times || schedule.times.length === 0) {
+      return;
+    }
+    
+    const sortedTimes = [...schedule.times].sort((a, b) => {
+      const timeA = parseTimeValue(a.split('-')[0]);
+      const timeB = parseTimeValue(b.split('-')[0]);
+      return timeA - timeB;
+    });
+    
+    const mergedTimes = [];
+    let currentRange = null;
+    
+    sortedTimes.forEach(timeSlot => {
+      const [startStr, endStr] = timeSlot.split('-');
+      const startTime = parseTimeValue(startStr);
+      const endTime = parseTimeValue(endStr);
+      
+      if (!currentRange) {
+        currentRange = {
+          start: startTime,
+          end: endTime,
+          startStr: startStr,
+          endStr: endStr
+        };
+      } else if (currentRange.end === startTime) {
+        currentRange.end = endTime;
+        currentRange.endStr = endStr;
+      } else {
+        mergedTimes.push(`${currentRange.startStr}-${currentRange.endStr}`);
+        currentRange = {
+          start: startTime,
+          end: endTime,
+          startStr: startStr,
+          endStr: endStr
+        };
+      }
+    });
+    
+    if (currentRange) {
+      mergedTimes.push(`${currentRange.startStr}-${currentRange.endStr}`);
+    }
+    
+    if (mergedTimes.length > 0) {
+      simplifiedSchedules.push({
+        date: schedule.date,
+        times: mergedTimes
+      });
+    }
+  });
+  
+  return simplifiedSchedules;
+};
+
 export default function CalendarPicker({
   label,
   value = [],
@@ -188,6 +269,7 @@ export default function CalendarPicker({
                   </button>
                 ))}
               </div>
+              
               <button
                 className="w-full mt-2 py-2 rounded-full bg-primary-red text-white font-semibold text-sm hover:bg-red-700 transition"
                 onClick={handleSaveTimes}
@@ -210,45 +292,52 @@ export default function CalendarPicker({
           </div>
         ) : (
           <div className="flex flex-wrap">
-            {value
-              .sort((a, b) => a.date.localeCompare(b.date))
-              .map((sched) => (
-                <div
-                  key={sched.date}
-                  className="flex flex-col text-primary-red px-4 py-2 font-semibold text-xs mb-1 w-full"
-                  style={{ minWidth: 180 }}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-primary-red text-xs">
-                      {new Date(sched.date).toLocaleDateString()}
-                    </span>
-                    <button
-                      className="ml-2 text-gray-400 hover:text-primary-red"
-                      onClick={() => handleRemoveDate(sched.date)}
-                      title="Remove all times for this date"
-                      type="button"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+            {(() => {
+              // Get simplified schedules for display
+              const simplifiedSchedules = simplifyTimeSlots(value);
+              return simplifiedSchedules
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .map((sched) => (
+                  <div
+                    key={sched.date}
+                    className="flex flex-col text-primary-red px-4 py-2 font-semibold text-xs mb-1 w-full"
+                    style={{ minWidth: 180 }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold text-primary-red text-xs">
+                        {new Date(sched.date).toLocaleDateString()}
+                      </span>
+                      <button
+                        className="ml-2 text-gray-400 hover:text-primary-red"
+                        onClick={() => handleRemoveDate(sched.date)}
+                        title="Remove all times for this date"
+                        type="button"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <div className="border-b border-gray-200 mb-2" />
+                    <div className="flex flex-wrap gap-1">
+                      {sched.times.map((timeRange, index) => {
+                        // Convert simplified time range to display label
+                        const [startStr, endStr] = timeRange.split('-');
+                        const startLabel = customTimeSlots.find((slot) => slot.value.startsWith(startStr))?.label.split(' - ')[0] || startStr.toUpperCase();
+                        const endLabel = customTimeSlots.find((slot) => slot.value.endsWith(endStr))?.label.split(' - ')[1] || endStr.toUpperCase();
+                        const displayLabel = `${startLabel} - ${endLabel}`;
+                        
+                        return (
+                          <span
+                            key={`${sched.date}-${timeRange}-${index}`}
+                            className="px-2 py-0.5 rounded-full border border-primary-red bg-primary-red/10 text-primary-red text-[11px] font-medium"
+                          >
+                            {displayLabel}
+                          </span>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="border-b border-gray-200 mb-2" />
-                  <div className="flex flex-wrap gap-1">
-                    {sched.times.map((t) => {
-                      const label =
-                        customTimeSlots.find((slot) => slot.value === t)
-                          ?.label || t;
-                      return (
-                        <span
-                          key={sched.date + t}
-                          className="px-2 py-0.5 rounded-full border border-primary-red bg-primary-red/10 text-primary-red text-[11px] font-medium"
-                        >
-                          {label}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+                ));
+            })()}
           </div>
         )}
       </div>
