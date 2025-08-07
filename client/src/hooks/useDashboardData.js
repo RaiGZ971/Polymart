@@ -90,6 +90,10 @@ export const useDashboardData = () => {
       status: listing.status,
       created_at: listing.created_at,
       tags: listing.tags,
+      availableSchedules: listing.available_schedules || [],
+      paymentMethods: listing.payment_methods || [],
+      meetupLocations: listing.seller_meetup_locations || [],
+      transactionMethods: listing.transaction_methods || [],
     };
   }, []);
 

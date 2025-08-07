@@ -27,8 +27,10 @@ const getCategoryLabel = (value) => {
 
 // Helper to generate value for CalendarViewer from order.availableSchedules
 function getCalendarValue(order) {
-  if (!order?.availableSchedules) return [];
-  return order.availableSchedules.flatMap((sched) =>
+  // Handle both snake_case (from API) and camelCase (from sample data)
+  const schedules = order?.available_schedules || order?.availableSchedules;
+  if (!schedules) return [];
+  return schedules.flatMap((sched) =>
     (sched.times || []).map((time) => [sched.date, time])
   );
 }

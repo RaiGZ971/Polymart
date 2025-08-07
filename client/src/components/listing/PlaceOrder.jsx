@@ -138,7 +138,7 @@ export default function PlaceOrder({ order, quantity, onClose, currentUser }) {
               </p>
             </div>
             <OrderCalendarPicker
-              availableSchedules={order.availableSchedules}
+              availableSchedules={order.available_schedules || order.availableSchedules}
               selectedDate={form.meetUpDate}
               selectedTime={form.meetUpTime}
               onDateChange={handleDateChange}
@@ -152,7 +152,7 @@ export default function PlaceOrder({ order, quantity, onClose, currentUser }) {
                 Seller’s available meet-up locations are listed below{" "}
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
-                {(order?.meetupLocations || []).map((location) => (
+                {(order?.seller_meetup_locations || order?.meetupLocations || []).map((location) => (
                   <ToggleButton
                     key={location}
                     label={location}

@@ -46,33 +46,38 @@ export default function CalendarViewer({
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
         day
       ).padStart(2, "0")}`;
-      const isBooked = value.some(([d]) => d === dateStr);
+      const hasSchedule = value.some(([d]) => d === dateStr);
       const dateObj = new Date(year, month, day);
       const isPast =
         dateObj <
         new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const isUnavailable = !hasSchedule && !isPast;
+      
       days.push(
         <button
           key={day}
           type="button"
-          className={`p-2 text-[9px] rounded-full text-center transition ${
+          className={`p-2 text-[9px] rounded-full text-center transition relative ${
             selectedDate === dateStr ? "bg-primary-red text-white" : ""
           } ${
-            isBooked
-              ? "bg-gray-100 text-gray-800 font-semibold"
+            hasSchedule
+              ? "bg-gray-100 text-gray-800 font-semibold hover:bg-primary-red hover:text-white"
               : isPast
               ? "text-gray-400 cursor-not-allowed"
-              : "text-gray-700 hover:bg-primary-red hover:text-white"
+              : "text-gray-300 cursor-not-allowed"
           }`}
-          disabled={disabled || isPast}
+          disabled={disabled || isPast || isUnavailable}
           onClick={() => {
-            if (!isPast) {
+            if (!isPast && hasSchedule) {
               setSelectedDate(dateStr);
               if (onDateClick) onDateClick(dateStr);
             }
           }}
         >
           {day}
+          {hasSchedule && (
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary-red" />
+          )}
         </button>
       );
     }
@@ -131,13 +136,13 @@ export default function CalendarViewer({
               No available times for this date.
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-1 overflow-y-auto">
+            <div className="grid grid-cols-1 gap-1 overflow-y-auto">
               {selectedTimes.map(([_, time], idx) => (
                 <span
                   key={idx}
-                  className="px-2 py-0.5 rounded-full text-primary-red border border-primary-red text-[9px] font-medium text-center"
+                  className="px-2 py-1 rounded-full text-primary-red border border-primary-red text-xs font-medium text-center"
                 >
-                  {timeSlots.find((slot) => slot.value === time)?.label || time}
+                  {time}
                 </span>
               ))}
             </div>

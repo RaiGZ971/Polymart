@@ -4,8 +4,73 @@ Handles image fetching, URL processing, and converting database records to respo
 """
 
 from typing import List, Dict, Any, Optional
-from supabase_client.schemas import ListingImage, ProductListing, Order, Meetup
+from supabase_client.schemas import ListingImage, ProductListing, Order, Meetup, MeetupSchedule
 from core.config import ensure_proper_image_urls
+from datetime import datetime
+
+
+def timestamp_to_time_slot(start_time: str, end_time: str) -> str:
+    """
+    Convert timestamp range to 12-hour time format like '9:00 AM - 10:30 AM'.
+    """
+    try:
+        start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+        end_dt = datetime.fromisoformat(end_time.replace('Z', '+00:00'))
+        
+        # Format times in 12-hour format
+        start_formatted = start_dt.strftime('%I:%M %p')
+        end_formatted = end_dt.strftime('%I:%M %p')
+        
+        # Remove leading zero from hour (e.g., "01:00 PM" -> "1:00 PM")
+        start_formatted = start_formatted.lstrip('0').replace(' 0', ' ')
+        end_formatted = end_formatted.lstrip('0').replace(' 0', ' ')
+        
+        formatted_time = f"{start_formatted} - {end_formatted}"
+        print(f"Converting {start_time} to {end_time} -> {formatted_time}")
+        
+        return formatted_time
+    except Exception as e:
+        print(f"Error converting timestamp to time slot: {e}")
+        return f"{start_time}-{end_time}"
+
+
+async def get_listing_meetup_schedules(supabase, listing_id: int) -> List[MeetupSchedule]:
+    """
+    Fetch and transform meetup time details for a listing into the expected format.
+    """
+    try:
+        # Fetch meetup times from database
+        result = supabase.table("listing_meetup_time_details").select("*").eq("listing_id", listing_id).execute()
+        
+        if not result.data:
+            return []
+        
+        # Group by date and collect time slots
+        date_groups = {}
+        for time_detail in result.data:
+            start_time = time_detail["start_time"]
+            end_time = time_detail["end_time"]
+            
+            # Extract date from start_time
+            start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+            date_str = start_dt.strftime('%Y-%m-%d')
+            
+            # Convert to time slot
+            time_slot = timestamp_to_time_slot(start_time, end_time)
+            
+            if date_str not in date_groups:
+                date_groups[date_str] = []
+            date_groups[date_str].append(time_slot)
+        
+        # Convert to MeetupSchedule objects
+        schedules = []
+        for date, times in date_groups.items():
+            schedules.append(MeetupSchedule(date=date, times=times))
+        
+        return schedules
+    except Exception as e:
+        print(f"Error fetching meetup schedules: {e}")
+        return []
 
 
 async def get_images_for_listing(supabase, listing_id: int) -> List[ListingImage]:
@@ -84,6 +149,9 @@ async def convert_listing_to_product(supabase, listing: Dict[str, Any]) -> Produ
         # If we can't get the count, just use 0
         pass
     
+    # Get meetup schedules
+    available_schedules = await get_listing_meetup_schedules(supabase, listing["listing_id"])
+    
     return ProductListing(
         listing_id=listing["listing_id"],
         seller_id=listing["seller_id"],
@@ -104,6 +172,7 @@ async def convert_listing_to_product(supabase, listing: Dict[str, Any]) -> Produ
         seller_meetup_locations=listing["seller_meetup_locations"],
         transaction_methods=listing.get("transaction_methods"),
         payment_methods=listing.get("payment_methods"),
+        available_schedules=available_schedules,
         images=images
     )
 
