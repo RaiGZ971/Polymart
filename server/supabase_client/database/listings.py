@@ -5,10 +5,11 @@ Handles product listing CRUD operations and queries.
 
 from typing import Dict, Any, List, Optional
 from fastapi import HTTPException
+from uuid import UUID
 from .base import get_authenticated_client, handle_database_error, validate_record_exists, calculate_pagination_offset
 
 
-async def create_listing(user_id: int, listing_data: Dict[str, Any]) -> Dict[str, Any]:
+async def create_listing(user_id: UUID, listing_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new product listing.
     """
@@ -32,7 +33,7 @@ async def create_listing(user_id: int, listing_data: Dict[str, Any]) -> Dict[str
         handle_database_error("create listing", e)
 
 
-async def get_listing_by_id(user_id: int, listing_id: int, include_seller_info: bool = True) -> Optional[Dict[str, Any]]:
+async def get_listing_by_id(user_id: UUID, listing_id: int, include_seller_info: bool = True) -> Optional[Dict[str, Any]]:
     """
     Get a specific listing by ID.
     """
@@ -68,7 +69,7 @@ async def get_listing_by_id(user_id: int, listing_id: int, include_seller_info: 
         handle_database_error("get listing by ID", e)
 
 
-async def get_public_listings(user_id: int, page: int = 1, page_size: int = 20, 
+async def get_public_listings(user_id: Optional[UUID] = None, page: int = 1, page_size: int = 20, 
                              category: Optional[str] = None, search: Optional[str] = None,
                              min_price: Optional[float] = None, max_price: Optional[float] = None,
                              sort_by: Optional[str] = "newest") -> Dict[str, Any]:
@@ -145,7 +146,7 @@ async def get_public_listings(user_id: int, page: int = 1, page_size: int = 20,
         handle_database_error("get public listings", e)
 
 
-async def get_user_listings(user_id: int, category: Optional[str] = None, 
+async def get_user_listings(user_id: UUID, category: Optional[str] = None, 
                            search: Optional[str] = None, status: Optional[str] = None,
                            sort_by: Optional[str] = "newest") -> List[Dict[str, Any]]:
     """
@@ -207,7 +208,7 @@ async def get_user_listings(user_id: int, category: Optional[str] = None,
         handle_database_error("get user listings", e)
 
 
-async def update_listing_status(user_id: int, listing_id: int, new_status: str) -> Dict[str, Any]:
+async def update_listing_status(user_id: UUID, listing_id: int, new_status: str) -> Dict[str, Any]:
     """
     Update listing status. Only the owner can update.
     """
@@ -238,7 +239,7 @@ async def update_listing_status(user_id: int, listing_id: int, new_status: str) 
         handle_database_error("update listing status", e)
 
 
-async def update_listing(user_id: int, listing_id: int, update_data: Dict[str, Any]) -> Dict[str, Any]:
+async def update_listing(user_id: UUID, listing_id: int, update_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update listing information. Only the owner can update.
     """
@@ -265,7 +266,7 @@ async def update_listing(user_id: int, listing_id: int, update_data: Dict[str, A
         handle_database_error("update listing", e)
 
 
-async def delete_listing(user_id: int, listing_id: int) -> bool:
+async def delete_listing(user_id: UUID, listing_id: int) -> bool:
     """
     Delete a listing. Only the owner can delete.
     """
@@ -289,7 +290,7 @@ async def delete_listing(user_id: int, listing_id: int) -> bool:
         handle_database_error("delete listing", e)
 
 
-async def get_listing_meetup_times(user_id: int, listing_id: int) -> List[Dict[str, Any]]:
+async def get_listing_meetup_times(user_id: UUID, listing_id: int) -> List[Dict[str, Any]]:
     """
     Get meetup time slots for a listing.
     """
@@ -303,7 +304,7 @@ async def get_listing_meetup_times(user_id: int, listing_id: int) -> List[Dict[s
         handle_database_error("get listing meetup times", e)
 
 
-async def add_listing_meetup_times(user_id: int, listing_id: int, time_slots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+async def add_listing_meetup_times(user_id: UUID, listing_id: int, time_slots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Add meetup time slots to a listing.
     """
@@ -355,7 +356,7 @@ def apply_listing_filters(query, category: Optional[str] = None, search: Optiona
     return query
 
 
-def build_public_listings_query(supabase, user_id: int):
+def build_public_listings_query(supabase, user_id: Optional[UUID] = None):
     """Build base query for public listings (excluding current user's listings)."""
     return supabase.table("listings").select(
         "listing_id,seller_id,name,description,category,tags,price_min,price_max,"
@@ -364,7 +365,7 @@ def build_public_listings_query(supabase, user_id: int):
     ).neq("seller_id", user_id).not_.is_("seller_id", "null").eq("status", "active")
 
 
-def build_user_listings_query(supabase, user_id: int):
+def build_user_listings_query(supabase, user_id: UUID):
     """Build base query for user's own listings."""
     return supabase.table("listings").select(
         "listing_id,seller_id,name,description,category,tags,price_min,price_max,"

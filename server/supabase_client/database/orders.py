@@ -5,10 +5,11 @@ Handles order creation, retrieval, updates, and related validations.
 
 from typing import Dict, Any, List, Optional
 from fastapi import HTTPException
+from uuid import UUID
 from .base import get_authenticated_client, handle_database_error, calculate_pagination_offset, validate_record_exists, validate_user_access
 
 
-async def check_listing_availability(user_id: int, listing_id: int, quantity: int, buyer_id: int) -> Dict[str, Any]:
+async def check_listing_availability(user_id: UUID, listing_id: int, quantity: int, buyer_id: UUID) -> Dict[str, Any]:
     """
     Check if a listing exists, is active, has sufficient stock, and buyer is not the seller.
     Returns the listing data if valid.
@@ -45,7 +46,7 @@ async def check_listing_availability(user_id: int, listing_id: int, quantity: in
         handle_database_error("check listing availability", e)
 
 
-async def create_order(user_id: int, order_data: Dict[str, Any]) -> Dict[str, Any]:
+async def create_order(user_id: UUID, order_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new order record in the database.
     """
@@ -66,7 +67,7 @@ async def create_order(user_id: int, order_data: Dict[str, Any]) -> Dict[str, An
         handle_database_error("create order", e)
 
 
-async def get_order_by_id(user_id: int, order_id: int) -> Dict[str, Any]:
+async def get_order_by_id(user_id: UUID, order_id: int) -> Dict[str, Any]:
     """
     Get order by ID, ensuring user has access (buyer or seller).
     """
@@ -101,7 +102,7 @@ async def get_order_by_id(user_id: int, order_id: int) -> Dict[str, Any]:
         handle_database_error("get order by ID", e)
 
 
-async def get_user_orders(user_id: int, page: int = 1, page_size: int = 20, 
+async def get_user_orders(user_id: UUID, page: int = 1, page_size: int = 20, 
                          status: Optional[str] = None, as_buyer: Optional[bool] = None) -> Dict[str, Any]:
     """
     Get user's orders with pagination and filtering.
@@ -159,7 +160,7 @@ async def get_user_orders(user_id: int, page: int = 1, page_size: int = 20,
         handle_database_error("get user orders", e)
 
 
-async def update_order_status(user_id: int, order_id: int, new_status: str) -> Dict[str, Any]:
+async def update_order_status(user_id: UUID, order_id: int, new_status: str) -> Dict[str, Any]:
     """
     Update order status. Only accessible to buyer or seller.
     """
@@ -183,7 +184,7 @@ async def update_order_status(user_id: int, order_id: int, new_status: str) -> D
         handle_database_error("update order status", e)
 
 
-async def update_listing_stock(user_id: int, listing_id: int, quantity: int) -> None:
+async def update_listing_stock(user_id: UUID, listing_id: int, quantity: int) -> None:
     """
     Update listing stock after an order is placed.
     Also updates sold_count.

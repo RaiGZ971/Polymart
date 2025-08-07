@@ -5,10 +5,11 @@ Handles user favorite listings management.
 
 from typing import Dict, Any, List, Optional
 from fastapi import HTTPException
+from uuid import UUID
 from .base import get_authenticated_client, handle_database_error, validate_record_exists
 
 
-async def check_favorite_exists(user_id: int, listing_id: int) -> bool:
+async def check_favorite_exists(user_id: UUID, listing_id: int) -> bool:
     """
     Check if a listing is already in user's favorites.
     """
@@ -24,7 +25,7 @@ async def check_favorite_exists(user_id: int, listing_id: int) -> bool:
         handle_database_error("check favorite exists", e)
 
 
-async def add_favorite(user_id: int, listing_id: int) -> Dict[str, Any]:
+async def add_favorite(user_id: UUID, listing_id: int) -> Dict[str, Any]:
     """
     Add a listing to user's favorites.
     """
@@ -50,7 +51,7 @@ async def add_favorite(user_id: int, listing_id: int) -> Dict[str, Any]:
         handle_database_error("add favorite", e)
 
 
-async def remove_favorite(user_id: int, listing_id: int) -> bool:
+async def remove_favorite(user_id: UUID, listing_id: int) -> bool:
     """
     Remove a listing from user's favorites.
     Returns True if removed, False if wasn't favorited.
@@ -69,7 +70,7 @@ async def remove_favorite(user_id: int, listing_id: int) -> bool:
         handle_database_error("remove favorite", e)
 
 
-async def get_user_favorites(user_id: int, include_listing_details: bool = True) -> List[Dict[str, Any]]:
+async def get_user_favorites(user_id: UUID, include_listing_details: bool = True) -> List[Dict[str, Any]]:
     """
     Get user's favorite listings.
     """
@@ -111,7 +112,7 @@ async def get_user_favorites(user_id: int, include_listing_details: bool = True)
         handle_database_error("get user favorites", e)
 
 
-async def get_favorite_listing_details(user_id: int, listing_id: int) -> Optional[Dict[str, Any]]:
+async def get_favorite_listing_details(user_id: UUID, listing_id: int) -> Optional[Dict[str, Any]]:
     """
     Get detailed listing information for a favorited item.
     """
@@ -148,7 +149,7 @@ async def get_favorite_listing_details(user_id: int, listing_id: int) -> Optiona
         handle_database_error("get favorite listing details", e)
 
 
-async def get_favorites_count(user_id: int) -> int:
+async def get_favorites_count(user_id: UUID) -> int:
     """
     Get the total count of user's favorite listings.
     """
@@ -162,7 +163,7 @@ async def get_favorites_count(user_id: int) -> int:
         handle_database_error("get favorites count", e)
 
 
-async def clear_user_favorites(user_id: int) -> int:
+async def clear_user_favorites(user_id: UUID) -> int:
     """
     Remove all favorites for a user.
     Returns the number of favorites removed.
@@ -182,7 +183,7 @@ async def clear_user_favorites(user_id: int) -> int:
 
 
 # Query Builder Functions
-def build_favorites_query(supabase, user_id: int):
+def build_favorites_query(supabase, user_id: UUID):
     """Build base query for user favorites."""
     return supabase.table("user_favorites").select(
         "listing_id,favorited_at"

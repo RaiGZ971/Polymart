@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from uuid import UUID
 
 class User(BaseModel):
     id: str
@@ -9,7 +10,7 @@ class User(BaseModel):
     hashed_password: str
 
 class UserProfile(BaseModel):
-    user_id: int
+    user_id: UUID
     username: str
     first_name: str
     middle_name: str
@@ -65,7 +66,7 @@ class UpdateListingStatusResponse(BaseModel):
 
 class ProductListing(BaseModel):
     listing_id: int
-    seller_id: int
+    seller_id: UUID
     seller_username: str
     seller_listing_count: int = 0
     seller_profile_photo_url: Optional[str] = None
@@ -120,8 +121,8 @@ class CreateOrderRequest(BaseModel):
 
 class Order(BaseModel):
     order_id: int
-    buyer_id: int
-    seller_id: int
+    buyer_id: UUID
+    seller_id: UUID
     listing_id: int
     quantity: int
     buyer_requested_price: Optional[float]

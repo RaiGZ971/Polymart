@@ -4,10 +4,11 @@ Contains common database utilities, pagination, and client management.
 """
 
 from fastapi import HTTPException
+from uuid import UUID
 from supabase_client.auth_client import get_authenticated_supabase_client
 
 
-def get_supabase_client(user_id: int):
+def get_supabase_client(user_id: UUID):
     """Get authenticated Supabase client with error handling."""
     supabase = get_authenticated_supabase_client(user_id)
     if not supabase:

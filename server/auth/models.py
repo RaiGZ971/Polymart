@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date
+from uuid import UUID
 
 class Token(BaseModel):
     access_token: str
@@ -39,7 +40,7 @@ class VerificationStatus(BaseModel):
     rejection_reason: Optional[str] = None
 
 class UserData(BaseModel):
-    user_id: int
+    user_id: UUID
     username: str
     email: str
     first_name: str
