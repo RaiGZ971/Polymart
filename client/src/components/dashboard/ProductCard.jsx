@@ -1,5 +1,6 @@
-import { Heart, MoreVertical, ShoppingBag } from "lucide-react";
+import { MoreVertical, ShoppingBag } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import FavoriteButton from "../shared/FavoriteButton";
 
 export default function ProductCard({ order }) {
   const {
@@ -11,6 +12,7 @@ export default function ProductCard({ order }) {
     username,
     itemsOrdered = 0,
     userAvatar,
+    listingId, // Add this for the favorite functionality
   } = order || {};
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -46,9 +48,11 @@ export default function ProductCard({ order }) {
         />
         {/* Top right icons */}
         <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
-          <button className="bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors">
-            <Heart size={20} />
-          </button>
+          <FavoriteButton 
+            listingId={listingId}
+            className="bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors"
+            size={20}
+          />
           <div className="relative" ref={dropdownRef}>
             <button
               className={`bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors ${

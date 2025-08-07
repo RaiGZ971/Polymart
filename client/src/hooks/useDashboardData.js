@@ -63,6 +63,7 @@ export const useDashboardData = () => {
 
       // Transformed data for ProductCard component
       id: listing.listing_id,
+      listingId: listing.listing_id, // Add this for FavoriteButton
       productName: listing.name,
       productPrice: listing.price_min,
       priceRange: hasRange

@@ -75,9 +75,15 @@ async def get_user_favorite_listings(
     Get the current user's favorite listings. Optionally includes full listing details.
     """
     try:
-        # Get user's favorites
-        favorites_data = await favorites_db.get_user_favorites(current_user["user_id"], include_listing_details)
+        # Get user's favorites (just the relationships)
+        from supabase_client.database.base import get_authenticated_client
+        supabase = get_authenticated_client(current_user["user_id"])
+        favorites_result = favorites_db.get_user_favorites(supabase, current_user["user_id"], include_listing_details=False)
+        
+        if not favorites_result["success"]:
+            raise HTTPException(status_code=500, detail=favorites_result.get("error", "Failed to fetch favorites"))
 
+        favorites_data = favorites_result["data"]
         if not favorites_data:
             return UserFavoritesResponse(
                 favorites=[],
@@ -89,12 +95,20 @@ async def get_user_favorite_listings(
         favorites = []
         for favorite in favorites_data:
             listing_details = None
-            # If listing details are included in the data
-            if include_listing_details and "listings" in favorite:
-                # Convert the nested listing data to product format
-                from supabase_client.database.base import get_authenticated_client
-                supabase = get_authenticated_client(current_user["user_id"])
-                listing_details = await convert_listing_to_product(supabase, favorite["listings"])
+            
+            # If listing details are requested, fetch them separately
+            if include_listing_details:
+                try:
+                    listing_result = await listings_db.get_listing_by_id(
+                        current_user["user_id"], 
+                        favorite["listing_id"], 
+                        include_seller_info=True
+                    )
+                    if listing_result:
+                        listing_details = await convert_listing_to_product(supabase, listing_result)
+                except Exception as e:
+                    print(f"Error fetching listing details for {favorite['listing_id']}: {e}")
+                    # Continue without listing details for this item
             
             favorites.append(UserFavorite(
                 listing_id=favorite["listing_id"],
@@ -129,11 +143,14 @@ async def check_favorite_listing_status(
         favorited_at = None
         if is_favorited:
             # Get the favorite details including timestamp
-            favorites_data = await favorites_db.get_user_favorites(current_user["user_id"], include_listing_details=False)
-            for favorite in favorites_data:
-                if favorite["listing_id"] == listing_id:
-                    favorited_at = favorite["favorited_at"]
-                    break
+            from supabase_client.database.base import get_authenticated_client
+            supabase = get_authenticated_client(current_user["user_id"])
+            favorites_result = favorites_db.get_user_favorites(supabase, current_user["user_id"], include_listing_details=False)
+            if favorites_result["success"]:
+                for favorite in favorites_result["data"]:
+                    if favorite["listing_id"] == listing_id:
+                        favorited_at = favorite["favorited_at"]
+                        break
         
         return create_standardized_response(
             message="Favorite listing status retrieved",
