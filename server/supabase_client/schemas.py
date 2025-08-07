@@ -64,6 +64,10 @@ class UpdateListingStatusResponse(BaseModel):
     message: str
     data: dict
 
+class MeetupSchedule(BaseModel):
+    date: str
+    times: List[str]
+
 class ProductListing(BaseModel):
     listing_id: int
     seller_id: UUID
@@ -84,6 +88,7 @@ class ProductListing(BaseModel):
     seller_meetup_locations: Optional[List[str]]
     transaction_methods: Optional[List[str]]
     payment_methods: Optional[List[str]]
+    available_schedules: List[MeetupSchedule] = []
     images: List[ListingImage] = []
 
 class ProductListingsResponse(BaseModel):

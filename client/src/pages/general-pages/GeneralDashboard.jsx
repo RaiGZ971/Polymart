@@ -180,13 +180,24 @@ export default function GeneralDashboard() {
             <div className="text-lg text-gray-500">Searching...</div>
           </div>
         ) : displayedListings.length === 0 ? (
-          <div className="col-span-full flex flex-col items-center justify-center min-h-[200px]">
-            <span className="text-gray-500 text-lg py-12">
-              {activeTab === 'your-listings'
-                ? 'No listings found. Create your first listing!'
-                : 'No items matched'}
-            </span>
-          </div>
+          activeTab === 'your-listings' ? (
+            <div className="col-span-full flex flex-col items-center justify-center min-h-[200px] gap-6">
+              <span className="text-gray-500 text-lg">
+                No listings found. Create your first listing!
+              </span>
+              <Add
+                text="Add a new listing"
+                className="w-[268px] h-[346px] min-w-[247px] min-h-[346px]"
+                onClick={() => setShowCreateListing(true)}
+              />
+            </div>
+          ) : (
+            <div className="col-span-full flex flex-col items-center justify-center min-h-[200px]">
+              <span className="text-gray-500 text-lg py-12">
+                No items matched
+              </span>
+            </div>
+          )
         ) : (
           <>
             {activeTab === 'your-listings' && (
