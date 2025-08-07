@@ -5,6 +5,7 @@ Handles user profile operations and user information retrieval.
 
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Optional
+from uuid import UUID
 from supabase_client.schemas import UserProfile, UserProfileResponse
 from supabase_client.database import users as users_db
 from auth.utils import get_current_user_optional
@@ -14,7 +15,7 @@ router = APIRouter()
 
 @router.get("/users/{user_id}", response_model=UserProfileResponse)
 async def get_user_profile(
-    user_id: int,
+    user_id: UUID,
     current_user: Optional[dict] = Depends(get_current_user_optional)
 ):
     """

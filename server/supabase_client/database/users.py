@@ -1,10 +1,11 @@
 """
 User-related database operations.
-Handles user profile management, verification, and authentication operations.
+Handles user profile management, verification, and authenticationasync def update_user_profile(user_id: UUID, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:operations.
 """
 
 from typing import Optional, Dict, Any
 from fastapi import HTTPException
+from uuid import UUID
 from .base import get_authenticated_client, get_unauthenticated_client, handle_database_error
 
 
@@ -26,7 +27,7 @@ async def create_user_profile(user_data: Dict[str, Any]) -> Optional[Dict[str, A
         handle_database_error("create user profile", e)
 
 
-async def create_user_verification_documents(user_id: int, document_urls: Dict[str, str]) -> Optional[Dict[str, Any]]:
+async def create_user_verification_documents(user_id: UUID, document_urls: Dict[str, str]) -> Optional[Dict[str, Any]]:
     """
     Create user verification documents entry in the user_verification table
     """
@@ -55,7 +56,7 @@ async def create_user_verification_documents(user_id: int, document_urls: Dict[s
         handle_database_error("create user verification documents", e)
 
 
-async def update_user_verification_documents(user_id: int, document_urls: Dict[str, str]) -> Optional[Dict[str, Any]]:
+async def update_user_verification_documents(user_id: UUID, document_urls: Dict[str, str]) -> Optional[Dict[str, Any]]:
     """
     Update existing user verification documents (for resubmission)
     """
@@ -83,7 +84,7 @@ async def update_user_verification_documents(user_id: int, document_urls: Dict[s
         handle_database_error("update user verification documents", e)
 
 
-async def get_user_verification_status(user_id: int) -> Optional[Dict[str, Any]]:
+async def get_user_verification_status(user_id: UUID) -> Optional[Dict[str, Any]]:
     """
     Get user verification status by user_id
     """
@@ -175,7 +176,7 @@ async def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
         handle_database_error("get user by username", e)
 
 
-async def get_user_by_id(user_id: int, include_private: bool = False) -> Optional[Dict[str, Any]]:
+async def get_user_by_id(user_id: UUID, include_private: bool = False) -> Optional[Dict[str, Any]]:
     """
     Get a user profile by user ID.
     

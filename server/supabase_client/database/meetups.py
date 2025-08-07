@@ -5,10 +5,11 @@ Handles meetup creation, updates, and confirmation for orders.
 
 from typing import Dict, Any, Optional
 from fastapi import HTTPException
+from uuid import UUID
 from .base import get_authenticated_client, handle_database_error, validate_record_exists
 
 
-async def create_meetup(user_id: int, order_id: int, meetup_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+async def create_meetup(user_id: UUID, order_id: int, meetup_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Create a new meetup record for an order.
     """
@@ -37,7 +38,7 @@ async def create_meetup(user_id: int, order_id: int, meetup_data: Optional[Dict[
         handle_database_error("create meetup", e)
 
 
-async def get_meetup_by_order(user_id: int, order_id: int) -> Optional[Dict[str, Any]]:
+async def get_meetup_by_order(user_id: UUID, order_id: int) -> Optional[Dict[str, Any]]:
     """
     Get meetup details by order ID.
     """
@@ -53,7 +54,7 @@ async def get_meetup_by_order(user_id: int, order_id: int) -> Optional[Dict[str,
         handle_database_error("get meetup by order", e)
 
 
-async def update_meetup(user_id: int, order_id: int, update_data: Dict[str, Any]) -> Dict[str, Any]:
+async def update_meetup(user_id: UUID, order_id: int, update_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update meetup details (location, scheduled_at, etc.).
     """
@@ -73,7 +74,7 @@ async def update_meetup(user_id: int, order_id: int, update_data: Dict[str, Any]
         handle_database_error("update meetup", e)
 
 
-async def confirm_meetup_by_user(user_id: int, order_id: int, is_buyer: bool) -> Dict[str, Any]:
+async def confirm_meetup_by_user(user_id: UUID, order_id: int, is_buyer: bool) -> Dict[str, Any]:
     """
     Confirm meetup by buyer or seller.
     When both confirm, meetup status becomes 'confirmed'.
@@ -117,7 +118,7 @@ async def confirm_meetup_by_user(user_id: int, order_id: int, is_buyer: bool) ->
         handle_database_error("confirm meetup", e)
 
 
-async def get_meetup_details(user_id: int, meetup_id: int) -> Dict[str, Any]:
+async def get_meetup_details(user_id: UUID, meetup_id: int) -> Dict[str, Any]:
     """
     Get detailed meetup information by meetup ID.
     """
@@ -134,7 +135,7 @@ async def get_meetup_details(user_id: int, meetup_id: int) -> Dict[str, Any]:
         handle_database_error("get meetup details", e)
 
 
-async def cancel_meetup(user_id: int, order_id: int, cancellation_reason: Optional[str] = None) -> Dict[str, Any]:
+async def cancel_meetup(user_id: UUID, order_id: int, cancellation_reason: Optional[str] = None) -> Dict[str, Any]:
     """
     Cancel a meetup and update its status.
     """
@@ -160,7 +161,7 @@ async def cancel_meetup(user_id: int, order_id: int, cancellation_reason: Option
         handle_database_error("cancel meetup", e)
 
 
-async def get_meetup_by_order_id(user_id: int, order_id: int) -> Dict[str, Any]:
+async def get_meetup_by_order_id(user_id: UUID, order_id: int) -> Dict[str, Any]:
     """
     Get meetup details by order ID.
     Raises HTTPException if meetup not found.
@@ -180,7 +181,7 @@ async def get_meetup_by_order_id(user_id: int, order_id: int) -> Dict[str, Any]:
         handle_database_error("get meetup by order ID", e)
 
 
-async def create_meetup_with_details(user_id: int, order_id: int, meetup_details: Dict[str, Any]) -> Dict[str, Any]:
+async def create_meetup_with_details(user_id: UUID, order_id: int, meetup_details: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new meetup record with initial details (location, scheduled_at, remarks).
     """

@@ -5,10 +5,11 @@ Contains shared database operations and helper functions.
 
 from typing import Optional, Dict, Any
 from fastapi import HTTPException
+from uuid import UUID
 from supabase_client.auth_client import get_authenticated_supabase_client, get_unauthenticated_supabase_client
 
 
-def get_authenticated_client(user_id: int):
+def get_authenticated_client(user_id: UUID):
     """Get authenticated Supabase client with error handling."""
     supabase = get_authenticated_supabase_client(user_id)
     if not supabase:
@@ -54,7 +55,7 @@ def validate_record_exists(data, error_message: str = "Record not found"):
     return data
 
 
-def validate_user_access(record_user_id: int, current_user_id: int, error_message: str = "Access denied"):
+def validate_user_access(record_user_id: UUID, current_user_id: UUID, error_message: str = "Access denied"):
     """Validate that user has access to a record."""
     if record_user_id != current_user_id:
         raise HTTPException(status_code=403, detail=error_message)

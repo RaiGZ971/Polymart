@@ -3,9 +3,10 @@ import os
 from typing import Optional, Dict, Any
 import jwt
 from datetime import datetime, timedelta
+from uuid import UUID
 
 
-def create_supabase_compatible_jwt(user_id: int) -> str:
+def create_supabase_compatible_jwt(user_id: UUID) -> str:
     """
     Create a JWT token that Supabase RLS can understand.
     This uses Supabase's JWT secret so RLS can read the user_id claim.
@@ -19,7 +20,7 @@ def create_supabase_compatible_jwt(user_id: int) -> str:
         # Create payload that Supabase RLS can understand
         payload = {
             "sub": str(user_id),     # Standard JWT subject claim
-            "user_id": user_id,      # Custom claim for our RLS function
+            "user_id": str(user_id), # Custom claim for our RLS function (as string)
             "iss": "fastapi-auth",   # Issuer
             "aud": "authenticated",  # Audience - Supabase expects this
             "role": "authenticated", # Supabase role
@@ -32,7 +33,7 @@ def create_supabase_compatible_jwt(user_id: int) -> str:
         print(f"Error creating Supabase-compatible JWT: {e}")
         return None
 
-def get_authenticated_supabase_client(user_id: Optional[int] = None) -> Client:
+def get_authenticated_supabase_client(user_id: Optional[UUID] = None) -> Client:
     """
     Get a Supabase client with JWT authentication for the specified user.
     
