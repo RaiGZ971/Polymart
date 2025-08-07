@@ -77,6 +77,13 @@ export const useSignUpNavigation = (
           if (!value || (typeof value === "string" && value.trim() === "")) {
             return false;
           }
+          
+          // Pattern validation (e.g., for student ID format)
+          if (fieldDef.validation && fieldDef.validation.pattern) {
+            if (!fieldDef.validation.pattern.test(value)) {
+              return false;
+            }
+          }
         }
       }
     }
