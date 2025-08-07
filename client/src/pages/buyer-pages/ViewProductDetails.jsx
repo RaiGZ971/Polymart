@@ -10,9 +10,10 @@ import {
   ReviewComponent,
   ChatApp,
   Modal,
+  FavoriteButton,
 } from '../../components';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Flag, Heart, ShoppingBag } from 'lucide-react';
+import { ChevronLeft, Flag, ShoppingBag } from 'lucide-react';
 import productCategories from '../../data/productCategories';
 import { stallbanner, pupmap } from '../../assets';
 import meetUpLocations from '../../data/meetUpLocations';
@@ -230,13 +231,12 @@ export default function ViewProductDetails() {
             </button>
 
             <div className="flex flex-row gap-4 items-center">
-              <button className="text-sm group hover:text-primary-red hover:underline">
-                <Heart
-                  size={20}
-                  className="inline pr-1 group-hover:text-primary-red"
-                />
-                Add to Favorites
-              </button>
+              <FavoriteButton 
+                listingId={order.listing_id || order.id}
+                className="text-sm group hover:text-primary-red hover:underline"
+                size={20}
+                showText={true}
+              />
               {/* User Actions End */}
             </div>
           </div>

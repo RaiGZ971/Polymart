@@ -126,19 +126,30 @@ async def convert_listing_to_product(supabase, listing: Dict[str, Any]) -> Produ
         # Fallback to separate query if not included in JOIN
         images = await get_images_for_listing(supabase, listing["listing_id"])
     
-    # Extract seller username and profile info using direct query
+    # Extract seller username and profile info 
     seller_username = str(listing["seller_id"])
     seller_profile_photo_url = None
     
-    # Fetch user profile data directly (no JOIN dependency)
-    try:
-        user_result = supabase.table("user_profile").select("username, profile_photo_url").eq("user_id", listing["seller_id"]).execute()
-        if user_result.data and len(user_result.data) > 0:
-            user_data = user_result.data[0]
-            seller_username = user_data["username"]
+    # Check if user profile data is available from JOIN query first
+    if "user_profile" in listing and listing["user_profile"]:
+        # Handle both list format (from certain JOIN queries) and dict format
+        user_data = listing["user_profile"]
+        if isinstance(user_data, list) and len(user_data) > 0:
+            user_data = user_data[0]
+        
+        if isinstance(user_data, dict):
+            seller_username = user_data.get("username", str(listing["seller_id"]))
             seller_profile_photo_url = user_data.get("profile_photo_url")
-    except Exception as e:
-        print(f"Warning: Could not fetch user profile for seller_id {listing['seller_id']}: {e}")
+    else:
+        # Fallback to direct query if not included in JOIN
+        try:
+            user_result = supabase.table("user_profile").select("username, profile_photo_url").eq("user_id", listing["seller_id"]).execute()
+            if user_result.data and len(user_result.data) > 0:
+                user_data = user_result.data[0]
+                seller_username = user_data["username"]
+                seller_profile_photo_url = user_data.get("profile_photo_url")
+        except Exception as e:
+            print(f"Warning: Could not fetch user profile for seller_id {listing['seller_id']}: {e}")
     
     # Get seller listing count
     seller_listing_count = 0

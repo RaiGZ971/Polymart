@@ -3,6 +3,7 @@ export { useEmailVerification } from "./useEmailVerification";
 export { default as useOrderModals } from "./useOrderModals";
 export { useOrdersData } from "./useOrdersData";
 export { useDashboardData } from "./useDashboardData";
+export { useFavorites } from "./useFavorites";
 export { 
   usePublicListings, 
   useMyListings, 

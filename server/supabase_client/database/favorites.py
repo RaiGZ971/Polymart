@@ -70,46 +70,24 @@ async def remove_favorite(user_id: UUID, listing_id: int) -> bool:
         handle_database_error("remove favorite", e)
 
 
-async def get_user_favorites(user_id: UUID, include_listing_details: bool = True) -> List[Dict[str, Any]]:
-    """
-    Get user's favorite listings.
-    """
+def get_user_favorites(supabase, user_id: str, include_listing_details: bool = False):
+    """Get all favorite listings for a user"""
     try:
-        supabase = get_authenticated_client(user_id)
-        
-        if include_listing_details:
-            # Join with listings table to get full details
-            query = supabase.table("user_favorites").select("""
-                listing_id,
-                favorited_at,
-                listings:listing_id (
-                    listing_id,
-                    seller_id,
-                    name,
-                    description,
-                    category,
-                    tags,
-                    price_min,
-                    price_max,
-                    total_stock,
-                    sold_count,
-                    status,
-                    created_at,
-                    updated_at,
-                    seller_meetup_locations,
-                    user_profile!inner(username)
-                )
-            """).eq("user_id", user_id).order("favorited_at", desc=True)
-        else:
-            # Only get basic favorite info
-            query = supabase.table("user_favorites").select(
-                "listing_id,favorited_at"
-            ).eq("user_id", user_id).order("favorited_at", desc=True)
+        # Just get the favorite relationships
+        query = (supabase.table("user_favorites")
+               .select("*")
+               .eq("user_id", user_id))
         
         result = query.execute()
-        return result.data if result.data else []
+        
+        if result.data:
+            return {"success": True, "data": result.data}
+        else:
+            return {"success": True, "data": []}
+            
     except Exception as e:
-        handle_database_error("get user favorites", e)
+        print(f"Error getting user favorites: {str(e)}")
+        return {"success": False, "error": str(e)}
 
 
 async def get_favorite_listing_details(user_id: UUID, listing_id: int) -> Optional[Dict[str, Any]]:
