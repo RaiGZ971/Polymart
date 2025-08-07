@@ -120,6 +120,91 @@ export class ListingService {
   }
 
   /**
+   * Upload listing images to S3 and associate with listing
+   * @param {number} listingId - The listing ID
+   * @param {File[]} images - Array of image files to upload
+   * @returns {Promise<Object>} Response with uploaded image data
+   */
+  static async uploadListingImages(listingId, images) {
+    try {
+      const formData = new FormData();
+      images.forEach((image, index) => {
+        formData.append('images', image);
+      });
+
+      // Use fetch directly for FormData to let browser set Content-Type
+      const { API_BASE } = await import('../config/api.js');
+      const { useAuthStore } = await import('../store/authStore.js');
+      
+      const response = await fetch(`${API_BASE}/s3/listing-images/${listingId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${useAuthStore.getState().token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP error status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to upload listing images:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a complete listing with images
+   * @param {Object} transformedListingData - The transformed listing data
+   * @param {File[]} images - Array of image files to upload
+   * @returns {Promise<Object>} Response with created listing and upload results
+   */
+  static async createListingWithImages(transformedListingData, images) {
+    try {
+      // First create the listing
+      const listingResponse = await this.createListing(transformedListingData);
+      
+      if (!listingResponse.success || !listingResponse.data?.listing_id) {
+        throw new Error('Failed to create listing: ' + (listingResponse.message || 'Unknown error'));
+      }
+      
+      const listingId = listingResponse.data.listing_id;
+      let imageUploadResult = null;
+      
+      // Then upload images if provided
+      if (images && images.length > 0) {
+        try {
+          imageUploadResult = await this.uploadListingImages(listingId, images);
+        } catch (imageError) {
+          console.error('Failed to upload images for listing:', imageError);
+          // Log the error but don't fail the entire operation
+          // The listing was created successfully, just image upload failed
+          imageUploadResult = {
+            success: false,
+            error: imageError.message
+          };
+        }
+      }
+      
+      return {
+        success: true,
+        message: 'Listing created successfully',
+        data: {
+          listing: listingResponse.data,
+          images: imageUploadResult
+        }
+      };
+      
+    } catch (error) {
+      console.error('Failed to create listing with images:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Update listing status
    * @param {number} listingId - The listing ID
    * @param {string} status - New status (active, inactive, sold_out, archived)

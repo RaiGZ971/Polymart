@@ -13,6 +13,8 @@ const Modal = ({
   setOfferPrice,
   offerMessage,
   setOfferMessage,
+  confirmText,
+  disabled = false,
 }) => {
   if (!isOpen) {
     return null;
@@ -56,11 +58,11 @@ const Modal = ({
           )}
           {type === "confirmation" && (
             <>
-              <Button variant="outline" onClick={onClose}>
+              <Button variant="outline" onClick={onClose} disabled={disabled}>
                 Review Details
               </Button>
-              <Button className="primary" onClick={onConfirm}>
-                Submit Listing
+              <Button className="primary" onClick={onConfirm} disabled={disabled}>
+                {confirmText || "Submit Listing"}
               </Button>
             </>
           )}
