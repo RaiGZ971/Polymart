@@ -18,7 +18,7 @@ import { useDashboardStore } from '../../store/dashboardStore.js';
 
 export default function GeneralDashboard() {
   const [showCreateListing, setShowCreateListing] = useState(false);
-  const { activeTab, setActiveTab } = useDashboardStore(); // Use persistent store
+  const { activeTab, setActiveTab } = useDashboardStore(); // Use in-memory store
   const [pendingSearch, setPendingSearch] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();

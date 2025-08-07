@@ -130,7 +130,6 @@ export class AuthService {
     localStorage.removeItem('authToken');
     
     // Force clear all Zustand persisted stores from localStorage
-    localStorage.removeItem('polymart-dashboard-state');
     localStorage.removeItem('polymart-contact-state');
     localStorage.removeItem('polymart-user-state');
     

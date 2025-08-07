@@ -226,10 +226,10 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
   const handleLogout = async () => {
     console.log('🚪 NavigationDashboard.handleLogout() called');
     
-    // First, reset in-memory Zustand stores to prevent them from persisting back to localStorage
-    console.log('🔄 Resetting Zustand stores first...');
+    // First, reset in-memory Zustand stores to prevent any stale state
+    console.log('🔄 Resetting Zustand stores...');
     authLogout(); // Reset auth store
-    resetDashboard(); // Reset dashboard store
+    resetDashboard(); // Reset dashboard store (in-memory only now)
     resetContacts(); // Reset contact store
     
     // Small delay to ensure store resets are processed
