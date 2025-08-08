@@ -54,7 +54,6 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
   } = useAuthStore();
 
   const { reset: resetDashboard } = useDashboardStore();
-  const { reset: resetContacts } = useContactStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [firstName, setFirstName] = useState('');
