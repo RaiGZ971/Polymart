@@ -40,12 +40,13 @@ export default function SignIn() {
         password: form.password,
       });
 
-      setUser(userData.data.user, userData.data.access_token);
+      setUser(userData.data.user.user_id, userData.data.access_token);
       navigate('/dashboard');
     } catch (error) {
-      const errorMessage = error?.response?.data?.detail || 
-                          error?.message || 
-                          'Login failed. Please try again.';
+      const errorMessage =
+        error?.response?.data?.detail ||
+        error?.message ||
+        'Login failed. Please try again.';
       setError(errorMessage);
     }
   };
@@ -60,14 +61,16 @@ export default function SignIn() {
         <div className="max-w-[420px] -ml-12">
           <img src={stall} alt="Stall" className="w-full h-auto" />
         </div>
-        
+
         <div className="max-w-[420px] flex flex-col items-center">
           <div className="border-2 border-primary-red rounded-[30px] p-10 shadow-lg w-full space-y-3">
             <div className="space-y-0 mb-8">
-              <h1 className="text-3xl font-bold text-primary-red">Kamusta, Iskolar?</h1>
+              <h1 className="text-3xl font-bold text-primary-red">
+                Kamusta, Iskolar?
+              </h1>
               <p className="text-sm">Sa PolyMart lahat ng Isko, may pwesto!</p>
             </div>
-            
+
             <form className="flex flex-col space-y-4" onSubmit={handleSubmit}>
               <Textfield
                 label="Student ID"
@@ -93,10 +96,13 @@ export default function SignIn() {
                 </div>
               )}
 
-              <a href="/forgot-password" className="text-gray-500 hover:underline text-xs text-right">
+              <a
+                href="/forgot-password"
+                className="text-gray-500 hover:underline text-xs text-right"
+              >
                 Forgot Password?
               </a>
-              
+
               <button
                 type="submit"
                 disabled={loading}
@@ -120,7 +126,9 @@ export default function SignIn() {
 
               <p className="text-xs text-gray-500">
                 Not part of the community yet?{' '}
-                <a href="/signup" className="text-primary-red hover:underline">Sign Up</a>
+                <a href="/signup" className="text-primary-red hover:underline">
+                  Sign Up
+                </a>
               </p>
             </form>
           </div>
