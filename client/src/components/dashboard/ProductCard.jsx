@@ -13,6 +13,7 @@ export default function ProductCard({ order }) {
     itemsOrdered = 0,
     userAvatar,
     listingId, // Add this for the favorite functionality
+    isFavorited, // Pre-fetched favorite status from batch query
   } = order || {};
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -52,6 +53,7 @@ export default function ProductCard({ order }) {
             listingId={listingId}
             className="bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors"
             size={20}
+            initialFavorited={isFavorited}
           />
           <div className="relative" ref={dropdownRef}>
             <button

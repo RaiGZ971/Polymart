@@ -17,20 +17,13 @@ def timestamp_to_time_slot(start_time: str, end_time: str) -> str:
         start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
         end_dt = datetime.fromisoformat(end_time.replace('Z', '+00:00'))
         
-        # Format times in 12-hour format
-        start_formatted = start_dt.strftime('%I:%M %p')
-        end_formatted = end_dt.strftime('%I:%M %p')
+        # Format times in 12-hour format and remove leading zeros
+        start_formatted = start_dt.strftime('%I:%M %p').lstrip('0').replace(' 0', ' ')
+        end_formatted = end_dt.strftime('%I:%M %p').lstrip('0').replace(' 0', ' ')
         
-        # Remove leading zero from hour (e.g., "01:00 PM" -> "1:00 PM")
-        start_formatted = start_formatted.lstrip('0').replace(' 0', ' ')
-        end_formatted = end_formatted.lstrip('0').replace(' 0', ' ')
-        
-        formatted_time = f"{start_formatted} - {end_formatted}"
-        print(f"Converting {start_time} to {end_time} -> {formatted_time}")
-        
-        return formatted_time
-    except Exception as e:
-        print(f"Error converting timestamp to time slot: {e}")
+        return f"{start_formatted} - {end_formatted}"
+    except Exception:
+        # Fallback to original format if conversion fails
         return f"{start_time}-{end_time}"
 
 
@@ -69,7 +62,7 @@ async def get_listing_meetup_schedules(supabase, listing_id: int) -> List[Meetup
         
         return schedules
     except Exception as e:
-        print(f"Error fetching meetup schedules: {e}")
+        # Only log to file, not console to reduce noise
         return []
 
 
@@ -149,7 +142,8 @@ async def convert_listing_to_product(supabase, listing: Dict[str, Any]) -> Produ
                 seller_username = user_data["username"]
                 seller_profile_photo_url = user_data.get("profile_photo_url")
         except Exception as e:
-            print(f"Warning: Could not fetch user profile for seller_id {listing['seller_id']}: {e}")
+            # Only log critical errors to reduce console noise
+            pass
     
     # Get seller listing count
     seller_listing_count = 0

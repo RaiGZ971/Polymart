@@ -178,9 +178,6 @@ async def signup(signup_data: SignUp):
     Sign up route that creates a new user. Verification documents should be uploaded separately using /s3/user-documents/submit-verification.
     """
     try:
-        print(f"Received signup request for email: {signup_data.email}")
-        print(f"Full signup data: {signup_data}")
-        
         # Check if email has been verified
         email_verified = await check_email_verification_status(signup_data.email)
         if not email_verified:
@@ -223,8 +220,6 @@ async def signup(signup_data: SignUp):
             bio=bio,
             profile_photo_url=None
         )
-        
-        print("Creating user profile...")
         
         # Create user profile
         user_result = await create_user_profile(user_profile_data)

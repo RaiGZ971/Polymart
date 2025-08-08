@@ -12,8 +12,9 @@ import {
   Modal,
   FavoriteButton,
 } from '../../components';
+import { DashboardBackButton } from '../../components/ui';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Flag, ShoppingBag } from 'lucide-react';
+import { Flag, ShoppingBag } from 'lucide-react';
 import productCategories from '../../data/productCategories';
 import { stallbanner, pupmap } from '../../assets';
 import meetUpLocations from '../../data/meetUpLocations';
@@ -119,16 +120,8 @@ export default function ViewProductDetails() {
 
   return (
     <MainDashboard>
-      {/* Back Button */}
-      <div
-        className="w-[80%] mt-10 flex cursor-pointer select-none"
-        onClick={() => navigate(-1)}
-      >
-        <ChevronLeft size={24} className="text-primary-red" />
-        <span className="ml-2 text-primary-red font-semibold hover:underline">
-          Back
-        </span>
-      </div>
+      <DashboardBackButton />
+      
       {/* Main Container */}
       <div className="flex flex-col w-[80%] min-h-screen mt-5">
         {/* First Row: Image Carousel + Product Details/User Actions */}

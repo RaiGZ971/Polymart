@@ -6,7 +6,11 @@ export const getContacts = (userID) => {
   return useQuery({
     queryKey: ['contacts', userID],
     queryFn: () => ChatService.getContacts(userID),
-    enabled: !!userID,
+    enabled: !!userID && typeof userID === 'string',
+    staleTime: 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 };
 
@@ -17,7 +21,9 @@ export const getMessages = (senderID, receiverID) => {
       const data = await ChatService.getMessages(senderID, receiverID);
       return data;
     },
-    enabled: !!senderID && !!receiverID,
+    enabled: !!senderID && !!receiverID && typeof senderID === 'string' && typeof receiverID === 'string',
+    staleTime: 30 * 1000, // 30 seconds
+    refetchOnWindowFocus: false,
     select: (data) => {
       return formattedMessages(data, senderID);
     },
