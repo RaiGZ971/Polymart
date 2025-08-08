@@ -295,16 +295,19 @@ export default function ViewProductDetails() {
                   </div>
                   {/* User Image */}
                   <img
-                    src={order.userAvatar || "https://picsum.photos/247/245"}
+                    src={order.userAvatar || 'https://picsum.photos/247/245'}
                     alt="User Image"
                     className="w-full h-full rounded-full object-cover z-0"
                   />
                 </div>
                 <div className="text-left pl-3">
-                  <p className="font-bold text-lg">{order.username || 'Unknown Seller'}</p>
+                  <p className="font-bold text-lg">
+                    {order.username || 'Unknown Seller'}
+                  </p>
                   <p className="text-gray-500 text-sm">PUP Sta Mesa | CCIS</p>
                   <p className="text-xs text-gray-800 mt-2">
-                    {order.seller_listing_count || 0} Listings | <span className="text-yellow-400">★</span> 4.5 stars
+                    {order.seller_listing_count || 0} Listings |{' '}
+                    <span className="text-yellow-400">★</span> 4.5 stars
                   </p>
                 </div>
               </div>

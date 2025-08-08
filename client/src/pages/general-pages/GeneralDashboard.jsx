@@ -15,12 +15,12 @@ import { UserService } from '../../services';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore.js';
 import { useDashboardStore } from '../../store/dashboardStore.js';
+import { getUserDetails } from '../../queries/getUserDetails.js';
 
 export default function GeneralDashboard() {
   const [showCreateListing, setShowCreateListing] = useState(false);
   const { activeTab, setActiveTab } = useDashboardStore(); // Use in-memory store
   const [pendingSearch, setPendingSearch] = useState('');
-  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
 
   // Use the dashboard data hook
@@ -40,28 +40,30 @@ export default function GeneralDashboard() {
     refreshHome,
   } = useDashboardData();
 
-  const { currentUser: user, token, isAuthenticated } = useAuthStore();
+  const { userID, token, isAuthenticated, setData } = useAuthStore();
+
+  const { data: userData } = getUserDetails(userID);
 
   // Get current user on component mount
   useEffect(() => {
     console.log('🔑 Authentication check:', {
-      user,
+      userID,
       hasToken: !!token,
       token: token ? token.substring(0, 20) + '...' : null,
       isAuthenticated,
     });
 
-    setCurrentUser(user);
+    setData(userData);
 
     // If user is not authenticated, redirect to login
-    if (!user || !UserService.isAuthenticated(token)) {
+    if (!userID || !UserService.isAuthenticated(token)) {
       console.log(
         '❌ No user found or not authenticated, should redirect to sign-in'
       );
       navigate('/sign-in');
       return;
     }
-  }, [navigate]);
+  }, [navigate, userData]);
 
   const handleCategoryChange = (categoryValue) => {
     setActiveCategory(categoryValue);
@@ -118,7 +120,7 @@ export default function GeneralDashboard() {
     <MainDashboard onLogoClick={refreshHome} onHomeClick={refreshHome}>
       <div className="w-[80%] mt-0 space-y-6">
         <h1 className="text-4xl font-bold text-primary-red mt-10">
-          Welcome Back, {currentUser?.username || 'User'}!
+          Welcome Back, {userData?.username || 'User'}!
         </h1>
         <CategoryFilter
           onCategoryChange={handleCategoryChange}

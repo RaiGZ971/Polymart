@@ -1,39 +1,40 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useCallback, useMemo } from 'react';
 import { usePublicListings, useMyListings } from './queries/useListingQueries';
-import { UserService } from '../services/userService';
 import { useAuthStore } from '../store/authStore.js';
 import { useDashboardStore } from '../store/dashboardStore.js';
 
 export const useDashboardData = () => {
   // Get current user for user change detection
   const { token } = useAuthStore();
-  const { 
-    activeCategory, 
+  const {
+    activeCategory,
     setActiveCategory,
     sortBy,
     setSortBy,
     searchTerm,
-    setSearchTerm 
+    setSearchTerm,
   } = useDashboardStore();
-  const getCurrentUser = () => UserService.getCurrentUser(token);
-  const [currentUserId, setCurrentUserId] = useState(
-    getCurrentUser()?.user_id || null
-  );
 
   // Build query parameters based on current state
-  const publicParams = useMemo(() => ({
-    ...(searchTerm ? { search: searchTerm } : {}),
-    sort_by: sortBy,
-  }), [searchTerm, sortBy]);
+  const publicParams = useMemo(
+    () => ({
+      ...(searchTerm ? { search: searchTerm } : {}),
+      sort_by: sortBy,
+    }),
+    [searchTerm, sortBy]
+  );
 
-  const myParams = useMemo(() => ({
-    ...(searchTerm ? { search: searchTerm } : {}),
-    sort_by: sortBy,
-  }), [searchTerm, sortBy]);
+  const myParams = useMemo(
+    () => ({
+      ...(searchTerm ? { search: searchTerm } : {}),
+      sort_by: sortBy,
+    }),
+    [searchTerm, sortBy]
+  );
 
   // Use TanStack Query hooks
   const {
-    data: publicResponse = {},
+    data: allListings = [],
     isLoading: publicLoading,
     isError: publicError,
     error: publicErrorDetails,
@@ -42,7 +43,7 @@ export const useDashboardData = () => {
   } = usePublicListings(publicParams);
 
   const {
-    data: myResponse = {},
+    data: allMyListings = [],
     isLoading: myLoading,
     isError: myError,
     error: myErrorDetails,
@@ -50,70 +51,15 @@ export const useDashboardData = () => {
     isFetching: myFetching,
   } = useMyListings(myParams, token);
 
-  // Transform API listing data to match ProductCard component expectations
-  const transformListing = useCallback((listing) => {
-    const hasRange =
-      listing.price_min !== null &&
-      listing.price_max !== null &&
-      listing.price_min !== listing.price_max;
-
-    return {
-      // Original API data for reference
-      ...listing,
-
-      // Transformed data for ProductCard component
-      id: listing.listing_id,
-      productName: listing.name,
-      productPrice: listing.price_min,
-      priceRange: hasRange
-        ? {
-            min: listing.price_min,
-            max: listing.price_max,
-          }
-        : null,
-      hasPriceRange: hasRange,
-      username: listing.user_profile?.username || listing.seller_username,
-      userAvatar:
-        listing.seller_profile_photo_url ||
-        'https://via.placeholder.com/40x40?text=User',
-      productImage:
-        listing.images && listing.images.length > 0
-          ? listing.images.find((img) => img.is_primary)?.image_url ||
-            listing.images[0].image_url
-          : 'https://via.placeholder.com/268x245?text=No+Image',
-      images: listing.images || [],
-      itemsOrdered: listing.sold_count || 0,
-
-      // Additional data that might be needed
-      category: listing.category,
-      description: listing.description,
-      status: listing.status,
-      created_at: listing.created_at,
-      tags: listing.tags,
-      availableSchedules: listing.available_schedules || [],
-      paymentMethods: listing.payment_methods || [],
-      meetupLocations: listing.seller_meetup_locations || [],
-      transactionMethods: listing.transaction_methods || [],
-    };
-  }, []);
-
-  // Transform server data to client format
-  const allListings = useMemo(() => {
-    const products = publicResponse.products || [];
-    return products.map(transformListing);
-  }, [publicResponse, transformListing]);
-
-  const allMyListings = useMemo(() => {
-    const products = myResponse.products || [];
-    return products.map(transformListing);
-  }, [myResponse, transformListing]);
-
   // Loading and error states
   const loading = publicLoading || myLoading;
   const searchLoading = publicFetching || myFetching;
-  const error = publicError || myError 
-    ? (publicErrorDetails?.message || myErrorDetails?.message || 'Failed to fetch listings')
-    : null;
+  const error =
+    publicError || myError
+      ? publicErrorDetails?.message ||
+        myErrorDetails?.message ||
+        'Failed to fetch listings'
+      : null;
 
   // Client-side sorting function
   const sortListings = useCallback((listingsToSort, sortOption) => {
@@ -173,7 +119,7 @@ export const useDashboardData = () => {
       // Search in product name, description, tags, and seller name
       const searchableText = [
         listing.productName || '',
-        listing.description || '',
+        listing.productDescription || '',
         listing.username || '',
         ...(listing.tags || []),
       ]
@@ -221,53 +167,21 @@ export const useDashboardData = () => {
 
   const refreshHome = useCallback(async () => {
     console.log('🏠 Home refresh - resetting filters and refetching');
-    
+
     // Reset all filters
     setActiveCategory('all');
     setSearchTerm('');
     setSortBy('newest');
-    
+
     // Refetch data
     await Promise.all([refetchPublic(), refetchMy()]);
   }, [refetchPublic, refetchMy]);
-
-  // Monitor user changes and reset data when user changes
-  useEffect(() => {
-    const checkUserChange = () => {
-      const newUser = getCurrentUser();
-      const newUserId = newUser?.user_id || null;
-
-      if (currentUserId !== newUserId) {
-        console.log('👤 User changed:', {
-          oldUserId: currentUserId,
-          newUserId: newUserId,
-        });
-
-        // Reset all state when user changes (including logout)
-        console.log('🔄 Resetting filters for user change...');
-        setActiveCategory('all');
-        setSortBy('newest');
-        setSearchTerm('');
-
-        // Update current user ID
-        setCurrentUserId(newUserId);
-
-        console.log('✅ State reset for user change');
-      }
-    };
-
-    // Check immediately and then periodically
-    checkUserChange();
-    const interval = setInterval(checkUserChange, 1000); // Check every second
-
-    return () => clearInterval(interval);
-  }, [currentUserId, getCurrentUser]);
 
   return {
     listings: filteredListings, // Return filtered and sorted data
     myListings: filteredMyListings, // Return filtered and sorted data
     loading,
-    searchLoading, // Export search loading state  
+    searchLoading, // Export search loading state
     error,
     activeCategory,
     setActiveCategory,

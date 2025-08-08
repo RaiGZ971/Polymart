@@ -1,3 +1,26 @@
+// Sample notifications data - you can move this to a hook later
+// const notifications = [
+//   {
+//     type: "meetup",
+//     title: "Meetup Reminder",
+//     time: "2 hours ago",
+//     message: "Your meetup with @buyer123 is scheduled for tomorrow at 2 PM.",
+//     details: "Location: SM North EDSA\nProduct: Gaming Chair",
+//   },
+//   {
+//     type: "listing-approved",
+//     title: "Listing Approved",
+//     time: "5 hours ago",
+//     message: "Your listing 'Gaming Mouse' has been approved and is now live!",
+//   },
+//   {
+//     type: "message",
+//     title: "New Message",
+//     time: "1 day ago",
+//     message: "You have a new message from @seller456 about your order.",
+//   },
+// ];
+
 import {
   Home,
   Plus,
@@ -18,14 +41,19 @@ import NotificationOverlay from '../notifications/NotificationOverlay';
 import CreateListingComponent from '../CreateListingComponent';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getUserNotification } from './queries/navigationQueries';
-import { UserService } from '../../services/userService';
 import { useAuthStore } from '../../store/authStore.js';
 import { useDashboardStore } from '../../store/dashboardStore.js';
 import { useContactStore } from '../../store/contactStore.js';
-import { AuthService } from "../../services/authService";
+import { AuthService } from '../../services/authService';
 
 export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
-  const { currentUser: userID, token, logout: authLogout } = useAuthStore();
+  const {
+    userID,
+    data: currentUser,
+    isAuthenticated,
+    logout: authLogout,
+  } = useAuthStore();
+
   const { reset: resetDashboard } = useDashboardStore();
   const { reset: resetContacts } = useContactStore();
   const navigate = useNavigate();
@@ -35,108 +63,6 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
   const [showChat, setShowChat] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCreateListing, setShowCreateListing] = useState(false);
-
-  // Get user's first name on component mount with caching
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const currentUser = UserService.getCurrentUser(token);
-        if (currentUser) {
-          // Check if we have cached profile data
-          const cachedProfile = sessionStorage.getItem('user_profile_cache');
-          let cachedData = null;
-
-          if (cachedProfile) {
-            try {
-              const parsed = JSON.parse(cachedProfile);
-              const cacheAge = Date.now() - parsed.timestamp;
-              // Use cache if it's less than 5 minutes old
-              if (cacheAge < 5 * 60 * 1000) {
-                cachedData = parsed;
-              }
-            } catch (err) {
-              console.warn('Failed to parse cached profile:', err);
-            }
-          }
-
-          if (cachedData) {
-            // Use cached data
-            setFirstName(cachedData.first_name || currentUser.username);
-            setIsLoadingProfile(false);
-            console.log(
-              '🔄 Using cached profile data for:',
-              cachedData.first_name
-            );
-          } else {
-            // Fetch fresh data and cache it
-            try {
-              const profileResponse = await UserService.getMyProfile(token);
-              if (profileResponse.success && profileResponse.data) {
-                const firstName =
-                  profileResponse.data.first_name || currentUser.username;
-                setFirstName(firstName);
-
-                // Cache the profile data
-                const cacheData = {
-                  first_name: firstName,
-                  ...profileResponse.data,
-                  timestamp: Date.now(),
-                };
-                sessionStorage.setItem(
-                  'user_profile_cache',
-                  JSON.stringify(cacheData)
-                );
-                console.log('📦 Cached fresh profile data for:', firstName);
-              } else {
-                // Fallback to username if profile fetch fails
-                setFirstName(currentUser.username);
-              }
-              setIsLoadingProfile(false);
-            } catch (profileError) {
-              console.log(
-                'Could not fetch profile, using username:',
-                profileError
-              );
-              // Fallback to username if profile fetch fails
-              setFirstName(currentUser.username);
-              setIsLoadingProfile(false);
-            }
-          }
-        } else {
-          // User not authenticated, redirect to login
-          navigate('/sign-in');
-        }
-      } catch (error) {
-        console.error('Error loading user data:', error);
-        navigate('/sign-in');
-      }
-    };
-
-    loadUserData();
-  }, [navigate]);
-
-  // Sample notifications data - you can move this to a hook later
-  // const notifications = [
-  //   {
-  //     type: "meetup",
-  //     title: "Meetup Reminder",
-  //     time: "2 hours ago",
-  //     message: "Your meetup with @buyer123 is scheduled for tomorrow at 2 PM.",
-  //     details: "Location: SM North EDSA\nProduct: Gaming Chair",
-  //   },
-  //   {
-  //     type: "listing-approved",
-  //     title: "Listing Approved",
-  //     time: "5 hours ago",
-  //     message: "Your listing 'Gaming Mouse' has been approved and is now live!",
-  //   },
-  //   {
-  //     type: "message",
-  //     title: "New Message",
-  //     time: "1 day ago",
-  //     message: "You have a new message from @seller456 about your order.",
-  //   },
-  // ];
 
   const {
     data: notifications = [],
@@ -176,7 +102,12 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
   ];
 
   const bottomNavItems = [
-    { name: isLoadingProfile ? "Loading..." : (firstName || "User"), path: "/profile", icon: "user", hasText: true },
+    {
+      name: isLoadingProfile ? 'Loading...' : firstName || 'User',
+      path: '/profile',
+      icon: 'user',
+      hasText: true,
+    },
     {
       name: 'Orders & Meet Ups',
       path: '/orders-meetups',
@@ -214,7 +145,7 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
       setShowCreateListing(true);
     } else if (item.action === 'logout') {
       handleLogout();
-    } else if (item.name === "Home" && onHomeClick) {
+    } else if (item.name === 'Home' && onHomeClick) {
       // Handle Home button click with refresh
       onHomeClick();
       navigate(item.path);
@@ -225,29 +156,29 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
 
   const handleLogout = async () => {
     console.log('🚪 NavigationDashboard.handleLogout() called');
-    
+
     // First, reset in-memory Zustand stores to prevent any stale state
     console.log('🔄 Resetting Zustand stores...');
     authLogout(); // Reset auth store
     resetDashboard(); // Reset dashboard store (in-memory only now)
     resetContacts(); // Reset contact store
-    
+
     // Small delay to ensure store resets are processed
-    await new Promise(resolve => setTimeout(resolve, 10));
-    
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
     // Then clear localStorage and sessionStorage via AuthService
     console.log('🔐 Calling AuthService.logout() to clear storage...');
     AuthService.logout();
-    
+
     // Force clear localStorage again in case of any race conditions
     console.log('🔄 Double-checking localStorage cleanup...');
     localStorage.clear(); // Nuclear option - clears everything
     sessionStorage.clear(); // Clear all session storage too
-    
+
     console.log('🔄 Redirecting to sign-in...');
     // Redirect to sign-in page
     navigate('/sign-in');
-    
+
     console.log('✅ NavigationDashboard.handleLogout() completed');
   };
 
@@ -277,6 +208,23 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
     // For demo, match by path (customize as needed)
     return item.path !== '/' && location.pathname.startsWith(item.path);
   };
+
+  // Get user's first name on component mount with caching
+  useEffect(() => {
+    try {
+      if (currentUser) {
+        setFirstName(currentUser.first_name || currentUser.username);
+        setIsLoadingProfile(false);
+      }
+
+      if (!isAuthenticated) {
+        navigate('/sign-in');
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      navigate('/sign-in');
+    }
+  }, [currentUser, isAuthenticated, navigate]);
 
   return (
     <div>
