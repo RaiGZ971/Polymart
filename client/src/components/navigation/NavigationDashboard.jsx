@@ -159,7 +159,6 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
     console.log('🔄 Resetting Zustand stores...');
     authLogout(); // Reset auth store
     resetDashboard(); // Reset dashboard store (in-memory only now)
-    resetContacts(); // Reset contact store
 
     // Small delay to ensure store resets are processed
     await new Promise((resolve) => setTimeout(resolve, 10));
