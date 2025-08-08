@@ -43,7 +43,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getUserNotification } from './queries/navigationQueries';
 import { useAuthStore } from '../../store/authStore.js';
 import { useDashboardStore } from '../../store/dashboardStore.js';
-import { useContactStore } from '../../store/contactStore.js';
 import { AuthService } from '../../services/authService';
 
 export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
