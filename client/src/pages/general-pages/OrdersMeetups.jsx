@@ -6,6 +6,7 @@ import {
   ProductDetail,
   Modal,
 } from '@/components';
+import DashboardBackButton from "../../components/ui/DashboardBackButton";
 import { meetUpLocationsFilter, orderStatus } from '@/data';
 import { useOrdersData } from '../../hooks';
 import { UserService } from '../../services';
@@ -136,7 +137,9 @@ export default function OrdersMeetups() {
 
   return (
     <MainDashboard>
-      <div className="flex flex-col w-[80%] min-h-screen mt-10">
+      <DashboardBackButton />
+      
+      <div className="flex flex-col w-[80%] min-h-screen mt-5">
         <h1 className="text-left mb-6 font-bold text-4xl text-primary-red">
           Orders & Meet Ups
         </h1>

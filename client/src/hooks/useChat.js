@@ -7,7 +7,8 @@ import { useAuthStore } from '../store/authStore.js';
 
 export function useChat() {
   const wsService = useRef(new WebSocketService());
-  const { currentUser: userID } = useAuthStore();
+  const { currentUser } = useAuthStore();
+  const userID = currentUser?.user_id || currentUser?.id;
   const [currentChatID, setCurrentChatID] = useState(null);
   const [contacts, setContacts] = useState([]);
 

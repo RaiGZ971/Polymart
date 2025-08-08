@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
-import { useFavorites } from '../../hooks';
+import { useFavoriteStatus, useToggleFavorite } from '../../hooks/queries/useFavoritesQueries';
 
 export default function FavoriteButton({ 
   listingId, 
@@ -9,52 +8,33 @@ export default function FavoriteButton({
   showText = false,
   initialFavorited = false
 }) {
-  const [isFavorited, setIsFavorited] = useState(initialFavorited);
-  const [isLoading, setIsLoading] = useState(false);
-  const { toggleFavorite, checkFavoriteStatus } = useFavorites();
-
-  useEffect(() => {
-    // Check initial favorite status if not provided
-    if (!initialFavorited && listingId) {
-      checkInitialStatus();
-    }
-  }, [listingId, initialFavorited]);
-
-  const checkInitialStatus = async () => {
-    try {
-      const status = await checkFavoriteStatus(listingId);
-      setIsFavorited(status.is_favorited);
-    } catch (err) {
-      console.error('Error checking favorite status:', err);
-    }
-  };
+  // Use TanStack Query for optimized caching and background updates
+  const { data: isFavorited = initialFavorited, isLoading } = useFavoriteStatus(listingId);
+  const toggleFavoriteMutation = useToggleFavorite();
 
   const handleToggleFavorite = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (isLoading) return;
+    if (isLoading || toggleFavoriteMutation.isPending) return;
 
     try {
-      setIsLoading(true);
-      const response = await toggleFavorite(listingId);
-      setIsFavorited(response.is_favorited);
+      await toggleFavoriteMutation.mutateAsync(listingId);
     } catch (err) {
       console.error('Error toggling favorite:', err);
-      // Revert the state if there was an error
-      // Could show a toast notification here
-    } finally {
-      setIsLoading(false);
+      // TanStack Query will handle reverting optimistic updates on error
     }
   };
+
+  const isProcessing = isLoading || toggleFavoriteMutation.isPending;
 
   return (
     <button
       onClick={handleToggleFavorite}
-      disabled={isLoading}
+      disabled={isProcessing}
       className={`
         flex items-center gap-1 transition-all duration-200 
-        ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'}
+        ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'}
         ${className}
       `}
       title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}

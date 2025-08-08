@@ -14,8 +14,8 @@ export const usePublicListings = (params = {}) => {
   return useQuery({
     queryKey: listingKeys.public(params),
     queryFn: () => ListingService.getPublicListings(params),
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes - prevent refetching when navigating back quickly
+    gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
     refetchOnWindowFocus: false,
     enabled: true,
@@ -25,10 +25,10 @@ export const usePublicListings = (params = {}) => {
 // Get user's own listings with caching
 export const useMyListings = (params = {}, token) => {
   return useQuery({
-    queryKey: listingKeys.myListings({ ...params, token }),
+    queryKey: listingKeys.myListings(params), // Remove token from query key
     queryFn: () => ListingService.getMyListings(params, token),
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes - prevent refetching when navigating back quickly
+    gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
     refetchOnWindowFocus: false,
     enabled: !!token, // Only run if token exists

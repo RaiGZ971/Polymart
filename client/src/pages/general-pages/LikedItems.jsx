@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { MainDashboard, ProductCard } from "../../components";
+import DashboardBackButton from "../../components/ui/DashboardBackButton";
 import { useFavorites } from "../../hooks";
 import { Heart, AlertCircle } from "lucide-react";
 
@@ -81,7 +82,9 @@ export default function LikedItems() {
 
   return (
     <MainDashboard>
-      <div className="w-[80%] mt-10">
+      <DashboardBackButton />
+      
+      <div className="w-[80%] mt-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">

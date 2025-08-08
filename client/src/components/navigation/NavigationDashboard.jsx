@@ -25,7 +25,8 @@ import { useContactStore } from '../../store/contactStore.js';
 import { AuthService } from "../../services/authService";
 
 export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
-  const { currentUser: userID, token, logout: authLogout } = useAuthStore();
+  const { currentUser, token, logout: authLogout } = useAuthStore();
+  const userID = currentUser?.user_id || currentUser?.id;
   const { reset: resetDashboard } = useDashboardStore();
   const { reset: resetContacts } = useContactStore();
   const navigate = useNavigate();
