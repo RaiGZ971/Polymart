@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ListingService } from '../../services/listingService';
 import { formattedListing } from '../../utils/formattedListing';
+import { UserService } from '../../services/userService';
 
 // Query keys
 export const listingKeys = {
   all: ['listings'],
   public: (params) => [...listingKeys.all, 'public', params],
-  myListings: (params) => [...listingKeys.all, 'my', params],
+  myListings: (params, userID) => [...listingKeys.all, 'my', userID, params],
   detail: (id) => [...listingKeys.all, 'detail', id],
 };
 
@@ -28,14 +29,18 @@ export const usePublicListings = (params = {}) => {
 
 // Get user's own listings with caching
 export const useMyListings = (params = {}, token) => {
+  // Get user ID from token for query key scoping
+  const currentUser = token ? UserService.getCurrentUser(token) : null;
+  const userID = currentUser?.user_id;
+
   return useQuery({
-    queryKey: listingKeys.myListings(params), // Remove token from query key
+    queryKey: listingKeys.myListings(params, userID), // Include userID in query key
     queryFn: () => ListingService.getMyListings(params, token),
     staleTime: 5 * 60 * 1000, // 5 minutes - prevent refetching when navigating back quickly
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
     refetchOnWindowFocus: false,
-    enabled: !!token, // Only run if token exists
+    enabled: !!token && !!userID, // Only run if token and userID exist
     select: (listings) => {
       return listings.products.map((listing) => formattedListing(listing));
     },
@@ -66,27 +71,11 @@ export const useCreateListing = () => {
       const previousPublicListings = queryClient.getQueryData(
         listingKeys.public({})
       );
-      const previousMyListings = queryClient.getQueryData(
-        listingKeys.myListings({})
-      );
-
-      // Optimistically update to the new value (add to user's listings)
-      if (previousMyListings) {
-        queryClient.setQueryData(listingKeys.myListings({}), (old) => ({
-          ...old,
-          products: [
-            {
-              ...newListing,
-              listing_id: Date.now(), // Temporary ID
-              status: 'pending',
-            },
-            ...(old.products || []),
-          ],
-        }));
-      }
+      // Note: Skip optimistic updates for myListings since userID is dynamic
+      // We'll rely on the onSettled invalidation to refresh the data
 
       // Return a context object with the snapshotted value
-      return { previousPublicListings, previousMyListings };
+      return { previousPublicListings };
     },
     onError: (err, newListing, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
@@ -94,12 +83,6 @@ export const useCreateListing = () => {
         queryClient.setQueryData(
           listingKeys.public({}),
           context.previousPublicListings
-        );
-      }
-      if (context?.previousMyListings) {
-        queryClient.setQueryData(
-          listingKeys.myListings({}),
-          context.previousMyListings
         );
       }
       console.error('Failed to create listing:', err);

@@ -17,6 +17,9 @@ export default function MeetUpDetails({ order, title }) {
         Meet Up Location: <strong>{order.location}</strong>
       </p>
       <p className="text-sm text-gray-800">
+        Proposed By: <strong>{order.proposed_by ? (order.proposed_by === 'buyer' ? 'Buyer' : 'Seller') : 'Buyer'}</strong>
+      </p>
+      <p className="text-sm text-gray-800">
         Remark: <strong>{order.remark || "None"}</strong>
       </p>
       <p className="text-sm text-gray-800">

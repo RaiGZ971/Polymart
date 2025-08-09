@@ -74,6 +74,9 @@ class ProductListing(BaseModel):
     seller_username: str
     seller_listing_count: int = 0
     seller_profile_photo_url: Optional[str] = None
+    # Buyer information (added when used in order context)
+    buyer_username: Optional[str] = None
+    buyer_profile_photo_url: Optional[str] = None
     name: str
     description: Optional[str]
     category: str
@@ -144,24 +147,25 @@ class Meetup(BaseModel):
     order_id: int
     location: Optional[str]
     scheduled_at: datetime
-    status: str
-    confirmed_by_buyer: bool
-    confirmed_by_seller: bool
-    confirmed_at: Optional[datetime]
-    cancelled_at: Optional[datetime]
-    cancellation_reason: Optional[str]
+    status: str  # 'pending', 'confirmed', 'rescheduled', 'completed', 'cancelled'
     remarks: Optional[str]
-    created_at: datetime
-    updated_at: datetime
+    proposed_by: str  # 'buyer' or 'seller'
+    confirmed_by_buyer: Optional[bool]
+    confirmed_by_seller: Optional[bool]
+    changed_at: datetime
+    is_current: bool
 
 class UpdateMeetupRequest(BaseModel):
     location: Optional[str] = Field(None, description="Meetup location")
     scheduled_at: Optional[datetime] = Field(None, description="Scheduled meetup date and time")
+    remarks: Optional[str] = Field(None, description="Additional remarks for the meetup")
+    proposed_by: Optional[str] = Field(None, description="Who proposed the meetup: buyer or seller")
 
 class CreateMeetupRequest(BaseModel):
     location: Optional[str] = Field(None, description="Initial meetup location")
     scheduled_at: datetime = Field(..., description="Scheduled meetup date and time")
     remarks: Optional[str] = Field(None, description="Additional remarks for the meetup")
+    proposed_by: Optional[str] = Field(None, description="Who proposed the meetup: buyer or seller")
 
 class MeetupResponse(BaseModel):
     success: bool

@@ -10,8 +10,13 @@ import {
 } from "../../components";
 import placeOrderData from "../../data/placeOrderData";
 import timeSlots from "@/data/timeSlots";
+import { OrderService } from "../../services";
 
-export default function PlaceOrder({ order, quantity, onClose, currentUser }) {
+export default function PlaceOrder({ order, quantity, onClose,  currentUser, onOrderCreated }) {
+  // Debug: Log the order object to see what data we have
+  console.log('PlaceOrder order data:', order);
+  console.log('Available schedules:', order.available_schedules || order.availableSchedules);
+  
   const [form, setForm] = useState({
     ...placeOrderData,
     ...order,
@@ -34,6 +39,8 @@ export default function PlaceOrder({ order, quantity, onClose, currentUser }) {
 
   const [showModal, setShowModal] = useState(false);
   const [modalStep, setModalStep] = useState("confirm");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const handleDateChange = (date) => {
     setForm((prev) => ({
@@ -48,6 +55,46 @@ export default function PlaceOrder({ order, quantity, onClose, currentUser }) {
       ...prev,
       meetUpTime: value,
     }));
+  };
+
+  // Helper function to get the actual time string for API calls
+  const getActualTimeForAPI = (timeValue) => {
+    // If it's a standard time slot, convert it to a timestamp-compatible format
+    const timeSlot = timeSlots.find(slot => slot.value === timeValue);
+    if (timeSlot) {
+      // Convert "6am-7am" to "06:00"
+      const startTime = timeSlot.value.split('-')[0];
+      const hour = startTime.replace(/[ap]m/, '');
+      const isPM = startTime.includes('pm');
+      let hourNum = parseInt(hour);
+      if (isPM && hourNum !== 12) hourNum += 12;
+      if (!isPM && hourNum === 12) hourNum = 0;
+      return String(hourNum).padStart(2, '0') + ':00';
+    }
+    
+    // For custom time slots, try to parse the time from the available schedules
+    const availableSchedules = order.available_schedules || order.availableSchedules || [];
+    for (const schedule of availableSchedules) {
+      if (schedule.date === form.meetUpDate) {
+        // Find the time that matches this custom slot
+        const customIndex = parseInt(timeValue.replace('custom-', ''));
+        if (!isNaN(customIndex) && schedule.times[customIndex]) {
+          // Parse "5:00 AM - 7:00 AM" to get start time
+          const timeString = schedule.times[customIndex];
+          const startTime = timeString.split(' - ')[0];
+          // Convert to 24-hour format
+          const [time, period] = startTime.split(' ');
+          const [hour, minute] = time.split(':');
+          let hourNum = parseInt(hour);
+          if (period === 'PM' && hourNum !== 12) hourNum += 12;
+          if (period === 'AM' && hourNum === 12) hourNum = 0;
+          return String(hourNum).padStart(2, '0') + ':' + minute;
+        }
+      }
+    }
+    
+    // Fallback: assume it's already in the right format
+    return timeValue;
   };
 
   const handleRemarksChange = (e) => {
@@ -84,6 +131,61 @@ export default function PlaceOrder({ order, quantity, onClose, currentUser }) {
     form.meetUpTime &&
     form.meetUpLocation &&
     form.quantity > 0;
+
+  // Handle order creation
+  const handleCreateOrder = async () => {
+    try {
+      setIsSubmitting(true);
+      setSubmitError(null);
+
+      // Prepare order data for API
+      const orderData = {
+        listing_id: order.listing_id || order.id,
+        quantity: form.quantity,
+        transaction_method: "meet_up",
+        payment_method: form.paymentMethod,
+        buyer_requested_price: order.productPriceOffer || null,
+      };
+
+      // Create the order
+      const response = await OrderService.createOrder(orderData);
+      
+      if (response.success) {
+        const orderId = response.data.order_id;
+        
+        // If order was created successfully and has meetup transaction method,
+        // create the meetup with the selected details
+        if (orderData.transaction_method === "meet_up") {
+          const actualTime = getActualTimeForAPI(form.meetUpTime);
+          const meetupData = {
+            location: form.meetUpLocation,
+            scheduled_at: `${form.meetUpDate}T${actualTime}:00.000Z`,
+            remarks: form.remarks || null,
+            proposed_by: "buyer"  // Always buyer when placing order
+          };
+
+          try {
+            await OrderService.createMeetup(orderId, meetupData);
+          } catch (meetupError) {
+            console.warn("Order created but meetup creation failed:", meetupError);
+            // Don't fail the entire process if meetup creation fails
+          }
+        }
+
+        setModalStep("success");
+        
+        // Call the callback to refresh orders if provided
+        if (onOrderCreated) {
+          onOrderCreated();
+        }
+      }
+    } catch (error) {
+      console.error("Failed to create order:", error);
+      setSubmitError(error.message || "Failed to create order. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-40">
@@ -138,7 +240,7 @@ export default function PlaceOrder({ order, quantity, onClose, currentUser }) {
               </p>
             </div>
             <OrderCalendarPicker
-              availableSchedules={order.available_schedules || order.availableSchedules}
+              availableSchedules={order.available_schedules || order.availableSchedules || []}
               selectedDate={form.meetUpDate}
               selectedTime={form.meetUpTime}
               onDateChange={handleDateChange}
@@ -224,40 +326,42 @@ export default function PlaceOrder({ order, quantity, onClose, currentUser }) {
           className="bg-primary-red text-white px-6 py-2 rounded-full font-semibold hover:bg-hover-red disabled:bg-gray-300 disabled:text-gray-500"
           onClick={() => {
             if (!isFormValid) return;
-            const filtered = Object.keys(placeOrderData).reduce((obj, key) => {
-              obj[key] = form[key];
-              return obj;
-            }, {});
-            console.log("Place Order Data:", filtered);
             setShowModal(true);
           }}
-          disabled={!isFormValid || currentUser?.role === "user"}
+          disabled={!isFormValid || isSubmitting}
         >
-          Place Order
+          {isSubmitting ? "Placing Order..." : "Place Order"}
         </button>
       </div>
       <Modal
         isOpen={showModal}
         onClose={() => {
-          setShowModal(false);
-          setModalStep("confirm");
+          if (!isSubmitting) {
+            setShowModal(false);
+            setModalStep("confirm");
+            setSubmitError(null);
+          }
         }}
         title={modalStep === "confirm" ? "Confirm Order" : "Order Confirmed"}
         description={
           modalStep === "confirm"
             ? "Are you sure you want to place this order? Please review your details before confirming."
+            : submitError
+            ? `Error: ${submitError}`
             : "Your order has been placed successfully!"
         }
-        type={modalStep === "confirm" ? "confirm" : "alert"}
+        type={modalStep === "confirm" ? "confirm" : submitError ? "error" : "alert"}
         onConfirm={() => {
           if (modalStep === "confirm") {
-            setModalStep("success");
+            handleCreateOrder();
           } else {
             setShowModal(false);
             setModalStep("confirm");
+            setSubmitError(null);
             onClose();
           }
         }}
+        isLoading={isSubmitting}
       ></Modal>
     </div>
   );

@@ -123,6 +123,8 @@ async def create_order(
 async def get_user_orders(
     status: Optional[str] = Query(None, description="Filter by order status"),
     as_buyer: Optional[bool] = Query(None, description="Get orders as buyer (True) or seller (False)"),
+    page: int = Query(1, description="Page number"),
+    page_size: int = Query(20, description="Number of items per page"),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -133,6 +135,8 @@ async def get_user_orders(
         # Get user orders with filters
         orders_data = await order_db.get_user_orders(
             user_id=current_user["user_id"],
+            page=page,
+            page_size=page_size,
             status=status,
             as_buyer=as_buyer
         )
@@ -143,7 +147,9 @@ async def get_user_orders(
         
         return OrdersResponse(
             orders=orders_response,
-            total_count=orders_data["total_count"]
+            total_count=orders_data["total_count"],
+            page=orders_data["page"],
+            page_size=orders_data["page_size"]
         )
         
     except HTTPException:
@@ -193,7 +199,15 @@ async def update_meetup_details(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Update meetup details for an order (location, scheduled_at).
+    Update meetup details - DUAL-PURPOSE ENDPOINT:
+    
+    **RESCHEDULING** (includes `scheduled_at`):
+    - Creates NEW meetup record with `status="rescheduled"`
+    - Marks old record as `is_current=false`
+    
+    **REGULAR UPDATES** (no `scheduled_at`):
+    - Updates current record in-place (location, remarks)
+    
     Only accessible to buyer or seller of the order.
     """
     try:
@@ -213,6 +227,15 @@ async def update_meetup_details(
             update_data["location"] = meetup_update.location
         if meetup_update.scheduled_at is not None:
             update_data["scheduled_at"] = meetup_update.scheduled_at.isoformat()
+        if meetup_update.remarks is not None:
+            update_data["remarks"] = meetup_update.remarks
+        
+        # Handle proposed_by field - determine who is making the update if not provided
+        if meetup_update.proposed_by is not None:
+            update_data["proposed_by"] = meetup_update.proposed_by
+        elif meetup_update.scheduled_at is not None:  # Only set for rescheduling
+            is_buyer = order_data["buyer_id"] == current_user["user_id"]
+            update_data["proposed_by"] = "buyer" if is_buyer else "seller"
         
         if not update_data:
             raise HTTPException(status_code=400, detail="No valid fields to update")
@@ -228,14 +251,12 @@ async def update_meetup_details(
             location=meetup_data.get("location"),
             scheduled_at=meetup_data["scheduled_at"],
             status=meetup_data["status"],
-            confirmed_by_buyer=meetup_data["confirmed_by_buyer"],
-            confirmed_by_seller=meetup_data["confirmed_by_seller"],
-            confirmed_at=meetup_data.get("confirmed_at"),
-            cancelled_at=meetup_data.get("cancelled_at"),
-            cancellation_reason=meetup_data.get("cancellation_reason"),
             remarks=meetup_data.get("remarks"),
-            created_at=meetup_data["created_at"],
-            updated_at=meetup_data["updated_at"]
+            proposed_by=meetup_data["proposed_by"],
+            confirmed_by_buyer=meetup_data.get("confirmed_by_buyer"),
+            confirmed_by_seller=meetup_data.get("confirmed_by_seller"),
+            changed_at=meetup_data["changed_at"],
+            is_current=meetup_data["is_current"]
         )
         
         return MeetupResponse(
@@ -260,8 +281,9 @@ async def confirm_meetup(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Confirm meetup by buyer or seller.
-    When both confirm, meetup status becomes 'confirmed'.
+    Confirm current meetup by buyer or seller.
+    Updates `confirmed_by_buyer` or `confirmed_by_seller`.
+    When both confirm → `status="confirmed"`.
     """
     try:
         # Verify user has access to this order
@@ -282,14 +304,12 @@ async def confirm_meetup(
             location=meetup_data.get("location"),
             scheduled_at=meetup_data["scheduled_at"],
             status=meetup_data["status"],
-            confirmed_by_buyer=meetup_data["confirmed_by_buyer"],
-            confirmed_by_seller=meetup_data["confirmed_by_seller"],
-            confirmed_at=meetup_data.get("confirmed_at"),
-            cancelled_at=meetup_data.get("cancelled_at"),
-            cancellation_reason=meetup_data.get("cancellation_reason"),
             remarks=meetup_data.get("remarks"),
-            created_at=meetup_data["created_at"],
-            updated_at=meetup_data["updated_at"]
+            proposed_by=meetup_data["proposed_by"],
+            confirmed_by_buyer=meetup_data.get("confirmed_by_buyer"),
+            confirmed_by_seller=meetup_data.get("confirmed_by_seller"),
+            changed_at=meetup_data["changed_at"],
+            is_current=meetup_data["is_current"]
         )
         
         message = "Meetup confirmed by buyer" if is_buyer else "Meetup confirmed by seller"
@@ -320,7 +340,8 @@ async def create_meetup(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Create a meetup for an order that uses 'meet_up' transaction method.
+    Create initial meetup for an order with 'meet_up' transaction method.
+    Creates new record with `status="pending"`, `is_current=true`.
     Only accessible to buyer or seller of the order.
     """
     try:
@@ -347,6 +368,10 @@ async def create_meetup(
             if "not found" not in str(e.detail).lower():
                 raise
         
+        # Determine who is proposing the meetup
+        is_buyer = order_data["buyer_id"] == current_user["user_id"]
+        proposed_by = meetup_request.proposed_by or ("buyer" if is_buyer else "seller")
+        
         # Create the meetup record
         meetup_data = await meetup_db.create_meetup_with_details(
             user_id=current_user["user_id"],
@@ -354,7 +379,8 @@ async def create_meetup(
             meetup_details={
                 "location": meetup_request.location,
                 "scheduled_at": meetup_request.scheduled_at.isoformat(),
-                "remarks": meetup_request.remarks
+                "remarks": meetup_request.remarks,
+                "proposed_by": proposed_by
             }
         )
         
@@ -366,14 +392,12 @@ async def create_meetup(
             location=meetup_data.get("location"),
             scheduled_at=meetup_data["scheduled_at"],
             status=meetup_data["status"],
-            confirmed_by_buyer=meetup_data["confirmed_by_buyer"],
-            confirmed_by_seller=meetup_data["confirmed_by_seller"],
-            confirmed_at=meetup_data.get("confirmed_at"),
-            cancelled_at=meetup_data.get("cancelled_at"),
-            cancellation_reason=meetup_data.get("cancellation_reason"),
             remarks=meetup_data.get("remarks"),
-            created_at=meetup_data["created_at"],
-            updated_at=meetup_data["updated_at"]
+            proposed_by=meetup_data["proposed_by"],
+            confirmed_by_buyer=meetup_data.get("confirmed_by_buyer"),
+            confirmed_by_seller=meetup_data.get("confirmed_by_seller"),
+            changed_at=meetup_data["changed_at"],
+            is_current=meetup_data["is_current"]
         )
         
         return MeetupResponse(
@@ -390,4 +414,100 @@ async def create_meetup(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to create meetup: {str(e)}"
+        )
+
+
+@router.get("/orders/{order_id}/meetup/history", response_model=list)
+async def get_meetup_history(
+    order_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get all meetup versions for an order (newest first).
+    Shows complete reschedule history with `is_current` flags.
+    """
+    try:
+        # Verify user has access to this order
+        order_data = await order_db.get_order_by_id(current_user["user_id"], order_id)
+        
+        # Get all meetup versions for this order
+        supabase = get_authenticated_client(current_user["user_id"])
+        result = supabase.table("meetups").select("*").eq("order_id", order_id).order("changed_at", desc=True).execute()
+        
+        meetups = []
+        for meetup_data in result.data:
+            from supabase_client.schemas import Meetup
+            meetup = Meetup(
+                meetup_id=meetup_data["meetup_id"],
+                order_id=meetup_data["order_id"],
+                location=meetup_data.get("location"),
+                scheduled_at=meetup_data["scheduled_at"],
+                status=meetup_data["status"],
+                remarks=meetup_data.get("remarks"),
+                proposed_by=meetup_data["proposed_by"],
+                confirmed_by_buyer=meetup_data.get("confirmed_by_buyer"),
+                confirmed_by_seller=meetup_data.get("confirmed_by_seller"),
+                changed_at=meetup_data["changed_at"],
+                is_current=meetup_data["is_current"]
+            )
+            meetups.append(meetup)
+        
+        return meetups
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting meetup history: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get meetup history: {str(e)}"
+        )
+
+
+@router.patch("/orders/{order_id}/meetup/cancel")
+async def cancel_meetup(
+    order_id: int,
+    cancellation_reason: str = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Cancel the current meetup for an order.
+    """
+    try:
+        # Verify user has access to this order
+        order_data = await order_db.get_order_by_id(current_user["user_id"], order_id)
+        
+        # Cancel meetup using database function
+        meetup_data = await meetup_db.cancel_meetup(current_user["user_id"], order_id, cancellation_reason)
+        
+        # Convert to proper response format
+        from supabase_client.schemas import Meetup
+        meetup = Meetup(
+            meetup_id=meetup_data["meetup_id"],
+            order_id=meetup_data["order_id"],
+            location=meetup_data.get("location"),
+            scheduled_at=meetup_data["scheduled_at"],
+            status=meetup_data["status"],
+            remarks=meetup_data.get("remarks"),
+            proposed_by=meetup_data["proposed_by"],
+            confirmed_by_buyer=meetup_data.get("confirmed_by_buyer"),
+            confirmed_by_seller=meetup_data.get("confirmed_by_seller"),
+            changed_at=meetup_data["changed_at"],
+            is_current=meetup_data["is_current"]
+        )
+        
+        return MeetupResponse(
+            success=True,
+            status="success",
+            message="Meetup cancelled successfully",
+            data=meetup
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error cancelling meetup: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to cancel meetup: {str(e)}"
         )

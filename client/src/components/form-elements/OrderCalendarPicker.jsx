@@ -10,6 +10,9 @@ export default function OrderCalendarPicker({
   onTimeChange,
   disabled = false,
 }) {
+  // Debug: Log the available schedules
+  console.log('OrderCalendarPicker availableSchedules:', availableSchedules);
+  
   const today = new Date();
   const [monthOffset, setMonthOffset] = useState(0);
 
@@ -45,14 +48,41 @@ export default function OrderCalendarPicker({
     availableSchedules.find((sched) => sched.date === selectedDate)?.times ||
     [];
 
+  console.log('Available times for date', selectedDate, ':', availableTimes);
+  console.log('Frontend timeSlots:', timeSlots);
+
   // Map availableTimes (labels) to values
   const availableTimeValues = timeSlots
     .filter(
       (slot) =>
         availableTimes.includes(slot.value) ||
-        availableTimes.includes(slot.label)
+        availableTimes.includes(slot.label) ||
+        // Additional flexible matching for slight variations
+        availableTimes.some(time => 
+          time.replace(/\s+/g, ' ').trim() === slot.label.replace(/\s+/g, ' ').trim()
+        )
     )
     .map((slot) => slot.value);
+    
+  // If no exact matches found, create custom time slots for the available times
+  const customTimeSlots = availableTimes.filter(time => 
+    !timeSlots.some(slot => 
+      slot.value === time || 
+      slot.label === time ||
+      slot.label.replace(/\s+/g, ' ').trim() === time.replace(/\s+/g, ' ').trim()
+    )
+  ).map((time, index) => ({
+    value: `custom-${index}`,
+    label: time
+  }));
+  
+  const allAvailableTimeSlots = [
+    ...timeSlots.filter(slot => availableTimeValues.includes(slot.value)),
+    ...customTimeSlots
+  ];
+    
+  console.log('Custom time slots:', customTimeSlots);
+  console.log('All available time slots:', allAvailableTimeSlots);
 
   // Calendar grid
   const renderCalendar = () => {
@@ -150,23 +180,21 @@ export default function OrderCalendarPicker({
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {timeSlots
-                .filter((slot) => availableTimeValues.includes(slot.value))
-                .map((slot) => (
-                  <button
-                    key={slot.value}
-                    type="button"
-                    className={`px-4 py-1 rounded-full border text-sm font-semibold text-center transition ${
-                      selectedTime === slot.value
-                        ? "bg-primary-red text-white border-primary-red"
-                        : "text-primary-red border-primary-red hover:bg-primary-red hover:text-white"
-                    }`}
-                    onClick={() => onTimeChange(slot.value)}
-                    disabled={disabled}
-                  >
-                    {slot.label}
-                  </button>
-                ))}
+              {allAvailableTimeSlots.map((slot) => (
+                <button
+                  key={slot.value}
+                  type="button"
+                  className={`px-4 py-1 rounded-full border text-sm font-semibold text-center transition ${
+                    selectedTime === slot.value
+                      ? "bg-primary-red text-white border-primary-red"
+                      : "text-primary-red border-primary-red hover:bg-primary-red hover:text-white"
+                  }`}
+                  onClick={() => onTimeChange(slot.value)}
+                  disabled={disabled}
+                >
+                  {slot.label}
+                </button>
+              ))}
             </div>
           )}
         </div>

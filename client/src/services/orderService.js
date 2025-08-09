@@ -60,10 +60,16 @@ export class OrderService {
    * Update meetup details for an order
    * @param {number} orderId - The order ID
    * @param {Object} meetupData - The meetup data to update
+   * @param {string} userRole - 'buyer' or 'seller' to determine proposed_by
    * @returns {Promise<Object>} Response with updated meetup data
    */
-  static async updateMeetup(orderId, meetupData) {
+  static async updateMeetup(orderId, meetupData, userRole = 'buyer') {
     try {
+      // Add proposed_by field when updating scheduled_at (rescheduling)
+      if (meetupData.scheduled_at && userRole) {
+        meetupData.proposed_by = userRole;
+      }
+      
       return await ApiClient.patch(`/supabase/orders/${orderId}/meetup`, meetupData);
     } catch (error) {
       console.error('Failed to update meetup:', error);

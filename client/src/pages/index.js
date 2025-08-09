@@ -5,3 +5,7 @@ export { default as GeneralDashboard } from "./general-pages/GeneralDashboard";
 export { default as CreateListing } from "./seller-pages/CreateListing";
 export { default as ViewProductDetails } from "./buyer-pages/ViewProductDetails";
 export { default as SellerProductDetails } from "./seller-pages/SellerProductDetails";
+export { default as OrdersMeetups } from "./general-pages/OrdersMeetups";
+export { default as LikedItems } from "./general-pages/LikedItems";
+export { default as ManageListing } from "./general-pages/ManageListing";
+export { default as TestPage } from "./general-pages/TestPage";
