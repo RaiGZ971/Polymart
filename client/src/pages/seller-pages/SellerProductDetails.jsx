@@ -7,17 +7,17 @@ import {
   ImageCarousel,
   ReviewComponent,
   ChatApp,
-  Modal,
 } from '../../components';
-import { DashboardBackButton } from '../../components/ui';
+import { DashboardBackButton, StatusSelector } from '../../components/ui';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Edit, Eye, Trash2, TrendingUp, Package } from 'lucide-react';
+import { TrendingUp, Package } from 'lucide-react';
 import productCategories from '../../data/productCategories';
 import { stallbanner, pupmap } from '../../assets';
 import meetUpLocations from '../../data/meetUpLocations';
 import timeSlots from '../../data/timeSlots';
 import { getListing, getProductReview } from '../buyer-pages/queries/productDetailsQueries';
 import { getUsersDetails } from '../../queries/index.js';
+import { ListingService } from '../../services/listingService.js';
 import { useAuthStore } from '../../store/authStore';
 
 const getCategoryLabel = (value) => {
@@ -37,19 +37,20 @@ export default function SellerProductDetails() {
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
-  const { userID, data: userData } = useAuthStore();
+  const { userID, data: userData, token } = useAuthStore();
 
   const listingId = params.id || location.state?.order?.listing_id || location.state?.order?.id;
 
   const [showMapModal, setShowMapModal] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const {
     data: order = {},
     isLoading: orderLoading,
     error: orderError,
+    refetch: refetchOrder,
   } = getListing(listingId);
 
   // Check if current user is the owner of this listing - must be here to access order data
@@ -94,20 +95,26 @@ export default function SellerProductDetails() {
     );
   }, [reviews]);
 
-  const handleEditListing = () => {
-    navigate('/edit-listing', { state: { listing: order } });
-  };
-
-  const handleDeleteListing = () => {
-    setShowDeleteModal(true);
-  };
-
-  const handleViewAsCustomer = () => {
-    navigate(`/buyer/view-product-details/${listingId}`);
-  };
-
-  const handleViewAnalytics = () => {
-    navigate(`/seller/analytics/${listingId}`);
+  const handleStatusChange = async (newStatus) => {
+    setIsUpdatingStatus(true);
+    try {
+      console.log(`Updating listing ${listingId} status to:`, newStatus);
+      
+      // Call the actual API to update listing status
+      const response = await ListingService.updateListingStatus(listingId, newStatus);
+      
+      console.log(`Status successfully updated to: ${newStatus}`, response);
+      
+      // Refetch the listing data to get updated status
+      await refetchOrder();
+      
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      // Show user-friendly error message
+      alert(`Failed to update status: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   if (orderLoading) {
@@ -148,35 +155,25 @@ export default function SellerProductDetails() {
             <h2 className="text-lg font-semibold text-blue-800">Managing Your Listing</h2>
             <p className="text-sm text-blue-600">You are viewing this as the seller/owner</p>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleViewAsCustomer}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              <Eye size={16} />
-              View as Customer
-            </button>
-            <button
-              onClick={handleEditListing}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-            >
-              <Edit size={16} />
-              Edit Listing
-            </button>
-            <button
-              onClick={handleViewAnalytics}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-            >
-              <TrendingUp size={16} />
-              Analytics
-            </button>
-            <button
-              onClick={handleDeleteListing}
-              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-            >
-              <Trash2 size={16} />
-              Delete
-            </button>
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                Listing Status
+              </label>
+              <div className="min-w-[200px]">
+                <StatusSelector
+                  currentStatus={order.status || 'active'}
+                  onStatusChange={handleStatusChange}
+                  disabled={isUpdatingStatus}
+                />
+              </div>
+            </div>
+            {isUpdatingStatus && (
+              <div className="flex items-center gap-2 text-blue-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-sm">Updating...</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -340,21 +337,6 @@ export default function SellerProductDetails() {
           </div>
         </div>
       </div>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title="Delete Listing"
-        description="Are you sure you want to delete this listing? This action cannot be undone."
-        type="confirm"
-        onConfirm={() => {
-          // TODO: Implement delete listing API call
-          console.log('Deleting listing:', listingId);
-          setShowDeleteModal(false);
-          navigate('/dashboard');
-        }}
-      />
     </MainDashboard>
   );
 }

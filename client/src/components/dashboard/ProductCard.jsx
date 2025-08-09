@@ -59,50 +59,46 @@ export default function ProductCard({ order }) {
               initialFavorited={isFavorited}
             />
           )}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              className={`bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors ${
-                dropdownOpen ? "text-[#950000]" : ""
-              }`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setDropdownOpen((v) => !v);
-              }}
-            >
-              <MoreVertical size={20} />
-            </button>
-            {dropdownOpen && (
-              <div
-                className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-20"
-                onClick={(e) => e.stopPropagation()}
+          {/* Show status badge for owner, 3-dot menu for others */}
+          {isOwner ? (
+            <div className={`px-2 py-1 rounded text-xs font-medium ${
+              order.status === 'active' ? 'bg-green-100 text-green-700' :
+              order.status === 'inactive' ? 'bg-yellow-100 text-yellow-700' :
+              order.status === 'archived' ? 'bg-gray-100 text-gray-700' :
+              order.status === 'sold_out' ? 'bg-red-100 text-red-700' :
+              'bg-gray-100 text-gray-700'
+            }`}>
+              {order.status || 'active'}
+            </div>
+          ) : (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                className={`bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors ${
+                  dropdownOpen ? "text-[#950000]" : ""
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDropdownOpen((v) => !v);
+                }}
               >
-                {isOwner ? (
-                  // Owner-specific menu items
-                  <>
-                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-[#950000]/10 hover:text-[#950000] transition-colors">
-                      Edit listing
-                    </button>
-                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-[#950000]/10 hover:text-[#950000] transition-colors">
-                      View analytics
-                    </button>
-                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-red-500/10 hover:text-red-500 transition-colors">
-                      Delete listing
-                    </button>
-                  </>
-                ) : (
-                  // Buyer-specific menu items
-                  <>
-                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-[#950000]/10 hover:text-[#950000] transition-colors">
-                      Report listing
-                    </button>
-                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-[#950000]/10 hover:text-[#950000] transition-colors">
-                      Share
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+                <MoreVertical size={20} />
+              </button>
+              {dropdownOpen && (
+                <div
+                  className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-20"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Buyer-specific menu items */}
+                  <button className="block w-full text-left px-4 py-2 text-sm hover:bg-[#950000]/10 hover:text-[#950000] transition-colors">
+                    Report listing
+                  </button>
+                  <button className="block w-full text-left px-4 py-2 text-sm hover:bg-[#950000]/10 hover:text-[#950000] transition-colors">
+                    Share
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
       {/* Card Content */}
