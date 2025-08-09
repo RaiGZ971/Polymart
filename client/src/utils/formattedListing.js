@@ -7,6 +7,8 @@ export const formattedListing = (listing) => {
   const transformedOrder = {
     ...listing,
     id: listing.listing_id,
+    listingId: listing.listing_id, // Add this for FavoriteButton
+    seller_id: listing.seller_id, // Preserve seller_id for ownership checks
     productName: listing.name,
     productPrice: listing.price_min,
     priceRange: hasRange

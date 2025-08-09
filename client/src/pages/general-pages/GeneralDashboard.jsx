@@ -79,7 +79,7 @@ export default function GeneralDashboard() {
 
   const handleProductClick = (product) => {
     const listingId = product.listing_id || product.id;
-    const currentUserId = currentUser?.user_id || currentUser?.id;
+    const currentUserId = userData?.user_id || userID;
     const isOwner = currentUserId === product.seller_id;
     
     if (isOwner) {
@@ -221,7 +221,7 @@ export default function GeneralDashboard() {
               </div>
             )}
             {displayedListings.map((product, idx) => {
-              const currentUserId = currentUser?.user_id || currentUser?.id;
+              const currentUserId = userData?.user_id || userID;
               const isOwner = currentUserId === product.seller_id;
               
               return (

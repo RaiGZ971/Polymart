@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   MainDashboard,
   GrayTag,
@@ -37,7 +37,7 @@ export default function SellerProductDetails() {
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
-  const { currentUser } = useAuthStore();
+  const { userID, data: userData } = useAuthStore();
 
   const listingId = params.id || location.state?.order?.listing_id || location.state?.order?.id;
 
@@ -51,6 +51,17 @@ export default function SellerProductDetails() {
     isLoading: orderLoading,
     error: orderError,
   } = getListing(listingId);
+
+  // Check if current user is the owner of this listing - must be here to access order data
+  const currentUserId = userData?.user_id || userID;
+  const isOwner = order.seller_id ? currentUserId === order.seller_id : true; // Default to true while loading
+
+  // Redirect if not the owner - place early to ensure consistent hook order
+  useEffect(() => {
+    if (order && order.seller_id && currentUserId && !isOwner) {
+      navigate(`/buyer/view-product-details/${listingId}`);
+    }
+  }, [isOwner, order, listingId, navigate, currentUserId]);
 
   const { data: rawReviews = [] } = getProductReview(
     order.seller_id,
@@ -82,9 +93,6 @@ export default function SellerProductDetails() {
       reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
     );
   }, [reviews]);
-
-  // Check if current user is the owner of this listing
-  const isOwner = currentUser?.user_id === order.seller_id;
 
   const handleEditListing = () => {
     navigate('/edit-listing', { state: { listing: order } });
@@ -124,9 +132,8 @@ export default function SellerProductDetails() {
     );
   }
 
-  // Redirect if not the owner
-  if (!isOwner) {
-    navigate(`/buyer/view-product-details/${listingId}`);
+  // Don't render anything if we're redirecting (the useEffect at the top handles the navigation)
+  if (order && order.seller_id && currentUserId && !isOwner) {
     return null;
   }
 

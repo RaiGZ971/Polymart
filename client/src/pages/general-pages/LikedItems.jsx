@@ -6,7 +6,7 @@ import { Heart, AlertCircle } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 
 export default function LikedItems() {
-  const { currentUser } = useAuthStore();
+  const { userID, data: userData } = useAuthStore();
   const { 
     favorites, 
     loading, 
@@ -33,7 +33,7 @@ export default function LikedItems() {
     const listing = favorite.listing;
     if (!listing) return null;
 
-    const currentUserId = currentUser?.user_id || currentUser?.id;
+    const currentUserId = userData?.user_id || userID;
     const isOwner = currentUserId === listing.seller_id;
 
     return {

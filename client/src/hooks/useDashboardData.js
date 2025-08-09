@@ -51,64 +51,8 @@ export const useDashboardData = () => {
     isFetching: myFetching,
   } = useMyListings(myParams, token);
 
-  // Transform API listing data to match ProductCard component expectations
-  const transformListing = useCallback((listing) => {
-    const hasRange =
-      listing.price_min !== null &&
-      listing.price_max !== null &&
-      listing.price_min !== listing.price_max;
-
-    return {
-      // Original API data for reference
-      ...listing,
-
-      // Transformed data for ProductCard component
-      id: listing.listing_id,
-      listingId: listing.listing_id, // Add this for FavoriteButton
-      productName: listing.name,
-      productPrice: listing.price_min,
-      priceRange: hasRange
-        ? {
-            min: listing.price_min,
-            max: listing.price_max,
-          }
-        : null,
-      hasPriceRange: hasRange,
-      username: listing.user_profile?.username || listing.seller_username,
-      userAvatar:
-        listing.seller_profile_photo_url ||
-        'https://via.placeholder.com/40x40?text=User',
-      productImage:
-        listing.images && listing.images.length > 0
-          ? listing.images.find((img) => img.is_primary)?.image_url ||
-            listing.images[0].image_url
-          : 'https://via.placeholder.com/268x245?text=No+Image',
-      images: listing.images || [],
-      itemsOrdered: listing.sold_count || 0,
-
-      // Additional data that might be needed
-      category: listing.category,
-      description: listing.description,
-      status: listing.status,
-      created_at: listing.created_at,
-      tags: listing.tags,
-      availableSchedules: listing.available_schedules || [],
-      paymentMethods: listing.payment_methods || [],
-      meetupLocations: listing.seller_meetup_locations || [],
-      transactionMethods: listing.transaction_methods || [],
-    };
-  }, []);
-
-  // Transform server data to client format
-  const allListings = useMemo(() => {
-    const products = publicResponse.products || [];
-    return products.map(transformListing);
-  }, [publicResponse, transformListing]);
-
-  const allMyListings = useMemo(() => {
-    const products = myResponse.products || [];
-    return products.map(transformListing);
-  }, [myResponse, transformListing]);
+  // Data is already transformed by the query hooks using formattedListing
+  // No additional transformation needed
 
   // Loading and error states
   const loading = publicLoading || myLoading;
@@ -191,7 +135,7 @@ export const useDashboardData = () => {
 
   // Get filtered and sorted listings - computed on demand
   const filteredListings = useMemo(() => {
-    let filtered = filterListings(allListings, activeCategory);
+    let filtered = filterListings(allListings || [], activeCategory);
     filtered = searchListings(filtered, searchTerm);
     return sortListings(filtered, sortBy);
   }, [
@@ -205,7 +149,7 @@ export const useDashboardData = () => {
   ]);
 
   const filteredMyListings = useMemo(() => {
-    let filtered = filterListings(allMyListings, activeCategory);
+    let filtered = filterListings(allMyListings || [], activeCategory);
     filtered = searchListings(filtered, searchTerm);
     return sortListings(filtered, sortBy);
   }, [
