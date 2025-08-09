@@ -12,6 +12,7 @@ VALID_CATEGORIES = {
     "Creative_Works",
     "Fashion",
     "Services",
+    "Anik-Anik"
     "Other"
 }
 
