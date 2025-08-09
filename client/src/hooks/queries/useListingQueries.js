@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ListingService } from '../../services/listingService';
+import { formattedListing } from '../../utils/formattedListing';
 
 // Query keys
 export const listingKeys = {
@@ -16,9 +17,11 @@ export const usePublicListings = (params = {}) => {
     queryFn: () => ListingService.getPublicListings(params),
     staleTime: 30 * 1000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
-    retry: 2,
     refetchOnWindowFocus: false,
     enabled: true,
+    select: (listings) => {
+      return listings.products.map((listing) => formattedListing(listing));
+    },
   });
 };
 
@@ -29,9 +32,10 @@ export const useMyListings = (params = {}, token) => {
     queryFn: () => ListingService.getMyListings(params, token),
     staleTime: 30 * 1000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
-    retry: 2,
-    refetchOnWindowFocus: false,
     enabled: !!token, // Only run if token exists
+    select: (listings) => {
+      return listings.products.map((listing) => formattedListing(listing));
+    },
   });
 };
 
@@ -65,20 +69,17 @@ export const useCreateListing = () => {
 
       // Optimistically update to the new value (add to user's listings)
       if (previousMyListings) {
-        queryClient.setQueryData(
-          listingKeys.myListings({}),
-          (old) => ({
-            ...old,
-            products: [
-              {
-                ...newListing,
-                listing_id: Date.now(), // Temporary ID
-                status: 'pending',
-              },
-              ...(old.products || []),
-            ],
-          })
-        );
+        queryClient.setQueryData(listingKeys.myListings({}), (old) => ({
+          ...old,
+          products: [
+            {
+              ...newListing,
+              listing_id: Date.now(), // Temporary ID
+              status: 'pending',
+            },
+            ...(old.products || []),
+          ],
+        }));
       }
 
       // Return a context object with the snapshotted value
@@ -111,12 +112,12 @@ export const useUpdateListing = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ listingId, data }) => 
+    mutationFn: ({ listingId, data }) =>
       ListingService.updateListing(listingId, data),
     onSuccess: (data, variables) => {
       // Invalidate specific listing and all listings
-      queryClient.invalidateQueries({ 
-        queryKey: listingKeys.detail(variables.listingId) 
+      queryClient.invalidateQueries({
+        queryKey: listingKeys.detail(variables.listingId),
       });
       queryClient.invalidateQueries({ queryKey: listingKeys.all });
     },
