@@ -13,6 +13,7 @@ import ManageListing from "./pages/general-pages/ManageListing";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import OrdersMeetups from "./pages/general-pages/OrdersMeetups";
 import ViewProductDetails from "./pages/buyer-pages/ViewProductDetails";
+import SellerProductDetails from "./pages/seller-pages/SellerProductDetails";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -34,6 +35,10 @@ function App() {
           <Route
             path="/buyer/view-product-details/:id?"
             element={<ViewProductDetails />}
+          />
+          <Route
+            path="/seller/view-product-details/:id?"
+            element={<SellerProductDetails />}
           />
           {/* Add more routes as needed */}
         </Routes>

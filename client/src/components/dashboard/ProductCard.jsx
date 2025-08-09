@@ -14,6 +14,7 @@ export default function ProductCard({ order }) {
     userAvatar,
     listingId, // Add this for the favorite functionality
     isFavorited, // Pre-fetched favorite status from batch query
+    isOwner, // Whether the current user owns this listing
   } = order || {};
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -49,12 +50,15 @@ export default function ProductCard({ order }) {
         />
         {/* Top right icons */}
         <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
-          <FavoriteButton 
-            listingId={listingId}
-            className="bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors"
-            size={20}
-            initialFavorited={isFavorited}
-          />
+          {/* Only show favorite button if user doesn't own this listing */}
+          {!isOwner && (
+            <FavoriteButton 
+              listingId={listingId}
+              className="bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors"
+              size={20}
+              initialFavorited={isFavorited}
+            />
+          )}
           <div className="relative" ref={dropdownRef}>
             <button
               className={`bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors ${
@@ -72,12 +76,30 @@ export default function ProductCard({ order }) {
                 className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-20"
                 onClick={(e) => e.stopPropagation()}
               >
-                <button className="block w-full text-left px-4 py-2 text-sm hover:bg-[#950000]/10 hover:text-[#950000] transition-colors">
-                  Report listing
-                </button>
-                <button className="block w-full text-left px-4 py-2 text-sm hover:bg-[#950000]/10 hover:text-[#950000] transition-colors">
-                  Share
-                </button>
+                {isOwner ? (
+                  // Owner-specific menu items
+                  <>
+                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-[#950000]/10 hover:text-[#950000] transition-colors">
+                      Edit listing
+                    </button>
+                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-[#950000]/10 hover:text-[#950000] transition-colors">
+                      View analytics
+                    </button>
+                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-red-500/10 hover:text-red-500 transition-colors">
+                      Delete listing
+                    </button>
+                  </>
+                ) : (
+                  // Buyer-specific menu items
+                  <>
+                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-[#950000]/10 hover:text-[#950000] transition-colors">
+                      Report listing
+                    </button>
+                    <button className="block w-full text-left px-4 py-2 text-sm hover:bg-[#950000]/10 hover:text-[#950000] transition-colors">
+                      Share
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
