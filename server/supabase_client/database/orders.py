@@ -131,8 +131,68 @@ async def get_user_orders(user_id: UUID, page: int = 1, page_size: int = 20,
         elif as_buyer is False:
             query = query.eq("seller_id", user_id)
         else:
-            # Get orders where user is either buyer or seller
-            query = query.or_(f"buyer_id.eq.{user_id},seller_id.eq.{user_id}")
+            # For getting orders where user is either buyer or seller,
+            # we need to make separate queries and combine results
+            buyer_query = supabase.table("orders").select("""
+                order_id,
+                buyer_id,
+                seller_id,
+                listing_id,
+                quantity,
+                buyer_requested_price,
+                price_at_purchase,
+                status,
+                transaction_method,
+                payment_method,
+                placed_at
+            """).eq("buyer_id", user_id)
+            
+            seller_query = supabase.table("orders").select("""
+                order_id,
+                buyer_id,
+                seller_id,
+                listing_id,
+                quantity,
+                buyer_requested_price,
+                price_at_purchase,
+                status,
+                transaction_method,
+                payment_method,
+                placed_at
+            """).eq("seller_id", user_id)
+            
+            # Apply status filter if provided
+            if status:
+                buyer_query = buyer_query.eq("status", status)
+                seller_query = seller_query.eq("status", status)
+            
+            # Execute both queries
+            buyer_result = buyer_query.order("placed_at", desc=True).execute()
+            seller_result = seller_query.order("placed_at", desc=True).execute()
+            
+            # Combine and deduplicate results
+            all_orders = []
+            seen_order_ids = set()
+            
+            for order in (buyer_result.data or []) + (seller_result.data or []):
+                if order["order_id"] not in seen_order_ids:
+                    all_orders.append(order)
+                    seen_order_ids.add(order["order_id"])
+            
+            # Sort by placed_at descending
+            all_orders.sort(key=lambda x: x["placed_at"], reverse=True)
+            
+            # Apply pagination
+            total_count = len(all_orders)
+            offset = calculate_pagination_offset(page, page_size)
+            paginated_orders = all_orders[offset:offset + page_size]
+            
+            return {
+                "orders": paginated_orders,
+                "total_count": total_count,
+                "page": page,
+                "page_size": page_size
+            }
         
         # Apply status filter if provided
         if status:
@@ -152,7 +212,9 @@ async def get_user_orders(user_id: UUID, page: int = 1, page_size: int = 20,
         
         return {
             "orders": orders,
-            "total_count": total_count
+            "total_count": total_count,
+            "page": page,
+            "page_size": page_size
         }
     except HTTPException:
         raise

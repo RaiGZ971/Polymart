@@ -199,18 +199,29 @@ async def convert_order_to_response(supabase, order_data: Dict[str, Any]) -> Ord
     Includes fetching and processing associated listing and meetup data.
     """
     # Get listing data for this order - simplified without JOIN
-    listing_result = supabase.table("product_listings").select("*").eq("listing_id", order_data["listing_id"]).single().execute()
+    listing_result = supabase.table("listings").select("*").eq("listing_id", order_data["listing_id"]).execute()
     
     listing = None
-    if listing_result.data:
-        listing = await convert_listing_to_product(supabase, listing_result.data)
+    if listing_result.data and len(listing_result.data) > 0:
+        listing = await convert_listing_to_product(supabase, listing_result.data[0])
+        
+        # Get buyer information and add it to the listing for easy access
+        buyer_result = supabase.table("user_profile").select(
+            "username, profile_photo_url"
+        ).eq("user_id", order_data["buyer_id"]).execute()
+        
+        if buyer_result.data and len(buyer_result.data) > 0:
+            buyer_info = buyer_result.data[0]
+            # Add buyer information to the listing object for easy access in frontend
+            listing.buyer_username = buyer_info.get("username", "Unknown Buyer")
+            listing.buyer_profile_photo_url = buyer_info.get("profile_photo_url")
     
     # Get meetup data if order uses meetup transaction method
     meetup = None
     if order_data.get("transaction_method") == "meet_up":
-        meetup_result = supabase.table("meetups").select("*").eq("order_id", order_data["order_id"]).single().execute()
-        if meetup_result.data:
-            meetup_data = meetup_result.data
+        meetup_result = supabase.table("meetups").select("*").eq("order_id", order_data["order_id"]).execute()
+        if meetup_result.data and len(meetup_result.data) > 0:
+            meetup_data = meetup_result.data[0]
             meetup = Meetup(
                 meetup_id=meetup_data["meetup_id"],
                 order_id=meetup_data["order_id"],
@@ -219,12 +230,10 @@ async def convert_order_to_response(supabase, order_data: Dict[str, Any]) -> Ord
                 status=meetup_data["status"],
                 confirmed_by_buyer=meetup_data["confirmed_by_buyer"],
                 confirmed_by_seller=meetup_data["confirmed_by_seller"],
-                confirmed_at=meetup_data.get("confirmed_at"),
-                cancelled_at=meetup_data.get("cancelled_at"),
-                cancellation_reason=meetup_data.get("cancellation_reason"),
                 remarks=meetup_data.get("remarks"),
-                created_at=meetup_data["created_at"],
-                updated_at=meetup_data["updated_at"]
+                proposed_by=meetup_data.get("proposed_by"),
+                changed_at=meetup_data["changed_at"],
+                is_current=meetup_data["is_current"]
             )
     
     return Order(

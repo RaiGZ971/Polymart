@@ -62,6 +62,7 @@ export default function ViewProductDetails() {
     data: order = {},
     isLoading: orderLoading,
     error: orderError,
+    refetch: refetchOrder,
   } = getListing(listingId);
 
   // Check if current user is the owner of this listing
@@ -404,6 +405,10 @@ export default function ViewProductDetails() {
             onClose={() => {
               setShowPlaceOrder(false);
               setCustomOrder(null);
+            }}
+            onOrderCreated={() => {
+              // Refresh the listing data after order creation
+              refetchOrder();
             }}
           />
         )}

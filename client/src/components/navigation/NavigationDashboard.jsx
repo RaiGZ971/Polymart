@@ -44,6 +44,7 @@ import { getUserNotification } from './queries/navigationQueries';
 import { useAuthStore } from '../../store/authStore.js';
 import { useDashboardStore } from '../../store/dashboardStore.js';
 import { AuthService } from '../../services/authService';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
   const {
@@ -54,6 +55,7 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
   } = useAuthStore();
 
   const { reset: resetDashboard } = useDashboardStore();
+  const queryClient = useQueryClient(); // Add QueryClient access
   const navigate = useNavigate();
   const location = useLocation();
   const [firstName, setFirstName] = useState('');
@@ -159,6 +161,10 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
     console.log('🔄 Resetting Zustand stores...');
     authLogout(); // Reset auth store
     resetDashboard(); // Reset dashboard store (in-memory only now)
+
+    // Clear TanStack Query cache to prevent showing previous user's data
+    console.log('🗑️ Clearing TanStack Query cache...');
+    queryClient.clear(); // This clears all cached queries
 
     // Small delay to ensure store resets are processed
     await new Promise((resolve) => setTimeout(resolve, 10));
