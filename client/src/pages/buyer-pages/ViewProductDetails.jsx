@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   MainDashboard,
   PlaceOrder,
@@ -21,6 +21,7 @@ import meetUpLocations from '../../data/meetUpLocations';
 import timeSlots from '../../data/timeSlots';
 import { getListing, getProductReview } from './queries/productDetailsQueries';
 import { getUsersDetails } from '../../queries/index.js';
+import { useAuthStore } from '../../store/authStore';
 
 const getCategoryLabel = (value) => {
   const found = productCategories.find((cat) => cat.value === value);
@@ -41,11 +42,11 @@ export default function ViewProductDetails() {
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
+  const { currentUser } = useAuthStore();
 
   // Get listing ID from URL params or fallback to passed state
   const listingId =
     params.id || location.state?.order?.listing_id || location.state?.order?.id;
-  const currentUser = location.state?.currentUser;
 
   const [quantity, setQuantity] = useState(1);
   const [showPlaceOrder, setShowPlaceOrder] = useState(false);
@@ -62,6 +63,16 @@ export default function ViewProductDetails() {
     isLoading: orderLoading,
     error: orderError,
   } = getListing(listingId);
+
+  // Check if current user is the owner of this listing
+  const isOwner = currentUser?.user_id === order.seller_id;
+
+  // Redirect to seller view if user is the owner
+  useEffect(() => {
+    if (order.seller_id && isOwner) {
+      navigate(`/seller/view-product-details/${listingId}`, { replace: true });
+    }
+  }, [order.seller_id, isOwner, navigate, listingId]);
 
   const { data: rawReviews = [] } = getProductReview(
     order.seller_id,

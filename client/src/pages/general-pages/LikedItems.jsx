@@ -3,8 +3,10 @@ import { MainDashboard, ProductCard } from "../../components";
 import DashboardBackButton from "../../components/ui/DashboardBackButton";
 import { useFavorites } from "../../hooks";
 import { Heart, AlertCircle } from "lucide-react";
+import { useAuthStore } from "../../store/authStore";
 
 export default function LikedItems() {
+  const { currentUser } = useAuthStore();
   const { 
     favorites, 
     loading, 
@@ -31,6 +33,9 @@ export default function LikedItems() {
     const listing = favorite.listing;
     if (!listing) return null;
 
+    const currentUserId = currentUser?.user_id || currentUser?.id;
+    const isOwner = currentUserId === listing.seller_id;
+
     return {
       listingId: listing.listing_id, // Changed from listing_id to listingId
       productImage: listing.images && listing.images.length > 0 
@@ -47,6 +52,7 @@ export default function LikedItems() {
       favorited_at: favorite.favorited_at,
       // Add a flag to identify this as a favorite item
       isFavorite: true,
+      isOwner: isOwner,
       onRemoveFavorite: () => handleRemoveFavorite(favorite.listing_id)
     };
   };

@@ -77,9 +77,18 @@ export default function GeneralDashboard() {
 
   const handleProductClick = (product) => {
     const listingId = product.listing_id || product.id;
-    navigate(`/buyer/view-product-details/${listingId}`, {
-      state: { order: product },
-    });
+    const currentUserId = currentUser?.user_id || currentUser?.id;
+    const isOwner = currentUserId === product.seller_id;
+    
+    if (isOwner) {
+      navigate(`/seller/view-product-details/${listingId}`, {
+        state: { order: product },
+      });
+    } else {
+      navigate(`/buyer/view-product-details/${listingId}`, {
+        state: { order: product },
+      });
+    }
   };
 
   const handleSearchInputChange = (value) => {
@@ -209,15 +218,20 @@ export default function GeneralDashboard() {
                 />
               </div>
             )}
-            {displayedListings.map((product, idx) => (
-              <div
-                key={product.id || idx}
-                onClick={() => handleProductClick(product)}
-                className="cursor-pointer h-full"
-              >
-                <ProductCard order={product} />
-              </div>
-            ))}
+            {displayedListings.map((product, idx) => {
+              const currentUserId = currentUser?.user_id || currentUser?.id;
+              const isOwner = currentUserId === product.seller_id;
+              
+              return (
+                <div
+                  key={product.id || idx}
+                  onClick={() => handleProductClick(product)}
+                  className="cursor-pointer h-full"
+                >
+                  <ProductCard order={{ ...product, isOwner }} />
+                </div>
+              );
+            })}
           </>
         )}
       </div>

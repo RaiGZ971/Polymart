@@ -97,8 +97,14 @@ export const useToggleFavorite = () => {
     },
     onSuccess: (data, listingId) => {
       // Update the status with the server response
-      const newStatus = data.is_favorited;
+      console.log('Toggle favorite response:', data); // Debug log
+      const newStatus = data.is_favorited || data.data?.is_favorited;
+      
+      // Set the data in the format that the query expects
       queryClient.setQueryData(favoritesKeys.status(listingId), newStatus);
+      
+      // Also invalidate the query to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: favoritesKeys.status(listingId) });
       
       // Update batch queries
       const batchQueries = queryClient.getQueriesData({ queryKey: favoritesKeys.all });
