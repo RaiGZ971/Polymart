@@ -24,10 +24,12 @@ export const getHeaders = (includeAuth = true) => {
         const token = useAuthStore.getState().token;
         if(token) {
             headers['Authorization'] = `Bearer ${token}`;
-            console.log('🔑 Adding auth header with token:', token.substring(0, 20) + '...');
-        } else {
-            console.log('❌ No auth token found in Zustand store');
+            // Only log in development
+            if (import.meta.env.DEV) {
+                console.log('🔑 Adding auth header with token:', token.substring(0, 20) + '...');
+            }
         }
+        // Removed unnecessary error log for missing token during logout
     }
 
     return headers

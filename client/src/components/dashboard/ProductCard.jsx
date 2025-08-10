@@ -34,7 +34,7 @@ export default function ProductCard({ order }) {
   const displayImage = productImage || 'https://via.placeholder.com/268x245?text=No+Image';
   const displayName = productName || 'Untitled Product';
   const displayUsername = username || 'Unknown User';
-  const displayAvatar = userAvatar || 'https://via.placeholder.com/40x40?text=User';
+  const displayAvatar = userAvatar || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyNUMxNy43OTA5IDI1IDE2IDIzLjIwOTEgMTYgMjFDMTYgMTguNzkwOSAxNy43OTA5IDE3IDIwIDE3QzIyLjIwOTEgMTcgMjQgMTguNzkwOSAyNCAyMUMyNCAyMy4yMDkxIDIyLjIwOTEgMjUgMjAgMjVaIiBmaWxsPSIjOUI5QkE5Ii8+CjxwYXRoIGQ9Ik0yOCAzMEMyOCAyNi42ODYzIDI0LjQxODMgMjQgMjAgMjRDMTUuNTgxNyAyNCAxMiAyNi42ODYzIDEyIDMwSDI4WiIgZmlsbD0iIzlCOUJBOSIvPgo8L3N2Zz4K';
 
   return (
     <div

@@ -21,7 +21,7 @@ export const formattedListing = (listing) => {
     username: listing.user_profile?.username || listing.seller_username,
     userAvatar:
       listing.seller_profile_photo_url ||
-      'https://via.placeholder.com/40x40?text=User',
+      '../assets/hackybara.png',
     productImage:
       listing.images && listing.images.length > 0
         ? listing.images.find((img) => img.is_primary)?.image_url ||

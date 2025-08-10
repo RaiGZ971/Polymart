@@ -2,10 +2,11 @@ import { useCallback, useMemo } from 'react';
 import { usePublicListings, useMyListings } from './queries/useListingQueries';
 import { useAuthStore } from '../store/authStore.js';
 import { useDashboardStore } from '../store/dashboardStore.js';
+import { UserService } from '../services';
 
 export const useDashboardData = () => {
   // Get current user for user change detection
-  const { token } = useAuthStore();
+  const { token, isAuthenticated, userID } = useAuthStore();
   const {
     activeCategory,
     setActiveCategory,
@@ -14,6 +15,9 @@ export const useDashboardData = () => {
     searchTerm,
     setSearchTerm,
   } = useDashboardStore();
+
+  // Check if user is actually authenticated
+  const isUserAuthenticated = isAuthenticated && token && UserService.isAuthenticated(token);
 
   // Build query parameters based on current state
   const publicParams = useMemo(
@@ -32,7 +36,7 @@ export const useDashboardData = () => {
     [searchTerm, sortBy]
   );
 
-  // Use TanStack Query hooks
+  // Use TanStack Query hooks - only enabled when authenticated
   const {
     data: allListings = [],
     isLoading: publicLoading,
@@ -40,7 +44,7 @@ export const useDashboardData = () => {
     error: publicErrorDetails,
     refetch: refetchPublic,
     isFetching: publicFetching,
-  } = usePublicListings(publicParams);
+  } = usePublicListings(publicParams, isUserAuthenticated);
 
   const {
     data: allMyListings = [],
