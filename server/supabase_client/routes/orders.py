@@ -51,6 +51,18 @@ async def create_order(
             listing.get("payment_methods", [])
         )
         
+        # Check for existing pending orders
+        has_pending_order = await order_db.check_existing_pending_orders(
+            current_user["user_id"], 
+            order_request.listing_id
+        )
+        
+        if has_pending_order:
+            raise HTTPException(
+                status_code=409,  # Conflict status
+                detail="You already have a pending order for this product. Please wait for the current order to be processed or cancel it before placing a new one."
+            )
+        
         # Validate buyer_requested_price usage
         has_price_range = (
             listing.get("price_min") is not None and 
@@ -160,6 +172,36 @@ async def get_user_orders(
             status_code=500, 
             detail=f"Failed to get orders: {str(e)}"
         )
+
+
+@router.get("/orders/check-pending/{listing_id}")
+async def check_pending_order_for_listing(
+    listing_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Check if user has a pending order for a specific listing.
+    """
+    try:
+        has_pending = await order_db.check_existing_pending_orders(
+            current_user["user_id"], 
+            listing_id
+        )
+        
+        return {
+            "has_pending_order": has_pending,
+            "listing_id": listing_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error checking pending orders: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to check pending orders: {str(e)}"
+        )
+
 
 @router.get("/orders/{order_id}", response_model=Order)
 async def get_order_details(

@@ -9,6 +9,29 @@ from uuid import UUID
 from .base import get_authenticated_client, handle_database_error, calculate_pagination_offset, validate_record_exists, validate_user_access
 
 
+async def check_existing_pending_orders(user_id: UUID, listing_id: int) -> bool:
+    """
+    Check if user already has a pending order for this listing.
+    Returns True if pending order exists, False otherwise.
+    """
+    try:
+        supabase = get_authenticated_client(user_id)
+        
+        # Check for existing pending orders
+        result = supabase.table("orders").select("order_id").eq(
+            "buyer_id", user_id
+        ).eq(
+            "listing_id", listing_id
+        ).eq(
+            "status", "pending"
+        ).execute()
+        
+        return len(result.data) > 0
+        
+    except Exception as e:
+        handle_database_error("check existing pending orders", e)
+
+
 async def check_listing_availability(user_id: UUID, listing_id: int, quantity: int, buyer_id: UUID) -> Dict[str, Any]:
     """
     Check if a listing exists, is active, has sufficient stock, and buyer is not the seller.

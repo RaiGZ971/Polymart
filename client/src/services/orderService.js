@@ -105,4 +105,18 @@ export class OrderService {
       throw error;
     }
   }
+
+  /**
+   * Check if user has a pending order for a specific listing
+   * @param {number} listingId - The listing ID to check
+   * @returns {Promise<Object>} Response with pending order status
+   */
+  static async checkPendingOrder(listingId) {
+    try {
+      return await ApiClient.get(`/supabase/orders/check-pending/${listingId}`);
+    } catch (error) {
+      console.error('Failed to check pending orders:', error);
+      throw error;
+    }
+  }
 }

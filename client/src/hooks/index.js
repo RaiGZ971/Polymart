@@ -4,6 +4,7 @@ export { default as useOrderModals } from "./useOrderModals";
 export { useOrdersData } from "./useOrdersData";
 export { useDashboardData } from "./useDashboardData";
 export { useFavorites } from "./useFavorites";
+export { usePendingOrderCheck } from "./usePendingOrderCheck";
 export { 
   usePublicListings, 
   useMyListings, 
