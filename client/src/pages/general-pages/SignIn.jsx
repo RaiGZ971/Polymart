@@ -4,6 +4,7 @@ import { NavigationBar, Footer, Textfield, PasswordField } from '@/components';
 import { stall } from '@/assets';
 import { postLogin } from './queries/signInQueries';
 import { useAuthStore } from '../../store/authStore.js';
+import { UserService } from '../../services/userService.js';
 
 export default function SignIn() {
   const [searchParams] = useSearchParams();

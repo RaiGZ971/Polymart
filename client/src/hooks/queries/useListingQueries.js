@@ -12,7 +12,7 @@ export const listingKeys = {
 };
 
 // Get public listings with caching and background updates
-export const usePublicListings = (params = {}) => {
+export const usePublicListings = (params = {}, enabled = true) => {
   return useQuery({
     queryKey: listingKeys.public(params),
     queryFn: () => ListingService.getPublicListings(params),
@@ -20,7 +20,7 @@ export const usePublicListings = (params = {}) => {
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
     refetchOnWindowFocus: false,
-    enabled: true,
+    enabled: enabled, // Now controllable from parent
     select: (listings) => {
       return listings.products.map((listing) => formattedListing(listing));
     },

@@ -23,7 +23,20 @@ export default function GeneralDashboard() {
   const [pendingSearch, setPendingSearch] = useState('');
   const navigate = useNavigate();
 
-  // Use the dashboard data hook
+  const { userID, token, isAuthenticated } = useAuthStore();
+
+  // Check authentication first and redirect if needed
+  useEffect(() => {
+    if (!userID || !UserService.isAuthenticated(token)) {
+      console.log(
+        '❌ No user found or not authenticated, redirecting to sign-in'
+      );
+      navigate('/sign-in');
+      return;
+    }
+  }, [navigate, userID, token, isAuthenticated]);
+
+  // Use the dashboard data hook - it will check authentication internally
   const {
     listings,
     myListings,
@@ -40,28 +53,7 @@ export default function GeneralDashboard() {
     refreshHome,
   } = useDashboardData();
 
-  const { userID, token, isAuthenticated } = useAuthStore();
-
   const { data: userData } = getUserDetails(userID);
-
-  // Get current user on component mount
-  useEffect(() => {
-    console.log('🔑 Authentication check:', {
-      userID,
-      hasToken: !!token,
-      token: token ? token.substring(0, 20) + '...' : null,
-      isAuthenticated,
-    });
-
-    // If user is not authenticated, redirect to login
-    if (!userID || !UserService.isAuthenticated(token)) {
-      console.log(
-        '❌ No user found or not authenticated, should redirect to sign-in'
-      );
-      navigate('/sign-in');
-      return;
-    }
-  }, [navigate, userID, token, isAuthenticated]);
 
   const handleCategoryChange = (categoryValue) => {
     setActiveCategory(categoryValue);

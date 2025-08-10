@@ -121,7 +121,9 @@ export class AuthService {
    * Logout user and clear all cached data
    */
   static logout() {
-    console.log('🚪 AuthService.logout() called');
+    if (import.meta.env.DEV) {
+      console.log('🚪 AuthService.logout() called');
+    }
     
     // Clear profile cache from sessionStorage
     sessionStorage.removeItem('user_profile_cache');
@@ -137,12 +139,16 @@ export class AuthService {
     const keys = Object.keys(localStorage);
     keys.forEach(key => {
       if (key.startsWith('polymart-')) {
-        console.log(`🗑️ Removing additional key: ${key}`);
+        if (import.meta.env.DEV) {
+          console.log(`🗑️ Removing additional key: ${key}`);
+        }
         localStorage.removeItem(key);
       }
     });
     
-    console.log('🧹 Cleared cached data and stores on logout');
+    if (import.meta.env.DEV) {
+      console.log('🧹 Cleared cached data and stores on logout');
+    }
   }
 
 }

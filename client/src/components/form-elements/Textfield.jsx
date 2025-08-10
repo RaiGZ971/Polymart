@@ -9,6 +9,8 @@ export default function Textfield({
   value = "",
   integerOnly = false,
   validation = null,
+  studID, // Extract studID to prevent it from being passed to DOM
+  type,   // Extract type to handle it properly
   ...props
 }) {
   const [isFocused, setIsFocused] = useState(false);
@@ -105,7 +107,7 @@ export default function Textfield({
       >
         {/*Textfield Input*/}
         <input
-          type={integerOnly ? "text" : "text"}
+          type={type || (integerOnly ? "text" : "text")}
           className="text-black outline-none bg-transparent w-full font-poppins"
           value={value}
           onFocus={() => setIsFocused(true)}

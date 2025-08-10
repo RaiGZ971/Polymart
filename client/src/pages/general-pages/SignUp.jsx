@@ -124,11 +124,11 @@ export default function SignUp() {
       console.log("Auto-login successful");
 
       // Store the authentication token in Zustand store
-      setUser(loginResult.data.user, loginResult.data.access_token);
+      setUser(loginResult.data.user.user_id, loginResult.data.access_token);
 
       // Fetch and store user profile to ensure display name is available immediately
       try {
-        const userProfile = await UserService.getUserProfile(loginResult.data.user);
+        const userProfile = await UserService.getUserProfile(loginResult.data.user.user_id);
         setUserProfile(userProfile.data);
       } catch (profileError) {
         console.warn("Failed to fetch user profile after signup:", profileError);
