@@ -21,8 +21,11 @@ export const getMessages = (senderID, receiverID) => {
       const data = await ChatService.getMessages(senderID, receiverID);
       return data;
     },
-    enabled: !!senderID && !!receiverID && typeof senderID === 'string' && typeof receiverID === 'string',
-    staleTime: 30 * 1000, // 30 seconds
+    enabled:
+      !!senderID &&
+      !!receiverID &&
+      typeof senderID === 'string' &&
+      typeof receiverID === 'string',
     refetchOnWindowFocus: false,
     select: (data) => {
       return formattedMessages(data, senderID);

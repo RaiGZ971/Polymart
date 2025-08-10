@@ -4,11 +4,16 @@ import { getContacts, getMessages } from './queries/useChatQueries';
 import { getUsersDetails } from '../queries/getUsersDetails.js';
 import { formattedContacts } from '../utils/index.js';
 import { useAuthStore } from '../store/authStore.js';
+import { formattedMessages } from '../utils/index.js';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function useChat() {
   const wsService = useRef(new WebSocketService());
+  const queryClient = useQueryClient();
+
   const { userID, data: userData } = useAuthStore();
   const [currentChatID, setCurrentChatID] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [contacts, setContacts] = useState([]);
 
   const {
@@ -23,41 +28,36 @@ export function useChat() {
   const userResults = getUsersDetails(contactIDs);
   const usersData = userResults.map((userResult) => userResult.data);
 
-  console.log(rawContacts);
-
   useEffect(() => {
-    if (contactIDs.length !== 0) {
-      setContacts(formattedContacts(usersData, latestMessages));
+    if (usersData.length && usersData[0]?.user_id) {
+      const newContacts = formattedContacts(usersData, latestMessages);
+
+      setContacts((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(newContacts)) {
+          return newContacts;
+        }
+        return prev;
+      });
     }
   }, [usersData, latestMessages]);
 
   const {
-    data: messages = [],
+    data: fetchedMessages = [],
     isLoading: messagesLoading,
     error: messagesError,
   } = getMessages(userID, currentChatID);
 
-  const unread = contacts.filter((chat) => chat.isUnread).length;
+  useEffect(() => {
+    if (fetchedMessages.length !== 0) {
+      setMessages(fetchedMessages);
+    }
+  }, [fetchedMessages]);
+
+  const unread = useMemo(() => {
+    return contacts.filter((chat) => chat.isUnread).length;
+  }, [contacts]);
 
   // Message operations
-  const addMessage = (messageData) => {
-    if (!currentChatID) return;
-
-    if (typeof messageData === 'string') {
-      setMessages((prev) => [...prev, { text: messageData, sender: 'user' }]);
-    } else {
-      const newMessage = {
-        text: messageData.text || '',
-        image: messageData.image,
-        imagePreview: messageData.image
-          ? URL.createObjectURL(messageData.image)
-          : null,
-        type: messageData.type,
-        sender: 'user',
-      };
-      setMessages((prev) => [...prev, newMessage]);
-    }
-  };
 
   const addBotResponse = () => {
     if (!currentChatID) return;
@@ -71,6 +71,25 @@ export function useChat() {
     const randomResponse =
       responses[Math.floor(Math.random() * responses.length)];
     setMessages((prev) => [...prev, { text: randomResponse, sender: 'other' }]);
+  };
+
+  const addMessage = (message, receiverID) => {
+    const response = formattedMessages(message, userID);
+    setMessages((prev) => [...prev, ...response]);
+
+    contacts.forEach((contact) => {
+      if (contact.id === receiverID) {
+        contact.message = response.text || 'Sent An Image';
+      }
+    });
+
+    queryClient.invalidateQueries({
+      queryKey: ['messages', userID, receiverID],
+    });
+
+    queryClient.invalidateQueries({
+      queryKey: ['contacts', userID],
+    });
   };
 
   const markAsRead = (chatId) => {
