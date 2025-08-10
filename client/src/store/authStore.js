@@ -7,7 +7,8 @@ export const useAuthStore = create(
       userID: null,
       token: null,
       isAuthenticated: false,
-      data: {},
+      username: '', // User's login username
+      firstName: '', // User's first name for display
 
       setUser: (userID, token) => {
         set({
@@ -17,8 +18,16 @@ export const useAuthStore = create(
         });
       },
 
-      setData: (data) => {
-        set({ data: data });
+      setUserProfile: (profileData) => {
+        set({ 
+          username: profileData?.username || '',
+          firstName: profileData?.first_name || '',
+        });
+      },
+
+      getDisplayName: () => {
+        const state = get();
+        return state.firstName || state.username || 'User';
       },
 
       logout: () => {
@@ -26,7 +35,8 @@ export const useAuthStore = create(
           userID: null,
           token: null,
           isAuthenticated: false,
-          data: [],
+          username: '',
+          firstName: '',
         });
       },
     }),
@@ -36,7 +46,8 @@ export const useAuthStore = create(
         userID: state.userID,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
-        data: state.data,
+        username: state.username,
+        firstName: state.firstName,
       }),
     }
   )

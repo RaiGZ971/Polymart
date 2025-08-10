@@ -40,7 +40,7 @@ export default function GeneralDashboard() {
     refreshHome,
   } = useDashboardData();
 
-  const { userID, token, isAuthenticated, setData } = useAuthStore();
+  const { userID, token, isAuthenticated } = useAuthStore();
 
   const { data: userData } = getUserDetails(userID);
 
@@ -53,8 +53,6 @@ export default function GeneralDashboard() {
       isAuthenticated,
     });
 
-    setData(userData);
-
     // If user is not authenticated, redirect to login
     if (!userID || !UserService.isAuthenticated(token)) {
       console.log(
@@ -63,7 +61,7 @@ export default function GeneralDashboard() {
       navigate('/sign-in');
       return;
     }
-  }, [navigate, userData]);
+  }, [navigate, userID, token, isAuthenticated]);
 
   const handleCategoryChange = (categoryValue) => {
     setActiveCategory(categoryValue);

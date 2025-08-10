@@ -40,7 +40,29 @@ export default function SignIn() {
         password: form.password,
       });
 
+      // Set basic auth data first
       setUser(userData.data.user.user_id, userData.data.access_token);
+      
+      // Set immediate username from token data as fallback
+      try {
+        const tokenUser = UserService.getCurrentUser(userData.data.access_token);
+        if (tokenUser && tokenUser.username) {
+          const { setUserProfile } = useAuthStore.getState();
+          setUserProfile({ username: tokenUser.username });
+        }
+      } catch (tokenError) {
+        console.warn('Could not extract username from token:', tokenError);
+      }
+      
+      // Fetch and store detailed user profile for first name
+      try {
+        const userProfile = await UserService.getUserProfile(userData.data.user.user_id);
+        const { setUserProfile } = useAuthStore.getState();
+        setUserProfile(userProfile.data);
+      } catch (profileError) {
+        console.warn('Failed to fetch user profile during login:', profileError);
+      }
+
       navigate('/dashboard');
     } catch (error) {
       const errorMessage =

@@ -35,7 +35,7 @@ import {
   Heart,
 } from 'lucide-react';
 import Logo from '../../assets/PolymartLogo.png';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import ChatApp from '../chat/ChatApp';
 import NotificationOverlay from '../notifications/NotificationOverlay';
 import CreateListingComponent from '../CreateListingComponent';
@@ -43,23 +43,24 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getUserNotification } from './queries/navigationQueries';
 import { useAuthStore } from '../../store/authStore.js';
 import { useDashboardStore } from '../../store/dashboardStore.js';
-import { AuthService } from '../../services/authService';
+import { AuthService, UserService } from '../../services';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
   const {
     userID,
-    data: currentUser,
+    token,
     isAuthenticated,
     logout: authLogout,
+    username,
+    firstName,
+    getDisplayName,
   } = useAuthStore();
 
   const { reset: resetDashboard } = useDashboardStore();
   const queryClient = useQueryClient(); // Add QueryClient access
   const navigate = useNavigate();
   const location = useLocation();
-  const [firstName, setFirstName] = useState('');
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [showChat, setShowChat] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCreateListing, setShowCreateListing] = useState(false);
@@ -101,9 +102,11 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
     { name: 'Sign Out', icon: 'logout', action: 'logout' },
   ];
 
-  const bottomNavItems = [
+  const displayName = getDisplayName();
+  
+  const bottomNavItems = useMemo(() => [
     {
-      name: isLoadingProfile ? 'Loading...' : firstName || 'User',
+      name: displayName,
       path: '/profile',
       icon: 'user',
       hasText: true,
@@ -134,7 +137,7 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
       hasText: false,
       action: 'chat',
     },
-  ];
+  ], [displayName]); // Only recalculate when displayName changes
 
   const handleItemClick = (item) => {
     if (item.action === 'chat') {
@@ -155,34 +158,25 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
   };
 
   const handleLogout = async () => {
-    console.log('🚪 NavigationDashboard.handleLogout() called');
-
     // First, reset in-memory Zustand stores to prevent any stale state
-    console.log('🔄 Resetting Zustand stores...');
     authLogout(); // Reset auth store
     resetDashboard(); // Reset dashboard store (in-memory only now)
 
-    // Clear TanStack Query cache to prevent showing previous user's data
-    console.log('🗑️ Clearing TanStack Query cache...');
+        // Clear TanStack Query cache to prevent showing previous user's data
     queryClient.clear(); // This clears all cached queries
 
     // Small delay to ensure store resets are processed
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Then clear localStorage and sessionStorage via AuthService
-    console.log('🔐 Calling AuthService.logout() to clear storage...');
     AuthService.logout();
 
     // Force clear localStorage again in case of any race conditions
-    console.log('🔄 Double-checking localStorage cleanup...');
     localStorage.clear(); // Nuclear option - clears everything
     sessionStorage.clear(); // Clear all session storage too
 
-    console.log('🔄 Redirecting to sign-in...');
     // Redirect to sign-in page
     navigate('/sign-in');
-
-    console.log('✅ NavigationDashboard.handleLogout() completed');
   };
 
   const handleCloseChat = () => {
@@ -212,22 +206,12 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
     return item.path !== '/' && location.pathname.startsWith(item.path);
   };
 
-  // Get user's first name on component mount with caching
+  // Simple authentication check
   useEffect(() => {
-    try {
-      if (currentUser) {
-        setFirstName(currentUser.first_name || currentUser.username);
-        setIsLoadingProfile(false);
-      }
-
-      if (!isAuthenticated) {
-        navigate('/sign-in');
-      }
-    } catch (error) {
-      console.error('Error loading user data:', error);
+    if (!isAuthenticated) {
       navigate('/sign-in');
     }
-  }, [currentUser, isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate]);
 
   return (
     <div>

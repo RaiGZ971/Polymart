@@ -14,7 +14,7 @@ import {
 } from "@/components";
 
 import { fieldConfig, phaseConfig } from "../../data";
-import { AuthService, FileUploadService } from "../../services";
+import { AuthService, FileUploadService, UserService } from "../../services";
 
 import { useSignUpNavigation } from "../../hooks/useSignUpNavigation";
 import { useEmailVerification } from "../../hooks/useEmailVerification";
@@ -30,7 +30,7 @@ export default function SignUp() {
   const hasAutoAdvanced = useRef(false);
   
   // Get setUser from Zustand store to store auth token
-  const { setUser } = useAuthStore();
+  const { setUser, setUserProfile } = useAuthStore();
   
   // Define steps array
   const steps = [
@@ -125,7 +125,15 @@ export default function SignUp() {
 
       // Store the authentication token in Zustand store
       setUser(loginResult.data.user, loginResult.data.access_token);
-      console.log("🔑 Token stored in Zustand store after signup");
+
+      // Fetch and store user profile to ensure display name is available immediately
+      try {
+        const userProfile = await UserService.getUserProfile(loginResult.data.user);
+        setUserProfile(userProfile.data);
+      } catch (profileError) {
+        console.warn("Failed to fetch user profile after signup:", profileError);
+        // Continue even if profile fetch fails - dashboard will handle it
+      }
 
       // Step 3: Upload profile picture if provided
       if (formData.profilePicture && formData.profilePicture instanceof File) {
