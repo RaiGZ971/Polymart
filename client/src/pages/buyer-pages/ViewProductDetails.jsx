@@ -20,9 +20,10 @@ import { stallbanner, pupmap } from '../../assets';
 import meetUpLocations from '../../data/meetUpLocations';
 import timeSlots from '../../data/timeSlots';
 import { getListing, getProductReview } from './queries/productDetailsQueries';
-import { getUsersDetails } from '../../queries/index.js';
+import { getUserDetails, getUsersDetails } from '../../queries/index.js';
 import { useAuthStore } from '../../store/authStore';
 import { usePendingOrderCheck } from '../../hooks/usePendingOrderCheck';
+import { formattedUserContact } from '../../utils/formattedUserContact';
 
 const getCategoryLabel = (value) => {
   const found = productCategories.find((cat) => cat.value === value);
@@ -53,11 +54,12 @@ export default function ViewProductDetails() {
   const [showPlaceOrder, setShowPlaceOrder] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
-  const [showChat, setShowChat] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [offerPrice, setOfferPrice] = useState('');
   const [offerMessage, setOfferMessage] = useState('');
   const [customOrder, setCustomOrder] = useState(null);
+  const [sellerContact, setSellerContact] = useState(null);
+  const [showChat, setShowChat] = useState(false);
 
   const {
     data: order = {},
@@ -66,11 +68,17 @@ export default function ViewProductDetails() {
     refetch: refetchOrder,
   } = getListing(listingId);
 
+  const {
+    data: sellerProfile = {},
+    isLoading: sellerContactLoading,
+    error: sellerContactError,
+  } = getUserDetails(order.seller_id);
+
   // Add pending order check
-  const { 
-    hasPendingOrder, 
-    loading: pendingOrderLoading, 
-    refetch: refetchPendingOrder 
+  const {
+    hasPendingOrder,
+    loading: pendingOrderLoading,
+    refetch: refetchPendingOrder,
   } = usePendingOrderCheck(listingId);
 
   // Check if current user is the owner of this listing
@@ -116,6 +124,16 @@ export default function ViewProductDetails() {
     );
   }, [reviews]);
 
+  const handleOpenChat = () => {
+    const response = {
+      ...formattedUserContact(sellerProfile),
+      productImage: order.productImage || 'https://picsum.photos/200',
+    };
+
+    setSellerContact(response);
+    setShowChat(true);
+  };
+
   if (orderLoading || pendingOrderLoading) {
     return (
       <MainDashboard>
@@ -141,7 +159,7 @@ export default function ViewProductDetails() {
   return (
     <MainDashboard>
       <DashboardBackButton />
-      
+
       {/* Main Container */}
       <div className="flex flex-col w-[80%] min-h-screen mt-5">
         {/* First Row: Image Carousel + Product Details/User Actions */}
@@ -236,7 +254,9 @@ export default function ViewProductDetails() {
               }`}
               onClick={() => {
                 if (hasPendingOrder) {
-                  alert('You already have a pending order for this product. Please wait for the current order to be processed or cancel it before placing a new one.');
+                  alert(
+                    'You already have a pending order for this product. Please wait for the current order to be processed or cancel it before placing a new one.'
+                  );
                   return;
                 }
 
@@ -249,12 +269,11 @@ export default function ViewProductDetails() {
               }}
               disabled={hasPendingOrder || pendingOrderLoading}
             >
-              {pendingOrderLoading 
-                ? 'Checking...' 
-                : hasPendingOrder 
-                  ? 'pending order' 
-                  : 'Place Order'
-              }
+              {pendingOrderLoading
+                ? 'Checking...'
+                : hasPendingOrder
+                ? 'pending order'
+                : 'Place Order'}
             </button>
 
             {/* Pending Order Notice */}
@@ -262,14 +281,22 @@ export default function ViewProductDetails() {
               <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    <svg
+                      className="h-5 w-5 text-yellow-400"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
                   <div className="ml-3">
                     <p className="text-sm text-yellow-700">
-                      You have a pending order for this product. 
-                      <button 
+                      You have a pending order for this product.
+                      <button
                         className="underline ml-1 hover:text-yellow-800"
                         onClick={() => navigate('/orders-meetups')}
                       >
@@ -282,7 +309,7 @@ export default function ViewProductDetails() {
             )}
 
             <div className="flex flex-row gap-4 items-center">
-              <FavoriteButton 
+              <FavoriteButton
                 listingId={order.listing_id || order.id}
                 className="text-sm group hover:text-primary-red hover:underline"
                 size={20}
@@ -365,7 +392,7 @@ export default function ViewProductDetails() {
               <div>
                 <button
                   className="bg-primary-red font-semibold text-white px-4 py-2 rounded-lg hover:bg-hover-red transition-colors text-sm"
-                  onClick={() => setShowChat(true)}
+                  onClick={() => handleOpenChat()}
                 >
                   Message
                 </button>
@@ -500,7 +527,12 @@ export default function ViewProductDetails() {
       {showChat && (
         <div className="fixed inset-0 z-50 shadow-glow flex items-start justify-end">
           <div className="h-screen w-[30%] bg-white rounded-l-xl shadow-lg relative">
-            <ChatApp onClose={() => setShowChat(false)} />
+            <ChatApp
+              initialView="chat"
+              initialChatData={sellerContact}
+              onClose={() => setShowChat(false)}
+              fromOrderDetails={true}
+            />
           </div>
         </div>
       )}
@@ -544,7 +576,7 @@ export default function ViewProductDetails() {
             offerMessage,
           });
           setShowOfferModal(false);
-          
+
           // Only show place order if no pending order exists
           if (!hasPendingOrder) {
             setShowPlaceOrder(true);
