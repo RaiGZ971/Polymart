@@ -181,7 +181,13 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
       }
     } catch (error) {
       console.error("Failed to create order:", error);
-      setSubmitError(error.message || "Failed to create order. Please try again.");
+      
+      // Handle specific error cases
+      if (error.response?.status === 409) {
+        setSubmitError("You already have a pending order for this product. Please check your orders page.");
+      } else {
+        setSubmitError(error.message || "Failed to create order. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
