@@ -69,7 +69,7 @@ export const useOrdersData = () => {
         : order.listing?.buyer_profile_photo_url ||
           'https://via.placeholder.com/40x40?text=B',
       paymentMethod: order.payment_method || 'Unknown',
-      schedule: order.meetup?.scheduled_at 
+      schedule: order.meetup?.scheduled_at
         ? new Date(order.meetup.scheduled_at).toLocaleString()
         : 'TBD',
       remark: order.meetup?.remarks || '',
@@ -100,15 +100,21 @@ export const useOrdersData = () => {
       ],
 
       // Add more detailed meetup information for ProductDetail component
-      datePlaced: order.placed_at?.split('T')[0] || new Date().toISOString().split('T')[0],
-      
+      datePlaced:
+        order.placed_at?.split('T')[0] ||
+        new Date().toISOString().split('T')[0],
+
       // Seller information for ProductDetail
       sellerId: order.seller_id,
       sellerUsername: order.listing?.seller_username || 'Unknown Seller',
-      sellerAvatar: order.listing?.seller_profile_photo_url || 'https://via.placeholder.com/40x40?text=S',
-      
+      sellerAvatar:
+        order.listing?.seller_profile_photo_url ||
+        'https://via.placeholder.com/40x40?text=S',
+
       // Product details for ProductDetail
-      productImage: order.listing?.images?.[0]?.image_url || 'https://via.placeholder.com/201x101?text=No+Image',
+      productImage:
+        order.listing?.images?.[0]?.image_url ||
+        'https://via.placeholder.com/201x101?text=No+Image',
       productImages: order.listing?.images || [],
     };
   };

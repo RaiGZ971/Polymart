@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { createPortal } from "react-dom";
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft } from 'lucide-react';
 import {
   Items,
   MeetUpDetails,
@@ -10,28 +10,30 @@ import {
   Modal,
   ChatApp,
   BackButton,
-} from "@/components";
+} from '@/components';
 
-import { useOrderModals } from "@/hooks";
+import { useOrderModals } from '@/hooks';
+import { getUserDetails } from '../../queries/index.js';
+import { formattedUserContact } from '../../utils/formattedUserContact.js';
 
 const statusColor = {
-  completed: "#34A853",
-  placed: "#FBBC04",
-  "order placed": "#FBBC04",
-  cancelled: "#FF0000",
-  ongoing: "#2670F9",
-  rescheduled: "#F97B26",
+  completed: '#34A853',
+  placed: '#FBBC04',
+  'order placed': '#FBBC04',
+  cancelled: '#FF0000',
+  ongoing: '#2670F9',
+  rescheduled: '#F97B26',
 };
 
 function getStatusLabel(status) {
-  if (!status) return "";
+  if (!status) return '';
   const map = {
-    completed: "Completed",
-    "order placed": "Order Placed",
-    placed: "Order Placed",
-    cancelled: "Cancelled",
-    ongoing: "Ongoing",
-    rescheduled: "Rescheduled",
+    completed: 'Completed',
+    'order placed': 'Order Placed',
+    placed: 'Order Placed',
+    cancelled: 'Cancelled',
+    ongoing: 'Ongoing',
+    rescheduled: 'Rescheduled',
   };
   return map[status.toLowerCase()] || status;
 }
@@ -67,32 +69,28 @@ export default function ProductDetail({
 
   // Add state for LeaveReview modal
   const [showLeaveReview, setShowLeaveReview] = useState(false);
-  const [confirmType, setConfirmType] = useState("");
+  const [confirmType, setConfirmType] = useState('');
 
   // Chat modal state
   const [showChatModal, setShowChatModal] = useState(false);
   const [chatData, setChatData] = useState(null);
-  const [chatInitialView, setChatInitialView] = useState("preview");
+  const [chatInitialView, setChatInitialView] = useState('preview');
 
-  const handleOpenChat = (targetUserId) => {
-    // Create mock chat data for demonstration
-    const mockChat = {
-      id: targetUserId,
-      username:
-        role === "user"
-          ? order.sellerUsername || "Seller"
-          : order.username || "Buyer",
-      avatarUrl:
-        role === "user"
-          ? order.sellerAvatar || "https://picsum.photos/247/245"
-          : order.userAvatar || "https://picsum.photos/247/245",
-      productImage: order.productImage || "https://picsum.photos/200",
-      message: "This is a mock chat message.",
-      sent: true,
-      isUnread: false,
+  const {
+    data: buyerProfile = {},
+    isLoading: buyerContactLoading,
+    error: buyerContactError,
+  } = getUserDetails(order.buyer_id);
+
+  const handleOpenChat = () => {
+    console.log(order);
+    const response = {
+      ...formattedUserContact(buyerProfile),
+      productImage: order.productImage || 'https://picsum.photos/200',
     };
-    setChatData(mockChat);
-    setChatInitialView("chat");
+
+    setChatData(response);
+    setChatInitialView('chat');
     setShowChatModal(true);
   };
 
@@ -100,9 +98,9 @@ export default function ProductDetail({
 
   const items = order.productsOrdered || order.items || [];
   const isUserPlaced =
-    role === "user" &&
-    (order.status?.toLowerCase() === "placed" ||
-      order.status?.toLowerCase() === "order placed");
+    role === 'user' &&
+    (order.status?.toLowerCase() === 'placed' ||
+      order.status?.toLowerCase() === 'order placed');
 
   const handleOpenLeaveReview = () => {
     handleLeaveReview();
@@ -115,9 +113,9 @@ export default function ProductDetail({
   // Optionally, pass user profile info for review
   const userProfile = {
     username: order.username,
-    campus: "PUP Sta Mesa",
-    department: "CCIS",
-    profileImage: order.userAvatar || "https://picsum.photos/247/245",
+    campus: 'PUP Sta Mesa',
+    department: 'CCIS',
+    profileImage: order.userAvatar || 'https://picsum.photos/247/245',
     id: order.userId, // adjust as needed
   };
 
@@ -130,9 +128,9 @@ export default function ProductDetail({
           <h1 className="text-3xl font-bold text-primary-red">Order Details</h1>
           <p
             style={{
-              color: statusColor[order.status?.toLowerCase()] || "#333",
-              fontWeight: "bold",
-              textTransform: "capitalize",
+              color: statusColor[order.status?.toLowerCase()] || '#333',
+              fontWeight: 'bold',
+              textTransform: 'capitalize',
             }}
           >
             {getStatusLabel(order.status)}
@@ -142,7 +140,7 @@ export default function ProductDetail({
         <div className="flex flex-row justify-between px-20">
           <div className="flex flex-row items-center gap-4">
             <img
-              src={order.userAvatar || "https://picsum.photos/247/245"}
+              src={order.userAvatar || 'https://picsum.photos/247/245'}
               alt="User Image"
               className="w-20 h-20 rounded-full object-cover"
             />
@@ -153,11 +151,9 @@ export default function ProductDetail({
           </div>
           <button
             className="bg-primary-red text-white px-4 py-1 max-h-10 rounded-lg hover:bg-hover-red transition-colors text-sm"
-            onClick={() =>
-              handleOpenChat(role === "user" ? order.sellerId : order.buyerId)
-            }
+            onClick={() => handleOpenChat()}
           >
-            {role === "user" ? "Message Seller" : "Message Buyer"}
+            {role === 'user' ? 'Message Seller' : 'Message Buyer'}
           </button>
         </div>
 

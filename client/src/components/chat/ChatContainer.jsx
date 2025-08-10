@@ -4,33 +4,61 @@ import ChatInput from './ChatInput';
 import { Flag, ChevronLeft, Send } from 'lucide-react';
 import { useChat } from '../../hooks/useChat';
 import { useProductInfo } from '../../hooks/useProductInfo';
+import { formattedMessage } from '../../utils/index.js';
+import {
+  postMessage,
+  postMessageImage,
+} from './queries/useChatContainerQueries.js';
 
 const ChatContainer = ({ chatData, onBack }) => {
   const username = chatData?.username || 'nintendocicc';
   const avatarUrl = chatData?.avatarUrl || '/path/to/avatar.jpg';
   const productImageUrl =
     chatData?.productImage || '/path/to/product-image.jpg';
-  const chatId = chatData?.id;
+  const chatID = chatData?.id;
 
-  const { messages, addMessage, addBotResponse, selectChat } = useChat();
-  const productInfo = useProductInfo(chatId);
+  const { messages, addMessage, selectChat } = useChat();
+  const productInfo = useProductInfo(chatID);
   const { productName, productPrice, meetUpPlace, meetUpDay, meetUpTime } =
     productInfo;
   const productImage = productImageUrl;
+  const sendMessage = postMessage();
+  const sendImage = postMessageImage();
 
   // Select this chat when component mounts
   useEffect(() => {
-    if (chatId) {
-      selectChat(chatId);
+    if (chatID) {
+      selectChat(chatID);
     }
-  }, [chatId, selectChat]);
+  }, [chatID, selectChat]);
 
-  const handleSend = (messageData) => {
-    addMessage(messageData);
+  const handleSend = async (messageData) => {
+    let form;
 
-    setTimeout(() => {
-      addBotResponse();
-    }, 600);
+    console.log(chatData.id);
+    if (messageData.type === 'image') {
+      const imageURL = await sendImage.mutateAsync({
+        sellerID: chatID,
+        file: messageData.image,
+      });
+
+      console.log('S3 Bucket Image Upload: ', imageURL);
+
+      messageData.image = imageURL.image;
+    }
+
+    form = formattedMessage(messageData, chatID);
+
+    sendMessage.mutate(
+      { sellerID: chatID, form },
+      {
+        onSuccess: (data) => {
+          const arrayMessage = [data];
+          addMessage(arrayMessage, chatID);
+          console.log('Uploaded Message in dynamodb: ', data);
+        },
+      }
+    );
   };
 
   return (
