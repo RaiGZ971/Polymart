@@ -100,7 +100,7 @@ export default function CreateListingComponent({ onClose }) {
   const isOnlineOnly =
     Array.isArray(listingData.transactionMethods) &&
     listingData.transactionMethods.length === 1 &&
-    listingData.transactionMethods[0] === "online";
+    listingData.transactionMethods[0] === "Online";
 
   return (
     <div className="w-full max-w-4xl bg-white rounded-xl shadow-glow p-8 relative">
@@ -175,7 +175,7 @@ export default function CreateListingComponent({ onClose }) {
           </div>
           {renderListingField("paymentMethods", {
             filteredOptions: isOnlineOnly 
-              ? ['gcash', 'maya', 'bank_transfer', 'remittance']
+              ? ['GCash', 'Maya', 'Bank Transfer', 'Remittance']
               : null
           })}
         </Container>

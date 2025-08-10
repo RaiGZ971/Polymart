@@ -67,41 +67,24 @@ const simplifyTimeSlots = (schedules) => {
 };
 
 /**
- * Parse time string like '6am', '12pm' to a numeric value for comparison
- * @param {string} timeStr - Time string like '6am' or '12pm'
- * @returns {number} Numeric representation (0-23 for hours)
+ * Parse time string like '06:00', '14:30' to a numeric value for comparison
+ * @param {string} timeStr - Time string like '06:00' or '14:30'
+ * @returns {number} Numeric representation (minutes since midnight)
  */
 const parseTimeValue = (timeStr) => {
-  const match = timeStr.match(/^(\d{1,2})(am|pm)$/i);
-  if (!match) {
-    return 0;
-  }
-  
-  let hours = parseInt(match[1], 10);
-  const period = match[2].toLowerCase();
-  
-  if (period === 'am') {
-    if (hours === 12) {
-      hours = 0; // 12am = 00:00
-    }
-  } else { // pm
-    if (hours !== 12) {
-      hours += 12; // 1pm = 13:00, but 12pm = 12:00
-    }
-  }
-  
-  return hours;
+  const [hours, minutes] = timeStr.split(':').map(num => parseInt(num, 10));
+  return hours * 60 + (minutes || 0);
 };
 
 /**
- * Parse time slot string (e.g., '6am-7am', '12pm-1pm') into start and end datetime objects
- * @param {string} timeSlotValue - Time slot string like '6am-7am'
+ * Parse time slot string (e.g., '06:00-07:00', '14:30-15:30') into start and end datetime objects
+ * @param {string} timeSlotValue - Time slot string like '06:00-07:00'
  * @param {string} date - Date string in YYYY-MM-DD format
  * @returns {Object|null} Object with start_time and end_time, or null if parsing fails
  */
 const parseTimeSlot = (timeSlotValue, date) => {
   try {
-    // Split the time slot value (e.g., '6am-7am' -> ['6am', '7am'])
+    // Split the time slot value (e.g., '06:00-07:00' -> ['06:00', '07:00'])
     const [startTimeStr, endTimeStr] = timeSlotValue.split('-');
     
     if (!startTimeStr || !endTimeStr) {
@@ -109,60 +92,44 @@ const parseTimeSlot = (timeSlotValue, date) => {
       return null;
     }
     
-    // Convert time strings to 24-hour format
-    const startTime24 = convertTo24Hour(startTimeStr.trim());
-    const endTime24 = convertTo24Hour(endTimeStr.trim());
+    const startTime = startTimeStr.trim();
+    const endTime = endTimeStr.trim();
     
-    if (!startTime24 || !endTime24) {
+    // Handle midnight crossing (e.g., "23:00-00:00")
+    let startDate = date;
+    let endDate = date;
+    
+    // If end time is "00:00" and start time is after noon, end time is next day
+    if (endTime === '00:00' && startTime !== '00:00') {
+      const nextDay = new Date(date);
+      nextDay.setDate(nextDay.getDate() + 1);
+      endDate = nextDay.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+    }
+    
+    // Create ISO strings directly to avoid timezone issues
+    const startDateTime = `${startDate}T${startTime}:00.000Z`;
+    const endDateTime = `${endDate}T${endTime}:00.000Z`;
+    
+    // Validate the datetime strings
+    const startDateObj = new Date(startDateTime);
+    const endDateObj = new Date(endDateTime);
+    
+    if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
       console.warn(`Failed to parse time slot: ${timeSlotValue}`);
       return null;
     }
     
-    // Create full datetime objects
-    const startDateTime = new Date(`${date}T${startTime24}:00`);
-    const endDateTime = new Date(`${date}T${endTime24}:00`);
-    
-    return {
-      start_time: startDateTime.toISOString(),
-      end_time: endDateTime.toISOString()
-    };
-  } catch (error) {
-    console.error(`Error parsing time slot ${timeSlotValue}:`, error);
-    return null;
-  }
-};
-
-/**
- * Convert time string like '6am', '12pm', '1pm' to 24-hour format like '06:00', '12:00', '13:00'
- * @param {string} timeStr - Time string like '6am' or '12pm'
- * @returns {string|null} Time in 24-hour format like '06:00' or null if parsing fails
- */
-const convertTo24Hour = (timeStr) => {
-  try {
-    // Extract number and am/pm
-    const match = timeStr.match(/^(\d{1,2})(am|pm)$/i);
-    if (!match) {
+    if (startDateObj >= endDateObj) {
+      console.warn(`Invalid time slot - start time must be before end time: ${timeSlotValue}`);
       return null;
     }
     
-    let hours = parseInt(match[1], 10);
-    const period = match[2].toLowerCase();
-    
-    // Convert to 24-hour format
-    if (period === 'am') {
-      if (hours === 12) {
-        hours = 0; // 12am = 00:00
-      }
-    } else { // pm
-      if (hours !== 12) {
-        hours += 12; // 1pm = 13:00, but 12pm = 12:00
-      }
-    }
-    
-    // Return formatted time
-    return `${hours.toString().padStart(2, '0')}:00`;
+    return {
+      start_time: startDateTime,
+      end_time: endDateTime
+    };
   } catch (error) {
-    console.error(`Error converting time ${timeStr}:`, error);
+    console.error(`Error parsing time slot ${timeSlotValue}:`, error);
     return null;
   }
 };
@@ -212,16 +179,6 @@ export const transformListingDataForAPI = (listingData) => {
     }
   }
   
-  // Map frontend transaction method values to backend values
-  const transactionMethodMap = {
-    'meetup': 'meet_up',
-    'online': 'online'
-  };
-  
-  const mappedTransactionMethods = listingData.transactionMethods?.map(method => 
-    transactionMethodMap[method] || method
-  ) || [];
-  
   // Transform the data to match backend schema
   const transformedData = {
     name: listingData.productTitle,
@@ -235,7 +192,7 @@ export const transformListingDataForAPI = (listingData) => {
       ? listingData.meetupLocations 
       : null,
     meetup_time_slots,
-    transaction_methods: mappedTransactionMethods,
+    transaction_methods: listingData.transactionMethods || [],
     payment_methods: listingData.paymentMethods || []
   };
   
@@ -307,7 +264,7 @@ export const validateListingData = (listingData) => {
   }
   
   // Meet-up specific validations
-  const hasMeetup = listingData.transactionMethods?.includes('meetup');
+  const hasMeetup = listingData.transactionMethods?.includes('Meet-up');
   if (hasMeetup) {
     if (!listingData.meetupLocations || listingData.meetupLocations.length === 0) {
       errors.meetupLocations = "At least one meetup location is required for meet-up transactions";
@@ -328,4 +285,119 @@ export const validateListingData = (listingData) => {
     isValid: Object.keys(errors).length === 0,
     errors
   };
+};
+
+/**
+ * Transform listing data for API update (excludes images and only includes changed fields)
+ * @param {Object} listingData - The listing form data
+ * @returns {Object} Transformed data ready for PATCH API call
+ */
+export const transformListingDataForUpdate = (listingData) => {
+  const updateData = {};
+
+  // Basic fields
+  if (listingData.productName?.trim()) {
+    updateData.name = listingData.productName.trim();
+  }
+  
+  if (listingData.productDescription?.trim()) {
+    updateData.description = listingData.productDescription.trim();
+  }
+  
+  if (listingData.category) {
+    updateData.category = listingData.category;
+  }
+  
+  if (listingData.tags?.trim()) {
+    updateData.tags = listingData.tags.trim();
+  }
+
+  // Handle pricing
+  if (listingData.hasPriceRange && listingData.priceRange) {
+    const minPrice = parseFloat(listingData.priceRange.min);
+    const maxPrice = parseFloat(listingData.priceRange.max);
+    
+    if (!isNaN(minPrice)) {
+      updateData.price_min = minPrice;
+    }
+    if (!isNaN(maxPrice)) {
+      updateData.price_max = maxPrice;
+    }
+  } else if (listingData.productPrice) {
+    const price = parseFloat(listingData.productPrice);
+    if (!isNaN(price)) {
+      updateData.price_min = price;
+      updateData.price_max = price;
+    }
+  }
+
+  // Stock
+  if (listingData.stock !== undefined && listingData.stock !== '') {
+    const stock = parseInt(listingData.stock);
+    if (!isNaN(stock) && stock >= 0) {
+      updateData.total_stock = stock;
+    }
+  }
+
+  // Meetup locations
+  if (listingData.meetupLocations && Array.isArray(listingData.meetupLocations)) {
+    updateData.seller_meetup_locations = listingData.meetupLocations.filter(loc => loc.trim());
+  }
+
+  // Transform meetup time slots to API format
+  if (listingData.meetupTimeSlots && Array.isArray(listingData.meetupTimeSlots)) {
+    const timeSlots = [];
+    
+    listingData.meetupTimeSlots.forEach(schedule => {
+      if (schedule.date && schedule.times && schedule.times.length > 0) {
+        schedule.times.forEach(timeRange => {
+          const [startTimeStr, endTimeStr] = timeRange.split('-');
+          
+          if (startTimeStr && endTimeStr) {
+            const startTime = startTimeStr.trim();
+            const endTime = endTimeStr.trim();
+            
+            // Handle midnight crossing
+            let startDate = schedule.date;
+            let endDate = schedule.date;
+            
+            // If end time is "00:00" and start time is after noon, end time is next day
+            if (endTime === '00:00' && startTime !== '00:00') {
+              const nextDay = new Date(schedule.date);
+              nextDay.setDate(nextDay.getDate() + 1);
+              endDate = nextDay.toISOString().split('T')[0];
+            }
+            
+            // Create ISO strings directly to avoid timezone issues
+            const startDateTime = `${startDate}T${startTime}:00.000Z`;
+            const endDateTime = `${endDate}T${endTime}:00.000Z`;
+            
+            // Validate the datetime strings
+            const startDateObj = new Date(startDateTime);
+            const endDateObj = new Date(endDateTime);
+            
+            if (!isNaN(startDateObj.getTime()) && !isNaN(endDateObj.getTime()) && startDateObj < endDateObj) {
+              timeSlots.push({
+                start_time: startDateTime,
+                end_time: endDateTime
+              });
+            }
+          }
+        });
+      }
+    });
+    
+    updateData.meetup_time_slots = timeSlots;
+  }
+
+  // Transaction and payment methods
+  if (listingData.transactionMethods && Array.isArray(listingData.transactionMethods)) {
+    updateData.transaction_methods = listingData.transactionMethods;
+  }
+  
+  if (listingData.paymentMethods && Array.isArray(listingData.paymentMethods)) {
+    updateData.payment_methods = listingData.paymentMethods;
+  }
+
+  return updateData;
 };

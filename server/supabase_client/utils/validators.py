@@ -20,9 +20,9 @@ VALID_STATUSES = {"active", "inactive", "sold_out", "archived"}
 
 VALID_ORDER_STATUSES = {"pending", "confirmed", "completed", "cancelled"}
 
-VALID_TRANSACTION_METHODS = {"meet_up", "online"}
+VALID_TRANSACTION_METHODS = {"Meet-up", "Online"}
 
-VALID_PAYMENT_METHODS = {"cash", "gcash", "maya", "bank_transfer", "remittance"}
+VALID_PAYMENT_METHODS = {"Cash", "GCash", "Maya", "Bank Transfer", "Remittance"}
 
 
 def validate_category(category: Optional[str]) -> None:

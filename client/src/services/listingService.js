@@ -234,14 +234,14 @@ export class ListingService {
   }
 
   /**
-   * Update listing data
+   * Update listing data (using PATCH for partial updates)
    * @param {number} listingId - The listing ID
-   * @param {Object} data - Updated listing data
+   * @param {Object} data - Updated listing data (partial update)
    * @returns {Promise<Object>} Response with updated listing data
    */
   static async updateListing(listingId, data) {
     try {
-      return await ApiClient.put(`/supabase/listings/${listingId}`, data);
+      return await ApiClient.patch(`/supabase/listings/${listingId}`, data);
     } catch (error) {
       console.error('Failed to update listing:', error);
       throw error;

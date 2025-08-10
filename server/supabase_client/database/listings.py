@@ -331,6 +331,49 @@ async def add_listing_meetup_times(user_id: UUID, listing_id: int, time_slots: L
         handle_database_error("add listing meetup times", e)
 
 
+async def delete_listing_meetup_times(user_id: UUID, listing_id: int) -> bool:
+    """
+    Delete all meetup time slots for a listing.
+    """
+    try:
+        supabase = get_authenticated_client(user_id)
+        
+        # First verify ownership
+        listing = await get_listing_by_id(user_id, listing_id, include_seller_info=False)
+        validate_record_exists(listing, "Listing not found")
+        
+        if listing["seller_id"] != user_id:
+            raise HTTPException(status_code=403, detail="You can only modify your own listings")
+        
+        # Delete all meetup time slots for this listing
+        result = supabase.table("listing_meetup_time_details").delete().eq("listing_id", listing_id).execute()
+        
+        return True
+    except HTTPException:
+        raise
+    except Exception as e:
+        handle_database_error("delete listing meetup times", e)
+
+
+async def update_listing_meetup_times(user_id: UUID, listing_id: int, time_slots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Replace all meetup time slots for a listing with new ones.
+    """
+    try:
+        # First delete existing time slots
+        await delete_listing_meetup_times(user_id, listing_id)
+        
+        # Then add new time slots if any are provided
+        if time_slots:
+            return await add_listing_meetup_times(user_id, listing_id, time_slots)
+        
+        return []
+    except HTTPException:
+        raise
+    except Exception as e:
+        handle_database_error("update listing meetup times", e)
+
+
 # Query Builder Functions
 def apply_listing_filters(query, category: Optional[str] = None, search: Optional[str] = None, 
                          min_price: Optional[float] = None, max_price: Optional[float] = None,

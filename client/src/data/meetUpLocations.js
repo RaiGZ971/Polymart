@@ -1,16 +1,16 @@
-const meetUpLocations = [
-  { value: 'lagoon', label: 'Lagoon' },
-  { value: 'westwing', label: 'West Wing' },
-  { value: 'dome', label: 'Dome' },
-  { value: 'eastwing', label: 'East Wing' },
-  { value: 'southwing', label: 'South Wing' },
-  { value: 'linearpark', label: 'Linear Park' },
-  { value: 'charliebuilding', label: 'Charlie Building' },
-  { value: 'grandstand', label: 'Grandstand' },
-  { value: 'tenniscourtside', label: 'Tennis Court Side' },
-  { value: 'souvenirshop', label: 'Souvenir Shop' },
-  { value: 'gateexit', label: 'Gate Exit' },
-  { value: 'gateentrance', label: 'Gate Entrance' },
+export const meetUpLocations = [
+  { label: 'Lagoon', value: 'Lagoon' },
+  { label: 'West Wing', value: 'West Wing' },
+  { label: 'Dome', value: 'Dome' },
+  { label: 'East Wing', value: 'East Wing' },
+  { label: 'South Wing', value: 'South Wing' },
+  { label: 'Linear Park', value: 'Linear Park' },
+  { label: 'Charlie Building', value: 'Charlie Building' },
+  { label: 'Grandstand', value: 'Grandstand' },
+  { label: 'Tennis Court Side', value: 'Tennis Court Side' },
+  { label: 'Souvenir Shop', value: 'Souvenir Shop' },
+  { label: 'Gate Exit', value: 'Gate Exit' },
+  { label: 'Gate Entrance', value: 'Gate Entrance' },
 ];
 
 // For create a listing (no "All" option)
