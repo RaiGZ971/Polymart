@@ -13,3 +13,12 @@ html, body {
   width: 100%;
   overflow-x: hidden;
 }
+
+/* Custom utility for text clamping if line-clamp plugin is not available */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

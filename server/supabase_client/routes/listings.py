@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 from supabase_client.schemas import (
     ProductListingsResponse, ProductListing, CreateListingRequest, CreateListingResponse,
-    UpdateListingStatusRequest, UpdateListingStatusResponse
+    UpdateListingStatusRequest, UpdateListingStatusResponse, UpdateListingRequest, UpdateListingResponse
 )
 from supabase_client.database import listings as listings_db
 from supabase_client.database.base import get_authenticated_client
@@ -317,3 +317,152 @@ async def update_listing_status(
     except Exception as e:
         print(f"Error updating listing status: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update listing status: {str(e)}")
+
+@router.patch("/listings/{listing_id}", response_model=UpdateListingResponse)
+async def update_listing(
+    listing_id: int,
+    listing_data: UpdateListingRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Update listing fields (excluding images). Only the owner can update their listing.
+    Fields that can be updated: name, description, category, tags, price_min, price_max, 
+    total_stock, seller_meetup_locations, transaction_methods, payment_methods
+    """
+    try:
+        # Get current listing to check ownership and get current values
+        current_listing = await listings_db.get_listing_by_id(
+            user_id=current_user["user_id"],
+            listing_id=listing_id,
+            include_seller_info=False
+        )
+        
+        if not current_listing:
+            raise HTTPException(status_code=404, detail="Listing not found")
+        
+        # Check ownership (this is also validated in the database function)
+        if current_listing["seller_id"] != current_user["user_id"]:
+            raise HTTPException(status_code=403, detail="You can only update your own listings")
+        
+        # Build update data dict with only provided fields
+        update_data = {}
+        fields_updated = []
+        
+        if listing_data.name is not None:
+            update_data["name"] = listing_data.name
+            fields_updated.append("name")
+        
+        if listing_data.description is not None:
+            update_data["description"] = listing_data.description
+            fields_updated.append("description")
+        
+        if listing_data.category is not None:
+            validate_category(listing_data.category)
+            update_data["category"] = listing_data.category
+            fields_updated.append("category")
+        
+        if listing_data.tags is not None:
+            update_data["tags"] = listing_data.tags
+            fields_updated.append("tags")
+        
+        if listing_data.price_min is not None or listing_data.price_max is not None:
+            # If either price is provided, validate the range
+            price_min = listing_data.price_min if listing_data.price_min is not None else current_listing.get("price_min")
+            price_max = listing_data.price_max if listing_data.price_max is not None else current_listing.get("price_max")
+            validate_price_range(price_min, price_max)
+            
+            if listing_data.price_min is not None:
+                update_data["price_min"] = listing_data.price_min
+                fields_updated.append("price_min")
+            
+            if listing_data.price_max is not None:
+                update_data["price_max"] = listing_data.price_max
+                fields_updated.append("price_max")
+        
+        if listing_data.total_stock is not None:
+            update_data["total_stock"] = listing_data.total_stock
+            fields_updated.append("total_stock")
+        
+        if listing_data.seller_meetup_locations is not None:
+            update_data["seller_meetup_locations"] = listing_data.seller_meetup_locations
+            fields_updated.append("seller_meetup_locations")
+        
+        if listing_data.transaction_methods is not None:
+            validate_listing_transaction_methods(listing_data.transaction_methods)
+            update_data["transaction_methods"] = listing_data.transaction_methods
+            fields_updated.append("transaction_methods")
+        
+        if listing_data.payment_methods is not None:
+            validate_listing_payment_methods(listing_data.payment_methods)
+            update_data["payment_methods"] = listing_data.payment_methods
+            fields_updated.append("payment_methods")
+        
+        # Check if there's anything to update (excluding meetup_time_slots which is handled separately)
+        if not update_data and listing_data.meetup_time_slots is None:
+            return UpdateListingResponse(
+                success=True,
+                message="No fields provided for update",
+                data={
+                    "listing_id": listing_id,
+                    "name": current_listing["name"],
+                    "fields_updated": []
+                }
+            )
+        
+        # Update the listing fields if any were provided
+        updated_listing = current_listing
+        if update_data:
+            updated_listing = await listings_db.update_listing(
+                user_id=current_user["user_id"],
+                listing_id=listing_id,
+                update_data=update_data
+            )
+        
+        # Handle meetup time slots update if provided
+        meetup_slots_updated = 0
+        if listing_data.meetup_time_slots is not None:
+            meetup_time_data = []
+            
+            # Validate and prepare meetup time slots
+            for time_slot in listing_data.meetup_time_slots:
+                if time_slot.start_time >= time_slot.end_time:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Start time must be before end time for all meetup slots"
+                    )
+                
+                meetup_time_data.append({
+                    "start_time": time_slot.start_time.isoformat(),
+                    "end_time": time_slot.end_time.isoformat()
+                })
+            
+            # Update meetup time slots (replaces all existing ones)
+            try:
+                await listings_db.update_listing_meetup_times(
+                    user_id=current_user["user_id"],
+                    listing_id=listing_id,
+                    time_slots=meetup_time_data
+                )
+                meetup_slots_updated = len(meetup_time_data)
+                fields_updated.append("meetup_time_slots")
+            except Exception as e:
+                # Log warning but don't fail the entire update
+                print(f"Warning: Failed to update meetup time slots for listing {listing_id}: {e}")
+        
+        return UpdateListingResponse(
+            success=True,
+            message=f"Listing updated successfully. Updated fields: {', '.join(fields_updated)}",
+            data={
+                "listing_id": listing_id,
+                "name": updated_listing["name"],
+                "fields_updated": fields_updated,
+                "updated_at": updated_listing["updated_at"],
+                "meetup_slots_updated": meetup_slots_updated
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating listing: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update listing: {str(e)}")

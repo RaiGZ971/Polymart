@@ -48,8 +48,8 @@ class CreateListingRequest(BaseModel):
     total_stock: Optional[int] = Field(None, ge=0, description="Total stock available")
     seller_meetup_locations: Optional[List[str]] = Field(None, description="Available meetup locations")
     meetup_time_slots: Optional[List[MeetupTimeSlot]] = Field(None, description="Available meetup time slots")
-    transaction_methods: List[str] = Field(..., description="Available transaction methods (meet_up, online)")
-    payment_methods: List[str] = Field(..., description="Available payment methods (cash, gcash, maya, bank_transfer, remittance)")
+    transaction_methods: List[str] = Field(..., description="Available transaction methods (Meet-up, Online)")
+    payment_methods: List[str] = Field(..., description="Available payment methods (Cash, GCash, Maya, Bank Transfer, Remittance)")
 
 class CreateListingResponse(BaseModel):
     success: bool
@@ -60,6 +60,24 @@ class UpdateListingStatusRequest(BaseModel):
     status: str = Field(..., description="New status for the listing (active, inactive, sold_out, archived)")
 
 class UpdateListingStatusResponse(BaseModel):
+    success: bool
+    message: str
+    data: dict
+
+class UpdateListingRequest(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100, description="Product name")
+    description: Optional[str] = Field(None, description="Product description")
+    category: Optional[str] = Field(None, description="Product category")
+    tags: Optional[str] = Field(None, description="Product tags")
+    price_min: Optional[float] = Field(None, ge=0, description="Minimum price or fixed price")
+    price_max: Optional[float] = Field(None, ge=0, description="Maximum price (optional for price ranges)")
+    total_stock: Optional[int] = Field(None, ge=0, description="Total stock available")
+    seller_meetup_locations: Optional[List[str]] = Field(None, description="Available meetup locations")
+    meetup_time_slots: Optional[List[MeetupTimeSlot]] = Field(None, description="Available meetup time slots (replaces all existing ones)")
+    transaction_methods: Optional[List[str]] = Field(None, description="Available transaction methods (Meet-up, Online)")
+    payment_methods: Optional[List[str]] = Field(None, description="Available payment methods (Cash, GCash, Maya, Bank Transfer, Remittance)")
+
+class UpdateListingResponse(BaseModel):
     success: bool
     message: str
     data: dict
@@ -123,8 +141,8 @@ class UserFavoritesResponse(BaseModel):
 class CreateOrderRequest(BaseModel):
     listing_id: int = Field(..., description="ID of the listing to order")
     quantity: int = Field(..., ge=1, description="Quantity to order")
-    transaction_method: str = Field(..., description="Transaction method: meet_up or online")
-    payment_method: str = Field(..., description="Payment method: cash, gcash, maya, bank_transfer, or remittance")
+    transaction_method: str = Field(..., description="Transaction method: Meet-up or Online")
+    payment_method: str = Field(..., description="Payment method: Cash, GCash, Maya, Bank Transfer, or Remittance")
     buyer_requested_price: Optional[float] = Field(None, ge=0, description="Optional price requested by buyer (only for listings with price ranges where price_min != price_max)")
 
 class Order(BaseModel):

@@ -4,25 +4,8 @@ import timeSlots from "../../data/timeSlots";
 
 // Import the simplification functions from the utils
 const parseTimeValue = (timeStr) => {
-  const match = timeStr.match(/^(\d{1,2})(am|pm)$/i);
-  if (!match) {
-    return 0;
-  }
-  
-  let hours = parseInt(match[1], 10);
-  const period = match[2].toLowerCase();
-  
-  if (period === 'am') {
-    if (hours === 12) {
-      hours = 0;
-    }
-  } else {
-    if (hours !== 12) {
-      hours += 12;
-    }
-  }
-  
-  return hours;
+  const [hours, minutes] = timeStr.split(':').map(num => parseInt(num, 10));
+  return hours * 60 + (minutes || 0);
 };
 
 const simplifyTimeSlots = (schedules) => {
@@ -321,8 +304,8 @@ export default function CalendarPicker({
                       {sched.times.map((timeRange, index) => {
                         // Convert simplified time range to display label
                         const [startStr, endStr] = timeRange.split('-');
-                        const startLabel = customTimeSlots.find((slot) => slot.value.startsWith(startStr))?.label.split(' - ')[0] || startStr.toUpperCase();
-                        const endLabel = customTimeSlots.find((slot) => slot.value.endsWith(endStr))?.label.split(' - ')[1] || endStr.toUpperCase();
+                        const startLabel = customTimeSlots.find((slot) => slot.value.startsWith(startStr))?.label.split(' - ')[0] || startStr;
+                        const endLabel = customTimeSlots.find((slot) => slot.value.endsWith(endStr))?.label.split(' - ')[1] || endStr;
                         const displayLabel = `${startLabel} - ${endLabel}`;
                         
                         return (

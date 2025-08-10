@@ -218,7 +218,7 @@ async def convert_order_to_response(supabase, order_data: Dict[str, Any]) -> Ord
     
     # Get meetup data if order uses meetup transaction method
     meetup = None
-    if order_data.get("transaction_method") == "meet_up":
+    if order_data.get("transaction_method") == "Meet-up":
         meetup_result = supabase.table("meetups").select("*").eq("order_id", order_data["order_id"]).execute()
         if meetup_result.data and len(meetup_result.data) > 0:
             meetup_data = meetup_result.data[0]

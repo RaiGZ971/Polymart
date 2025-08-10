@@ -155,7 +155,7 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
         
         // If order was created successfully and has meetup transaction method,
         // create the meetup with the selected details
-        if (orderData.transaction_method === "meet_up") {
+        if (orderData.transaction_method === "Meet-up") {
           const actualTime = getActualTimeForAPI(form.meetUpTime);
           const meetupData = {
             location: form.meetUpLocation,

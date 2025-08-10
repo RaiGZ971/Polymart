@@ -24,7 +24,9 @@ export default {
         'error-red': '#DC4E4E',
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/line-clamp'),
+  ],
   }
 };
 

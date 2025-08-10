@@ -26,9 +26,9 @@ export const initialListingData = {
   stock: 1,
 
   // Transaction Details
-  transactionMethods: [], // max 2 items: ['online', 'meet-up']
-  paymentMethods: [], // multiple: ['cash', 'gcash', 'maya', 'bank_transfer', 'remittance']
-  meetupLocations: [], // array of selected locations: lagoon, grandstand, etc.
+  transactionMethods: [], // max 2 items: ['Online', 'Meet-up']
+  paymentMethods: [], // multiple: ['Cash', 'GCash', 'Maya', 'Bank Transfer', 'Remittance']
+  meetupLocations: [], // array of selected locations: Lagoon, Grandstand, etc.
   availableSchedules: [], // array of date objects
 
   // Additional

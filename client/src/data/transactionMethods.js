@@ -1,6 +1,6 @@
-const transactionMethods = [
-  { value: 'meetup', label: 'Meet-up' },
-  { value: 'online', label: 'Online' }
+export const transactionMethods = [
+  { label: 'Meet-up', value: 'Meet-up' },
+  { label: 'Online', value: 'Online' },
 ];
 
 export default transactionMethods;
