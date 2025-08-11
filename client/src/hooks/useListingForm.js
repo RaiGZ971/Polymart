@@ -152,6 +152,7 @@ export const useListingForm = () => {
   return {
     listingData,
     errors,
+    setErrors,
     handleChange,
     handleDropdownChange,
     handleImageUpload,
