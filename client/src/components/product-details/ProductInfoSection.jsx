@@ -132,7 +132,7 @@ export default function ProductInfoSection({
                 You have a pending order for this product.
                 <button
                   className="underline ml-1 hover:text-yellow-800"
-                  onClick={() => window.location.href = '/orders-meetups'}
+                  onClick={() => window.location.href = '/orders'}
                 >
                   View your orders
                 </button>

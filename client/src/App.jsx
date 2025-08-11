@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import "./App.css";
 import LandingPage from "./pages/LandingPage";
 import SignUp from "./pages/general-pages/SignUp";
@@ -31,7 +31,9 @@ function App() {
           <Route path="/customer-service" element={<CustomerService />} />
           <Route path="/help" element={<Help />} />
           <Route path="/manage-listing" element={<ManageListing />} />
-          <Route path="/orders-meetups" element={<OrdersMeetups />} />
+          <Route path="/orders" element={<OrdersMeetups />} />
+          {/* Redirect old URL to new URL for backward compatibility */}
+          <Route path="/orders-meetups" element={<Navigate to="/orders" replace />} />
           <Route
             path="/buyer/view-product-details/:id?"
             element={<ViewProductDetails />}
