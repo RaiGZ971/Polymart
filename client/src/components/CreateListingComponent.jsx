@@ -8,6 +8,7 @@ import { transformListingDataForAPI, validateListingData } from "../utils/listin
 import { ListingService } from "../services/listingService";
 import { listingKeys } from "../hooks/queries/useListingQueries";
 import PUPMap from "../assets/pupmap.png";
+import meetUpLocations from "../data/meetUpLocations";
 import { ChevronLeft } from "lucide-react";
 import Modal from "./shared/Modal";
 
@@ -211,6 +212,40 @@ export default function CreateListingComponent({ onClose }) {
                   <h1 className="text-xl text-primary-red font-semibold mb-3">
                     Meet Up Locations
                   </h1>
+                  
+                  {/* Select All Checkbox */}
+                  <div className="flex items-center mb-4 p-3 bg-gray-50 rounded-lg border">
+                    <input
+                      type="checkbox"
+                      id="selectAllLocations"
+                      checked={(() => {
+                        const allLocations = meetUpLocations.map(loc => loc.value);
+                        const currentLocations = listingData.meetupLocations || [];
+                        return allLocations.every(location => 
+                          currentLocations.includes(location)
+                        );
+                      })()}
+                      onChange={(e) => {
+                        const allLocations = meetUpLocations.map(loc => loc.value);
+                        
+                        if (e.target.checked) {
+                          // Select all
+                          handleArraySelection("meetupLocations", allLocations);
+                        } else {
+                          // Deselect all
+                          handleArraySelection("meetupLocations", []);
+                        }
+                      }}
+                      className="w-4 h-4 text-primary-red bg-gray-100 border-gray-300 rounded focus:ring-primary-red focus:ring-2"
+                    />
+                    <label 
+                      htmlFor="selectAllLocations" 
+                      className="ml-2 text-sm font-medium text-gray-700 cursor-pointer"
+                    >
+                      Select All Locations
+                    </label>
+                  </div>
+                  
                   {renderListingField("meetupLocations")}
                 </div>
               </div>

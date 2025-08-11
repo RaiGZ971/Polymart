@@ -268,6 +268,53 @@ async def update_order_status(user_id: UUID, order_id: int, new_status: str) -> 
         handle_database_error("update order status", e)
 
 
+async def set_order_completion_price(user_id: UUID, order_id: int) -> Dict[str, Any]:
+    """
+    Set the price_at_purchase when order is completed.
+    Uses buyer_requested_price if available, otherwise uses listing's price_min.
+    """
+    try:
+        supabase = get_authenticated_client(user_id)
+        
+        # Get order and listing data
+        order_result = supabase.table("orders").select(
+            "order_id,listing_id,buyer_requested_price"
+        ).eq("order_id", order_id).execute()
+        
+        validate_record_exists(order_result.data, "Order not found")
+        order = order_result.data[0]
+        
+        # Get listing price
+        listing_result = supabase.table("listings").select(
+            "price_min"
+        ).eq("listing_id", order["listing_id"]).execute()
+        
+        validate_record_exists(listing_result.data, "Listing not found")
+        listing = listing_result.data[0]
+        
+        # Determine final price
+        final_price = order.get("buyer_requested_price") or listing.get("price_min")
+        
+        if not final_price:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot determine final price for order completion"
+            )
+        
+        # Update order with final price
+        result = supabase.table("orders").update({
+            "price_at_purchase": float(final_price)
+        }).eq("order_id", order_id).execute()
+        
+        validate_record_exists(result.data, "Failed to set order completion price")
+        return result.data[0]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        handle_database_error("set order completion price", e)
+
+
 async def update_listing_stock(user_id: UUID, listing_id: int, quantity: int) -> None:
     """
     Update listing stock after an order is placed.
@@ -297,6 +344,10 @@ async def update_listing_stock(user_id: UUID, listing_id: int, quantity: int) ->
         update_data = {"sold_count": new_sold_count}
         if new_total_stock is not None:
             update_data["total_stock"] = new_total_stock
+            
+            # Set listing to inactive when stock reaches 0 (last item ordered but still pending)
+            if new_total_stock == 0:
+                update_data["status"] = "inactive"
         
         result = supabase.table("listings").update(update_data).eq("listing_id", listing_id).execute()
         
@@ -305,3 +356,78 @@ async def update_listing_stock(user_id: UUID, listing_id: int, quantity: int) ->
         raise
     except Exception as e:
         handle_database_error("update listing stock", e)
+
+
+async def restore_listing_stock(user_id: UUID, listing_id: int, quantity: int) -> None:
+    """
+    Restore listing stock when an order is cancelled.
+    Also reduces sold_count accordingly.
+    """
+    try:
+        supabase = get_authenticated_client(user_id)
+        
+        # Get current listing data
+        listing_result = supabase.table("listings").select(
+            "total_stock,sold_count,status"
+        ).eq("listing_id", listing_id).execute()
+        
+        validate_record_exists(listing_result.data, "Listing not found")
+        listing = listing_result.data[0]
+        
+        # Calculate new values
+        new_sold_count = max(0, listing["sold_count"] - quantity)  # Ensure non-negative
+        new_total_stock = None
+        
+        if listing["total_stock"] is not None:
+            new_total_stock = listing["total_stock"] + quantity
+        
+        # Update listing
+        update_data = {"sold_count": new_sold_count}
+        if new_total_stock is not None:
+            update_data["total_stock"] = new_total_stock
+            
+            # Reactivate listing when stock is restored (order cancelled)
+            # Only reactivate if it was inactive due to stock depletion
+            if new_total_stock > 0 and listing.get("status") == "inactive":
+                update_data["status"] = "active"
+        
+        result = supabase.table("listings").update(update_data).eq("listing_id", listing_id).execute()
+        
+        validate_record_exists(result.data, "Failed to restore listing stock")
+    except HTTPException:
+        raise
+    except Exception as e:
+        handle_database_error("restore listing stock", e)
+
+
+async def set_listing_sold_out(user_id: UUID, listing_id: int) -> None:
+    """
+    Set listing status to 'sold_out' when order is completed and stock is 0.
+    Only updates if listing is currently inactive with 0 stock.
+    """
+    try:
+        supabase = get_authenticated_client(user_id)
+        
+        # Get current listing data
+        listing_result = supabase.table("listings").select(
+            "total_stock,status"
+        ).eq("listing_id", listing_id).execute()
+        
+        validate_record_exists(listing_result.data, "Listing not found")
+        listing = listing_result.data[0]
+        
+        # Only set to sold_out if listing is inactive and has 0 stock
+        if (listing.get("status") == "inactive" and 
+            listing.get("total_stock") is not None and 
+            listing["total_stock"] == 0):
+            
+            result = supabase.table("listings").update({
+                "status": "sold_out"
+            }).eq("listing_id", listing_id).execute()
+            
+            validate_record_exists(result.data, "Failed to update listing to sold_out")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        handle_database_error("set listing sold out", e)

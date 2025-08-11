@@ -86,15 +86,7 @@ async def create_order(
                     detail=f"buyer_requested_price must be between {listing['price_min']} and {listing['price_max']}"
                 )
         
-        # Calculate price at purchase (use price_min as the purchase price)
-        price_at_purchase = listing.get("price_min")
-        if not price_at_purchase:
-            raise HTTPException(
-                status_code=400, 
-                detail="Listing does not have a valid price"
-            )
-        
-        # Create the order record
+        # Create the order record (price_at_purchase will be set when order is completed)
         order_data = await order_db.create_order(
             user_id=current_user["user_id"],
             order_data={
@@ -102,16 +94,31 @@ async def create_order(
                 "seller_id": listing["seller_id"],
                 "listing_id": order_request.listing_id,
                 "quantity": order_request.quantity,
-                "price_at_purchase": float(price_at_purchase),
                 "transaction_method": order_request.transaction_method,
                 "payment_method": order_request.payment_method,
                 "buyer_requested_price": order_request.buyer_requested_price
             }
         )
         
+        # Update stock immediately when order is placed (even if pending)
+        # This prevents overselling and provides real-time inventory updates
+        try:
+            await order_db.update_listing_stock(
+                user_id=current_user["user_id"],
+                listing_id=order_request.listing_id,
+                quantity=order_request.quantity
+            )
+        except Exception as stock_error:
+            # If stock update fails, we should clean up the created order
+            # This is a critical error that should not happen if validation passed
+            print(f"Critical error: Stock update failed after order creation: {stock_error}")
+            # In a production system, you might want to implement compensation logic here
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to update inventory. Order creation aborted."
+            )
+        
         # Note: Meetup creation is now handled separately via POST /orders/{order_id}/meetup
-        # Note: Stock is NOT updated here since order is still "pending"
-        # Stock should only be updated when order status changes to "confirmed" or "completed"
         
         # Convert to response format
         supabase = get_authenticated_client(current_user["user_id"])
@@ -323,6 +330,29 @@ async def update_order_status(
             order_id, 
             status
         )
+        
+        # Handle stock restoration for cancelled orders
+        if status == "cancelled":
+            # Restore stock when order is cancelled
+            await order_db.restore_listing_stock(
+                user_id=current_user["user_id"],
+                listing_id=order_data["listing_id"],
+                quantity=order_data["quantity"]
+            )
+        
+        # Handle setting listing to sold_out when order is completed
+        elif status == "completed":
+            # Set the final price when order is completed
+            await order_db.set_order_completion_price(
+                user_id=current_user["user_id"],
+                order_id=order_id
+            )
+            
+            # Set listing to sold_out if it was inactive due to 0 stock
+            await order_db.set_listing_sold_out(
+                user_id=current_user["user_id"],
+                listing_id=order_data["listing_id"]
+            )
         
         # Convert to response format
         supabase = get_authenticated_client(current_user["user_id"])
