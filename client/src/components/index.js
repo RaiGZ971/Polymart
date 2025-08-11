@@ -61,3 +61,12 @@ export { default as FavoriteButton } from "./shared/FavoriteButton";
 
 export { default as Button } from "./ui/Button";
 export { default as BackButton } from "./ui/BackButton";
+
+// Product Details Components
+export {
+  ProductInfoSection,
+  SellerInfoSection,
+  ReviewsSection,
+  MapModal,
+  ChatModal,
+} from "./product-details";

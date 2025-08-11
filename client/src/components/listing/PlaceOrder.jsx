@@ -10,6 +10,7 @@ import {
 } from "../../components";
 import placeOrderData from "../../data/placeOrderData";
 import timeSlots from "@/data/timeSlots";
+import paymentMethods from "../../data/paymentMethods";
 import { OrderService } from "../../services";
 
 export default function PlaceOrder({ order, quantity, onClose,  currentUser, onOrderCreated }) {
@@ -111,11 +112,7 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
     }));
   };
 
-  const paymentMethods = order?.paymentMethods || [
-    "Cash",
-    "GCash",
-    "Bank Transfer",
-  ];
+  const availablePaymentMethods = order?.paymentMethods || paymentMethods.map(pm => pm.value);
 
   const handlePaymentMethodChange = (method) => {
     setForm((prev) => ({
@@ -138,14 +135,21 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
       setIsSubmitting(true);
       setSubmitError(null);
 
+      // Determine transaction method - default to Meet-up since this component is designed for meetups
+      // In the future, this could be made dynamic based on listing.transaction_methods
+      const transactionMethod = order.transaction_methods?.includes('Meet-up') ? 'Meet-up' : 
+                               order.transaction_methods?.[0] || 'Meet-up';
+
       // Prepare order data for API
       const orderData = {
         listing_id: order.listing_id || order.id,
         quantity: form.quantity,
-        transaction_method: "meet_up",
+        transaction_method: transactionMethod,
         payment_method: form.paymentMethod,
         buyer_requested_price: order.productPriceOffer || null,
       };
+
+      console.log('Sending order data:', orderData); // Debug log
 
       // Create the order
       const response = await OrderService.createOrder(orderData);
@@ -225,7 +229,7 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
               </p>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
-              {paymentMethods.map((method) => (
+              {availablePaymentMethods.map((method) => (
                 <ToggleButton
                   key={method}
                   label={method}

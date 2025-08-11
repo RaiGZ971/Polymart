@@ -37,6 +37,7 @@ export const formattedListing = (listing) => {
     stock: listing.total_stock,
     meetupLocations: listing.seller_meetup_locations || [],
     paymentMethods: listing.payment_methods || [],
+    transactionMethods: listing.transaction_methods || [],
   };
 
   return transformedOrder;

@@ -131,7 +131,3 @@ export default function ProductCard({ order }) {
     </div>
   );
 }
-
-// Example usage elsewhere in your app:
-// {ordersSampleData.map((order, idx) => (
-//   <ProductCard key={idx} order={order}

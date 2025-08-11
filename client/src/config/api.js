@@ -29,7 +29,6 @@ export const getHeaders = (includeAuth = true) => {
                 console.log('🔑 Adding auth header with token:', token.substring(0, 20) + '...');
             }
         }
-        // Removed unnecessary error log for missing token during logout
     }
 
     return headers

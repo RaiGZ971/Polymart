@@ -1,15 +1,18 @@
 import { useState } from "react";
+import { useQueryClient } from '@tanstack/react-query';
 import { useListingForm } from "../hooks/useListingForm";
 import { useListingFieldRenderer } from "../hooks/useListingFieldRenderer";
 import { ImageUploader } from "../components";
 import { listingFieldConfig } from "../data/listingSchema";
 import { transformListingDataForAPI, validateListingData } from "../utils/listingTransform";
 import { ListingService } from "../services/listingService";
+import { listingKeys } from "../hooks/queries/useListingQueries";
 import PUPMap from "../assets/pupmap.png";
 import { ChevronLeft } from "lucide-react";
 import Modal from "./shared/Modal";
 
 export default function CreateListingComponent({ onClose }) {
+  const queryClient = useQueryClient();
   const {
     listingData,
     errors,
@@ -69,6 +72,11 @@ export default function CreateListingComponent({ onClose }) {
         // Close confirmation modal and show success modal
         setShowConfirm(false);
         setShowSuccess(true);
+
+  // Immediately refresh any listings queries so UI shows latest data
+  // This invalidates all queries starting with ['listings'] which includes
+  // public listings and the authenticated user's listings.
+  await queryClient.invalidateQueries({ queryKey: listingKeys.all });
         
         // Check if image upload had issues
         if (result.data.images && !result.data.images.success) {

@@ -14,3 +14,5 @@ export {
   useDeleteListing,
   listingKeys
 } from "./queries/useListingQueries";
+export { default as useProductDetailsModals } from "./useProductDetailsModals";
+export { default as useProductDetailsLogic } from "./useProductDetailsLogic";
