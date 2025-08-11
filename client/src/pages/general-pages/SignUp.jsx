@@ -129,7 +129,10 @@ export default function SignUp() {
       // Fetch and store user profile to ensure display name is available immediately
       try {
         const userProfile = await UserService.getUserProfile(loginResult.data.user.user_id);
-        setUserProfile(userProfile.data);
+        setUserProfile({
+          username: userProfile.data.username,
+          first_name: userProfile.data.first_name
+        });
       } catch (profileError) {
         console.warn("Failed to fetch user profile after signup:", profileError);
         // Continue even if profile fetch fails - dashboard will handle it

@@ -44,22 +44,14 @@ export default function SignIn() {
       // Set basic auth data first
       setUser(userData.data.user.user_id, userData.data.access_token);
       
-      // Set immediate username from token data as fallback
-      try {
-        const tokenUser = UserService.getCurrentUser(userData.data.access_token);
-        if (tokenUser && tokenUser.username) {
-          const { setUserProfile } = useAuthStore.getState();
-          setUserProfile({ username: tokenUser.username });
-        }
-      } catch (tokenError) {
-        console.warn('Could not extract username from token:', tokenError);
-      }
-      
-      // Fetch and store detailed user profile for first name
+      // Fetch and store detailed user profile (both username and first name from database)
       try {
         const userProfile = await UserService.getUserProfile(userData.data.user.user_id);
         const { setUserProfile } = useAuthStore.getState();
-        setUserProfile(userProfile.data);
+        setUserProfile({
+          username: userProfile.data.username,
+          first_name: userProfile.data.first_name
+        });
       } catch (profileError) {
         console.warn('Failed to fetch user profile during login:', profileError);
       }
