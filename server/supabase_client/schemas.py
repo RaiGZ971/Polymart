@@ -202,5 +202,13 @@ class OrdersResponse(BaseModel):
     page: int
     page_size: int
 
+class UpdateOrderStatusRequest(BaseModel):
+    status: str = Field(..., description="New status for the order (pending, confirmed, completed, cancelled)")
+
+class UpdateOrderStatusResponse(BaseModel):
+    success: bool
+    message: str
+    data: Order
+
 # Update forward references
 Order.model_rebuild()

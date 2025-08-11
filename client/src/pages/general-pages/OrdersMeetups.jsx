@@ -9,7 +9,7 @@ import {
 import DashboardBackButton from '../../components/ui/DashboardBackButton';
 import { meetUpLocationsFilter, orderStatus } from '@/data';
 import { useOrdersData } from '../../hooks';
-import { UserService } from '../../services';
+import { UserService, OrderService } from '../../services';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore.js';
 
@@ -25,6 +25,7 @@ export default function OrdersMeetups() {
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [dialogType, setDialogType] = useState('');
   const [message, setMessage] = useState('');
+  const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
 
   const { token } = useAuthStore();
 
@@ -71,17 +72,41 @@ export default function OrdersMeetups() {
   };
 
   // Handle message dialog confirmation
-  const handleMessageConfirm = () => {
-    // TODO: Implement API call to accept/reject order with message
-    console.log(`${dialogType} order with message:`, message);
+  const handleMessageConfirm = async () => {
+    if (!selectedOrder) return;
 
-    // Close dialog and reset state
-    setShowMessageDialog(false);
-    setMessage('');
+    setIsUpdatingOrder(true);
+    
+    try {
+      // Determine the new status based on dialog type
+      const newStatus = dialogType === 'accept' ? 'confirmed' : 'cancelled';
+      
+      // Call the API to update order status
+      await OrderService.updateOrderStatus(selectedOrder.id, newStatus);
+      
+      // Refresh the orders data to reflect the changes
+      await refreshData();
+      
+      // Close dialog and reset state
+      setShowMessageDialog(false);
+      setMessage('');
+      setDialogType('');
+      
+      // Go back to orders list to see updated status
+      setSelectedOrder(null);
+      
+    } catch (error) {
+      console.error(`Failed to ${dialogType} order:`, error);
+      console.error(`Failed to ${dialogType} order:`, error);
+      alert(`Failed to ${dialogType} order: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsUpdatingOrder(false);
+    }
   };
 
   // Handle message dialog close
   const handleMessageClose = () => {
+    if (isUpdatingOrder) return; // Prevent closing while updating
     setShowMessageDialog(false);
     setMessage('');
     setDialogType('');
@@ -196,6 +221,10 @@ export default function OrdersMeetups() {
               role={selectedOrder.role}
               onAcceptOrder={handleAcceptOrder}
               onRejectOrder={handleRejectOrder}
+              onStatusUpdate={async () => {
+                await refreshData();
+                setSelectedOrder(null);
+              }}
             />
           ) : filteredData.length > 0 ? (
             filteredData.map((order, idx) => (
@@ -217,12 +246,13 @@ export default function OrdersMeetups() {
         onClose={handleMessageClose}
         onConfirm={handleMessageConfirm}
         type="message"
-        title={dialogType === 'accept' ? 'Accept Order' : 'Reject Order'}
+        title={dialogType === 'accept' ? 'Confirm Order' : 'Reject Order'}
         description={
           dialogType === 'accept'
-            ? 'If you accept order, the order process will proceed.'
-            : 'Once you reject order, no further actions are allowed. Are you sure you want to proceed?'
+            ? 'If you confirm the order, the order process will proceed.'
+            : 'Once you reject the order, no further actions are allowed. Are you sure you want to proceed?'
         }
+        isLoading={isUpdatingOrder}
       />
     </MainDashboard>
   );

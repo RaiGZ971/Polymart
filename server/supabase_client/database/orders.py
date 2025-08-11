@@ -257,8 +257,7 @@ async def update_order_status(user_id: UUID, order_id: int, new_status: str) -> 
         
         # Update the order status
         result = supabase.table("orders").update({
-            "status": new_status,
-            "updated_at": "now()"
+            "status": new_status
         }).eq("order_id", order_id).execute()
         
         validate_record_exists(result.data, "Failed to update order status")

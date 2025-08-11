@@ -7,14 +7,16 @@ export default function ActionButtons({
   role,
   isUserPlaced,
   onCancelClick,
-  onItemReceivedClick,
   onMarkCompleteClick,
   onLeaveReviewClick,
   onAcceptOrder,
   onRejectOrder,
 }) {
   const status = order.status?.toLowerCase();
+  const isBuyer = role === "user";
+  const isSeller = role === "owner" || role === "seller";
 
+  // Cancelled orders - both buyer and seller see disabled buttons
   if (status === "cancelled") {
     return (
       <>
@@ -31,16 +33,7 @@ export default function ActionButtons({
     );
   }
 
-  if (role === "user" && status === "ongoing") {
-    return (
-      <div className="flex justify-end w-full">
-        <Button variant="primary" onClick={onItemReceivedClick}>
-          Item Received
-        </Button>
-      </div>
-    );
-  }
-
+  // Completed orders - both buyer and seller can leave reviews
   if (status === "completed") {
     return (
       <div className="flex justify-end w-full">
@@ -51,47 +44,69 @@ export default function ActionButtons({
     );
   }
 
-  if (role !== "user" && status === "ongoing") {
-    return (
-      <>
-        <Button variant="graytext" onClick={onCancelClick}>
-          Cancel Order
-        </Button>
-        <Button variant="primary" onClick={onMarkCompleteClick}>
-          Mark as Complete
-        </Button>
-      </>
-    );
+  // Pending orders - seller can confirm/reject, buyer can cancel
+  if (status === "pending") {
+    if (isSeller) {
+      return (
+        <>
+          <Button variant="graytext" onClick={onRejectOrder}>
+            Reject Order
+          </Button>
+          <Button variant="primary" onClick={onAcceptOrder}>
+            Confirm Order
+          </Button>
+        </>
+      );
+    } else if (isBuyer) {
+      return (
+        <>
+          <Button variant="graytext" onClick={onCancelClick}>
+            Cancel Order
+          </Button>
+          <Button variant="primary" disabled className="bg-gray-400 text-white cursor-not-allowed">
+            Waiting for Confirmation
+          </Button>
+        </>
+      );
+    }
   }
 
-  if (role !== "user" && (status === "placed" || status === "order placed")) {
-    return (
-      <>
-        <Button variant="graytext" onClick={onRejectOrder}>
-          Reject Order
-        </Button>
-        <Button variant="primary" onClick={onAcceptOrder}>
-          Accept Order
-        </Button>
-      </>
-    );
+  // Confirmed orders - seller can mark complete, buyer can only cancel or wait
+  if (status === "confirmed") {
+    if (isSeller) {
+      return (
+        <>
+          <Button variant="graytext" onClick={onCancelClick}>
+            Cancel Order
+          </Button>
+          <Button variant="primary" onClick={onMarkCompleteClick}>
+            Mark as Complete
+          </Button>
+        </>
+      );
+    } else if (isBuyer) {
+      return (
+        <>
+          <Button variant="graytext" onClick={onCancelClick}>
+            Cancel Order
+          </Button>
+          <Button variant="primary" disabled className="bg-gray-400 text-white cursor-not-allowed">
+            Waiting for Completion
+          </Button>
+        </>
+      );
+    }
   }
 
-  if (isUserPlaced) {
-    return (
-      <>
-        <Button variant="graytext">Edit Details</Button>
-        <Button variant="primary" onClick={onCancelClick}>
-          Cancel Order
-        </Button>
-      </>
-    );
-  }
-
+  // Fallback for any unhandled status
   return (
     <>
-      <Button variant="graytext">Report Bogus</Button>
-      <Button variant="primary">Order Completed</Button>
+      <Button variant="graytext" onClick={onCancelClick}>
+        Cancel Order
+      </Button>
+      <Button variant="primary" disabled className="bg-gray-400 text-white cursor-not-allowed">
+        Unknown Status
+      </Button>
     </>
   );
 }

@@ -7,7 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 from supabase_client.schemas import (
     CreateOrderRequest, CreateOrderResponse, Order, OrdersResponse,
-    UpdateMeetupRequest, CreateMeetupRequest, MeetupResponse
+    UpdateMeetupRequest, CreateMeetupRequest, MeetupResponse,
+    UpdateOrderStatusRequest, UpdateOrderStatusResponse
 )
 from supabase_client.database import orders as order_db, meetups as meetup_db
 from supabase_client.database.base import get_authenticated_client
@@ -232,6 +233,114 @@ async def get_order_details(
         raise HTTPException(
             status_code=500, 
             detail=f"Failed to get order details: {str(e)}"
+        )
+
+@router.patch("/orders/{order_id}/status", response_model=UpdateOrderStatusResponse)
+async def update_order_status(
+    order_id: int,
+    request: UpdateOrderStatusRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Update the status of an order.
+    Only accessible to the buyer or seller of the order.
+    Valid status values: 'pending', 'confirmed', 'completed', 'cancelled'
+    """
+    try:
+        status = request.status
+        
+        # Validate status against database schema
+        valid_statuses = ['pending', 'confirmed', 'completed', 'cancelled']
+        if status not in valid_statuses:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+            )
+        
+        # Get order to verify user has access
+        order_data = await order_db.get_order_by_id(current_user["user_id"], order_id)
+        
+        # Determine if user is buyer or seller
+        is_buyer = order_data["buyer_id"] == current_user["user_id"]
+        is_seller = order_data["seller_id"] == current_user["user_id"]
+        
+        # Business logic for status transitions based on database schema
+        # Valid statuses: 'pending', 'confirmed', 'completed', 'cancelled'
+        current_status = order_data.get("status", "").lower()
+        
+        # Status transition rules:
+        # pending -> confirmed (seller only)
+        # pending -> cancelled (buyer or seller)
+        # confirmed -> completed (seller only) 
+        # confirmed -> cancelled (buyer or seller)
+        
+        if status == "confirmed":
+            if not is_seller:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Only sellers can confirm orders"
+                )
+            if current_status != "pending":
+                raise HTTPException(
+                    status_code=400,
+                    detail="Only pending orders can be confirmed"
+                )
+        
+        elif status == "completed":
+            if not is_seller:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Only sellers can mark orders as completed"
+                )
+            if current_status != "confirmed":
+                raise HTTPException(
+                    status_code=400,
+                    detail="Only confirmed orders can be completed"
+                )
+        
+        elif status == "cancelled":
+            if not (is_buyer or is_seller):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Only order participants can cancel orders"
+                )
+            if current_status == "completed":
+                raise HTTPException(
+                    status_code=400,
+                    detail="Completed orders cannot be cancelled"
+                )
+        
+        elif status == "pending":
+            # Generally, orders shouldn't go back to pending
+            raise HTTPException(
+                status_code=400,
+                detail="Orders cannot be reverted to pending status"
+            )
+        
+        # Update order status in database
+        updated_order = await order_db.update_order_status(
+            current_user["user_id"], 
+            order_id, 
+            status
+        )
+        
+        # Convert to response format
+        supabase = get_authenticated_client(current_user["user_id"])
+        order_response = await convert_order_to_response(supabase, updated_order)
+        
+        return UpdateOrderStatusResponse(
+            success=True,
+            message=f"Order status updated to {status}",
+            data=order_response
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating order status: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update order status: {str(e)}"
         )
 
 @router.patch("/orders/{order_id}/meetup", response_model=MeetupResponse)

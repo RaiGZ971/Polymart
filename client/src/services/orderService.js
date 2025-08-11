@@ -119,4 +119,19 @@ export class OrderService {
       throw error;
     }
   }
+
+  /**
+   * Update order status
+   * @param {number} orderId - The order ID
+   * @param {string} status - The new status ('pending', 'confirmed', 'completed', 'cancelled')
+   * @returns {Promise<Object>} Response with updated order data
+   */
+  static async updateOrderStatus(orderId, status) {
+    try {
+      return await ApiClient.patch(`/supabase/orders/${orderId}/status`, { status });
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+      throw error;
+    }
+  }
 }
