@@ -35,6 +35,7 @@ export default function OrdersListingsComponent({
   location,
   remark,
   role,
+  transaction_method,
 }) {
   const isUser = role === "user";
   const barBg = isUser ? "bg-[#FFE38799]" : "bg-[#B7DBFF80]";
@@ -42,6 +43,9 @@ export default function OrdersListingsComponent({
 
   const statusKey = status?.toLowerCase();
   const statusTextColor = statusColor[statusKey] || "#333";
+
+  // Check if the transaction method is meet-up
+  const isMeetupTransaction = transaction_method === 'Meet-up';
 
   return (
     <div className="flex flex-col w-full group shadow-glow rounded-2xl hover:scale-[102%] transition-transform duration-300 ease-in-out cursor-pointer">
@@ -83,14 +87,19 @@ export default function OrdersListingsComponent({
           </div>
         </div>
 
-        {/* Meet Up Details */}
+        {/* Order Details */}
         <div className="w-[30%] pl-6 border-l border-gray-200">
           <p className="text-sm text-gray-800 font-semibold mb-2">
-            Meet Up Details
+            Order Details
           </p>
+          <p className="text-xs">Transaction: {transaction_method || "N/A"}</p>
           <p className="text-xs">Payment: {paymentMethod}</p>
-          <p className="text-xs">Schedule: {schedule}</p>
-          <p className="text-xs">Location: {location}</p>
+          {isMeetupTransaction && (
+            <>
+              <p className="text-xs">Schedule: {schedule}</p>
+              <p className="text-xs">Location: {location}</p>
+            </>
+          )}
           <p className="text-xs">Remarks: {remark || "None"}</p>
         </div>
       </div>
