@@ -2,19 +2,25 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { WebSocketService } from '../services/websocketService';
 import { getContacts, getMessages } from './queries/useChatQueries';
 import { getUsersDetails } from '../queries/getUsersDetails.js';
-import { formattedContacts } from '../utils/index.js';
+import {
+  formattedContacts,
+  formattedMessages,
+  getRoomID,
+} from '../utils/index.js';
 import { useAuthStore } from '../store/authStore.js';
-import { formattedMessages } from '../utils/index.js';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function useChat() {
   const wsService = useRef(new WebSocketService());
+  const connectedRoomID = useRef(null);
+
   const queryClient = useQueryClient();
 
   const { userID, data: userData } = useAuthStore();
   const [currentChatID, setCurrentChatID] = useState(null);
   const [messages, setMessages] = useState([]);
   const [contacts, setContacts] = useState([]);
+  const [currentRoomID, setCurrentRoomID] = useState('');
 
   const {
     data: rawContacts = [],
@@ -79,7 +85,7 @@ export function useChat() {
 
     contacts.forEach((contact) => {
       if (contact.id === receiverID) {
-        contact.message = response.text || 'Sent An Image';
+        contact.message = response[0]?.text || 'Sent An Image';
       }
     });
 
@@ -90,6 +96,21 @@ export function useChat() {
     queryClient.invalidateQueries({
       queryKey: ['contacts', userID],
     });
+
+    if (wsService.current.isConnected()) {
+      console.log('MESSAGE SENDING...');
+
+      // Format message for WebSocket - server expects simple object
+      const wsMessage = {
+        sender_id: userID,
+        content: message[0]?.content || null,
+        image: message[0]?.image || null,
+      };
+
+      console.log('📤 WebSocket message format:', wsMessage);
+      wsService.current.sendMessage(wsMessage);
+      console.log('MESSAGE SENT');
+    }
   };
 
   const markAsRead = (chatId) => {
@@ -97,8 +118,75 @@ export function useChat() {
   };
 
   const selectChat = (chatId) => {
+    // Disconnect from previous chat if switching
+    if (currentChatID && currentChatID !== chatId && connectedRoomID.current) {
+      console.log(
+        '🔌 Disconnecting from previous room:',
+        connectedRoomID.current
+      );
+      wsService.current.disconnect();
+      connectedRoomID.current = null;
+    }
+
     setCurrentChatID(chatId);
+    setCurrentRoomID(getRoomID(userID, chatId));
   };
+
+  useEffect(() => {
+    if (!currentRoomID || !userID || !currentChatID) return;
+
+    // If already connected to this room, don't reconnect
+    if (connectedRoomID.current === currentRoomID) {
+      console.log('✅ Already connected to room:', currentRoomID);
+      return;
+    }
+
+    console.log('🔄 Connecting to room:', currentRoomID);
+
+    wsService.current.connect(
+      currentRoomID,
+      userID,
+      currentChatID,
+      (data) => {
+        console.log('📨 RECEIVED MESSAGE:', data);
+        // Handle incoming message - add to messages state
+        if (data && data.content) {
+          const incomingMessage = {
+            id: data.message_id || Date.now(),
+            text: data.content,
+            sender: data.sender_id === userID ? 'user' : 'other',
+            timestamp: data.timestamp || new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, incomingMessage]);
+        }
+      },
+      () => {
+        console.log('connected to: ', currentRoomID);
+        connectedRoomID.current = currentRoomID;
+      },
+      () => {
+        console.log('disconnected from: ', currentRoomID);
+        connectedRoomID.current = null;
+      },
+      (error) => console.error('WebSocket error:', error)
+    );
+
+    // No cleanup - let the connection persist
+    return () => {
+      // Only disconnect when switching chats or unmounting
+    };
+  }, [currentRoomID, userID, currentChatID]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      if (connectedRoomID.current) {
+        console.log('🧹 Cleaning up WebSocket connection');
+        wsService.current.disconnect();
+        connectedRoomID.current = null;
+      }
+    };
+  }, []);
 
   return {
     // Chat list functionality
