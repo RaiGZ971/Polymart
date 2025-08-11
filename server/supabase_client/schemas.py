@@ -152,11 +152,12 @@ class Order(BaseModel):
     listing_id: int
     quantity: int
     buyer_requested_price: Optional[float]
-    price_at_purchase: float
+    price_at_purchase: Optional[float]  # Only set when order is completed
     status: str
     transaction_method: str
     payment_method: str
     placed_at: datetime
+    completed_at: Optional[datetime] = None  # Only set when order is completed
     listing: Optional[ProductListing] = None
     meetup: Optional['Meetup'] = None
 

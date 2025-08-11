@@ -320,8 +320,30 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
                     <strong>
                       {form.meetUpDate && form.meetUpTime
                         ? `${new Date(form.meetUpDate).toLocaleDateString()} at ${
-                            timeSlots.find((slot) => slot.value === form.meetUpTime)
-                              ?.label || form.meetUpTime
+                            (() => {
+                              // First check standard time slots
+                              const standardSlot = timeSlots.find((slot) => slot.value === form.meetUpTime);
+                              if (standardSlot) {
+                                return standardSlot.label;
+                              }
+                              
+                              // If not found and it's a custom slot (custom-X), find the original time from availableSchedules
+                              if (form.meetUpTime && form.meetUpTime.startsWith('custom-')) {
+                                const schedules = order.available_schedules || order.availableSchedules || [];
+                                const availableTimes = schedules.find((sched) => sched.date === form.meetUpDate)?.times || [];
+                                const customIndex = parseInt(form.meetUpTime.split('-')[1]);
+                                const customTimes = availableTimes.filter(time => 
+                                  !timeSlots.some(slot => 
+                                    slot.value === time || 
+                                    slot.label === time ||
+                                    slot.label.replace(/\s+/g, ' ').trim() === time.replace(/\s+/g, ' ').trim()
+                                  )
+                                );
+                                return customTimes[customIndex] || form.meetUpTime;
+                              }
+                              
+                              return form.meetUpTime;
+                            })()
                           }`
                         : "N/A"}
                     </strong>
