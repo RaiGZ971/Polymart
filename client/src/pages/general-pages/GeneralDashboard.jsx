@@ -174,11 +174,13 @@ export default function GeneralDashboard() {
       <div className="w-[80%] min-h-[300px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mt-4 mx-auto">
         {loading ? (
           <div className="col-span-full flex flex-col items-center justify-center min-h-[200px]">
-            <div className="text-lg text-gray-500">Loading listings...</div>
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-red"></div>
+            <p className="mt-4 text-gray-600">Loading listings...</p>
           </div>
         ) : searchLoading ? (
           <div className="col-span-full flex flex-col items-center justify-center min-h-[200px]">
-            <div className="text-lg text-gray-500">Searching...</div>
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-red"></div>
+            <p className="mt-4 text-gray-600">Searching...</p>
           </div>
         ) : displayedListings.length === 0 ? (
           activeTab === 'your-listings' ? (

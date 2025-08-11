@@ -141,8 +141,9 @@ export default function ViewProductDetails() {
   if (orderLoading || pendingOrderLoading) {
     return (
       <MainDashboard>
-        <div className="w-full flex justify-center items-center min-h-screen">
-          <p className="text-lg text-gray-500">Loading product details...</p>
+        <div className="w-full flex flex-col items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-red"></div>
+          <p className="mt-4 text-gray-600">Loading product details...</p>
         </div>
       </MainDashboard>
     );

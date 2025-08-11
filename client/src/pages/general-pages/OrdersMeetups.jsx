@@ -105,8 +105,9 @@ export default function OrdersMeetups() {
           <h1 className="text-left mb-6 font-bold text-4xl text-primary-red">
             Orders & Meet Ups
           </h1>
-          <div className="flex justify-center items-center min-h-[400px]">
-            <div className="text-lg text-gray-500">Loading...</div>
+          <div className="flex flex-col items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-red"></div>
+            <p className="mt-4 text-gray-600">Loading...</p>
           </div>
         </div>
       </MainDashboard>
