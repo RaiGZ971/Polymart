@@ -9,7 +9,6 @@ export default function ChatApp({
   onClose,
   fromOrderDetails = false, // <-- add default value
 }) {
-  console.log('CHAT APP DATA: ', initialChatData);
   const { currentUser } = useAuthStore();
   const initialChatId = currentUser?.user_id || currentUser?.id;
   const [currentView, setCurrentView] = useState(initialView);
