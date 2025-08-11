@@ -16,6 +16,7 @@ export default function CreateListingComponent({ onClose }) {
   const {
     listingData,
     errors,
+    setErrors,
     handleChange,
     handleDropdownChange,
     handleImageUpload,

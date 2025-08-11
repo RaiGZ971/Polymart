@@ -121,13 +121,20 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
     }));
   };
 
+  // Check if transaction includes meet-up
+  const transactionMethods = order.transaction_methods || order.transactionMethods || [];
+  const hasMeetup = transactionMethods.includes('Meet-up');
+  const isOnlineOnly = transactionMethods.length === 1 && transactionMethods.includes('Online');
+
   // Validation: All required fields must be filled
-  const isFormValid =
-    form.paymentMethod &&
-    form.meetUpDate &&
-    form.meetUpTime &&
-    form.meetUpLocation &&
-    form.quantity > 0;
+  // For meetup orders, require meetup details; for online-only orders, only require payment method
+  const isFormValid = hasMeetup
+    ? form.paymentMethod &&
+      form.meetUpDate &&
+      form.meetUpTime &&
+      form.meetUpLocation &&
+      form.quantity > 0
+    : form.paymentMethod && form.quantity > 0;
 
   // Handle order creation
   const handleCreateOrder = async () => {
@@ -225,7 +232,11 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
                 Choose a Payment Method
               </h2>
               <p className="text-sm text-gray-800">
-                All payment transactions are made during meet ups{" "}
+                {hasMeetup && !isOnlineOnly
+                  ? "All payment transactions are made during meet ups"
+                  : isOnlineOnly
+                  ? "Payment arrangements are made through chat"
+                  : "Payment method depends on transaction type"}
               </p>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
@@ -239,12 +250,13 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
               ))}
             </div>
           </Container>
-          <Container>
-            <div className="flex flex-col gap-1">
-              <h2 className="font-bold mb-2 text-primary-red">Meet Up</h2>
-              <h2 className="text-primary-red text-sm font-semibold">
-                Choose a Meet Up Schedule
-              </h2>
+          {hasMeetup && (
+            <Container>
+              <div className="flex flex-col gap-1">
+                <h2 className="font-bold mb-2 text-primary-red">Meet Up</h2>
+                <h2 className="text-primary-red text-sm font-semibold">
+                  Choose a Meet Up Schedule
+                </h2>
               <p className="text-sm text-gray-800">
                 Seller’s available time and dates for meet-ups are listed below
               </p>
@@ -275,6 +287,7 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
               </div>
             </div>
           </Container>
+          )}
           <Container>
             <div>
               <h2 className="font-bold mb-2 text-primary-red">
@@ -292,7 +305,7 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
           <Container>
             <div>
               <p className="text-primary-red font-bold text-base mb-1 space-y-1">
-                Confirm Meet Up Details
+                Confirm Order Details
               </p>
               <p className="text-sm text-gray-800">
                 Date Placed: <strong>{form.datePlaced}</strong>
@@ -300,21 +313,25 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
               <p className="text-sm text-gray-800">
                 Payment Method: <strong>{form.paymentMethod || "N/A"}</strong>
               </p>
-              <p className="text-sm text-gray-800">
-                Meet Up Schedule:{" "}
-                <strong>
-                  {form.meetUpDate && form.meetUpTime
-                    ? `${new Date(form.meetUpDate).toLocaleDateString()} at ${
-                        timeSlots.find((slot) => slot.value === form.meetUpTime)
-                          ?.label || form.meetUpTime
-                      }`
-                    : "N/A"}
-                </strong>
-              </p>
-              <p className="text-sm text-gray-800">
-                Meet Up Location:{" "}
-                <strong>{form.meetUpLocation || "N/A"}</strong>
-              </p>
+              {hasMeetup && (
+                <>
+                  <p className="text-sm text-gray-800">
+                    Meet Up Schedule:{" "}
+                    <strong>
+                      {form.meetUpDate && form.meetUpTime
+                        ? `${new Date(form.meetUpDate).toLocaleDateString()} at ${
+                            timeSlots.find((slot) => slot.value === form.meetUpTime)
+                              ?.label || form.meetUpTime
+                          }`
+                        : "N/A"}
+                    </strong>
+                  </p>
+                  <p className="text-sm text-gray-800">
+                    Meet Up Location:{" "}
+                    <strong>{form.meetUpLocation || "N/A"}</strong>
+                  </p>
+                </>
+              )}
               <p className="text-sm text-gray-800">
                 Remark: <strong>{form.remarks || "None"}</strong>
               </p>
