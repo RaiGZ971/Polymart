@@ -257,7 +257,7 @@ async def update_meetup_details(
         order_data = await order_db.get_order_by_id(current_user["user_id"], order_id)
         
         # Check if order has meetup transaction method
-        if order_data["transaction_method"] != "meet_up":
+        if order_data["transaction_method"] != "Meet-up":
             raise HTTPException(
                 status_code=400,
                 detail="This order does not use meetup transaction method"
@@ -382,7 +382,7 @@ async def create_meetup(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Create initial meetup for an order with 'meet_up' transaction method.
+    Create initial meetup for an order with 'Meet-up' transaction method.
     Creates new record with `status="pending"`, `is_current=true`.
     Only accessible to buyer or seller of the order.
     """
@@ -391,10 +391,10 @@ async def create_meetup(
         order_data = await order_db.get_order_by_id(current_user["user_id"], order_id)
         
         # Check if order uses meetup transaction method
-        if order_data["transaction_method"] != "meet_up":
+        if order_data["transaction_method"] != "Meet-up":
             raise HTTPException(
                 status_code=400,
-                detail="Meetup can only be created for orders with 'meet_up' transaction method"
+                detail="Meetup can only be created for orders with 'Meet-up' transaction method"
             )
         
         # Check if meetup already exists

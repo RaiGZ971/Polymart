@@ -162,7 +162,7 @@ export default function GeneralDashboard() {
             }`}
             onClick={() => setActiveTab('your-listings')}
           >
-            Your Listings
+            My Listings
           </button>
         </div>
         <DropdownFilter

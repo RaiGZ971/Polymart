@@ -16,7 +16,6 @@ export {
   default as productCategories,
   browsableCategories,
 } from "./productCategories";
-export { default as ordersSampleData } from "./ordersSampleData";
 export { default as orderStatus } from "./orderStatus";
 export { default as placeOrderData } from "./placeOrderData";
 export { default as userOrders } from "./userOrders";

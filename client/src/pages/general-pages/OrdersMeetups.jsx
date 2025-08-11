@@ -165,7 +165,7 @@ export default function OrdersMeetups() {
                 }`}
                 onClick={() => setActiveTab('listings')}
               >
-                From Your Listings ({listingsCount})
+                From My Listings ({listingsCount})
               </button>
             </div>
             <div className="flex flex-row gap-4">
