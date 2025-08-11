@@ -77,7 +77,9 @@ const Modal = ({
                 CANCEL
               </Button>
               <Button variant="primary" onClick={onConfirm}>
-                {title.includes("Accept") ? "ACCEPT" : "REJECT"}
+                {title.includes("Accept") || title.includes("Confirm") ? 
+                  (title.includes("Accept") ? "ACCEPT" : "CONFIRM") : 
+                  "REJECT"}
               </Button>
             </>
           )}

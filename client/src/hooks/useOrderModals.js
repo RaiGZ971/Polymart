@@ -1,53 +1,75 @@
 import { useState } from "react";
+import { OrderService } from "../services";
 
-export default function useOrderModals() {
+export default function useOrderModals(orderId, onStatusUpdate) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
-  const [showReceivedConfirm, setShowReceivedConfirm] = useState(false);
-  const [showReceivedAlert, setShowReceivedAlert] = useState(false);
   const [showMarkCompleteConfirm, setShowMarkCompleteConfirm] = useState(false);
-  const [showMarkCompleteAlert, setShowMarkCompleteAlert] = useState(false); // NEW
+  const [showMarkCompleteAlert, setShowMarkCompleteAlert] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleCancelClick = () => setShowConfirm(true);
-  const handleConfirmCancel = () => {
-    setShowConfirm(false);
-    setShowAlert(true);
+  
+  const handleConfirmCancel = async () => {
+    if (!orderId) {
+      setShowConfirm(false);
+      setShowAlert(true);
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await OrderService.updateOrderStatus(orderId, 'cancelled');
+      setShowConfirm(false);
+      setShowAlert(true);
+      if (onStatusUpdate) onStatusUpdate();
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+      alert(`Failed to cancel order: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsUpdating(false);
+    }
   };
+
   const handleAlertClose = () => setShowAlert(false);
-  const handleItemReceivedClick = () => setShowReceivedConfirm(true);
-  const handleConfirmReceived = () => {
-    setShowReceivedConfirm(false);
-    setShowReceivedAlert(true);
-  };
-  const handleLeaveReview = () => setShowReceivedAlert(false);
-  const handleNoThanks = () => setShowReceivedAlert(false);
   const handleMarkCompleteClick = () => setShowMarkCompleteConfirm(true);
-  const handleConfirmMarkComplete = () => {
-    setShowMarkCompleteConfirm(false);
-    setShowMarkCompleteAlert(true); // Show alert after confirm
-    // TODO: handle mark as complete logic (API call, etc)
+  
+  const handleConfirmMarkComplete = async () => {
+    if (!orderId) {
+      setShowMarkCompleteConfirm(false);
+      setShowMarkCompleteAlert(true);
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await OrderService.updateOrderStatus(orderId, 'completed');
+      setShowMarkCompleteConfirm(false);
+      setShowMarkCompleteAlert(true);
+      if (onStatusUpdate) onStatusUpdate();
+    } catch (error) {
+      console.error('Failed to mark order as complete:', error);
+      alert(`Failed to mark order as complete: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsUpdating(false);
+    }
   };
-  const handleMarkCompleteAlertClose = () => setShowMarkCompleteAlert(false); // NEW
+
+  const handleMarkCompleteAlertClose = () => setShowMarkCompleteAlert(false);
 
   return {
     showConfirm,
     showAlert,
-    showReceivedConfirm,
-    showReceivedAlert,
     showMarkCompleteConfirm,
-    showMarkCompleteAlert, // NEW
+    showMarkCompleteAlert,
+    isUpdating,
     handleCancelClick,
     handleConfirmCancel,
     handleAlertClose,
-    handleItemReceivedClick,
-    handleConfirmReceived,
-    handleLeaveReview,
-    handleNoThanks,
     setShowConfirm,
-    setShowReceivedConfirm,
     setShowMarkCompleteConfirm,
     handleMarkCompleteClick,
     handleConfirmMarkComplete,
-    handleMarkCompleteAlertClose, // NEW
+    handleMarkCompleteAlertClose,
   };
 }

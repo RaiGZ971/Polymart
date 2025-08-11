@@ -1,23 +1,19 @@
 import { ChevronRight } from "lucide-react";
 
 const statusColor = {
+  pending: "#FBBC04",
+  confirmed: "#2670F9",
   completed: "#34A853",
-  placed: "#FBBC04",
-  "order placed": "#FBBC04", // Add this line for consistency
   cancelled: "#FF0000",
-  ongoing: "#2670F9",
-  rescheduled: "#F97B26",
 };
 
 function getStatusLabel(status) {
   if (!status) return "";
   const map = {
+    pending: "Pending",
+    confirmed: "Confirmed",
     completed: "Completed",
-    "order placed": "Order Placed",
-    placed: "Order Placed",
     cancelled: "Cancelled",
-    ongoing: "Ongoing",
-    rescheduled: "Rescheduled",
   };
   return map[status.toLowerCase()] || status;
 }

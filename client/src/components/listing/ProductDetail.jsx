@@ -15,25 +15,22 @@ import {
 import { useOrderModals } from '@/hooks';
 import { getUserDetails } from '../../queries/index.js';
 import { formattedUserContact } from '../../utils/formattedUserContact.js';
+import { OrderService } from '../../services';
 
 const statusColor = {
+  pending: '#FBBC04',
+  confirmed: '#2670F9',
   completed: '#34A853',
-  placed: '#FBBC04',
-  'order placed': '#FBBC04',
   cancelled: '#FF0000',
-  ongoing: '#2670F9',
-  rescheduled: '#F97B26',
 };
 
 function getStatusLabel(status) {
   if (!status) return '';
   const map = {
+    pending: 'Pending',
+    confirmed: 'Confirmed',
     completed: 'Completed',
-    'order placed': 'Order Placed',
-    placed: 'Order Placed',
     cancelled: 'Cancelled',
-    ongoing: 'Ongoing',
-    rescheduled: 'Rescheduled',
   };
   return map[status.toLowerCase()] || status;
 }
@@ -44,28 +41,23 @@ export default function ProductDetail({
   role,
   onAcceptOrder,
   onRejectOrder,
+  onStatusUpdate,
 }) {
   const {
     showConfirm,
     showAlert,
-    showReceivedConfirm,
-    showReceivedAlert,
     handleCancelClick,
     handleConfirmCancel,
     handleAlertClose,
-    handleItemReceivedClick,
-    handleConfirmReceived,
-    handleLeaveReview,
-    handleNoThanks,
     setShowConfirm,
-    setShowReceivedConfirm,
     showMarkCompleteConfirm,
     showMarkCompleteAlert,
     setShowMarkCompleteConfirm,
     handleMarkCompleteClick,
     handleConfirmMarkComplete,
     handleMarkCompleteAlertClose,
-  } = useOrderModals();
+    isUpdating,
+  } = useOrderModals(order?.id || order?.order_id, onStatusUpdate);
 
   // Add state for LeaveReview modal
   const [showLeaveReview, setShowLeaveReview] = useState(false);
@@ -175,7 +167,6 @@ export default function ProductDetail({
             role={role}
             isUserPlaced={isUserPlaced}
             onCancelClick={handleCancelClick}
-            onItemReceivedClick={handleItemReceivedClick}
             onMarkCompleteClick={handleMarkCompleteClick}
             onLeaveReviewClick={handleOpenLeaveReview}
             onAcceptOrder={onAcceptOrder}
@@ -199,36 +190,6 @@ export default function ProductDetail({
           type="alert"
           onConfirm={handleAlertClose}
         />
-        <Modal
-          isOpen={showReceivedConfirm}
-          onClose={() => setShowReceivedConfirm(false)}
-          title="Confirm Item Received"
-          description="Are you sure you have received your item?"
-          type="confirm"
-          onConfirm={handleConfirmReceived}
-        />
-        <Modal
-          isOpen={showReceivedAlert}
-          onClose={handleNoThanks}
-          title="Item Received"
-          description="You’ve marked the item as received. Thank you for confirming! Would you like to leave a review?"
-          type="custom"
-        >
-          <div className="flex justify-end gap-2 mt-4">
-            <button
-              className="border border-primary-red text-primary-red px-6 py-2 rounded-full"
-              onClick={handleNoThanks}
-            >
-              NO THANKS
-            </button>
-            <button
-              className="bg-primary-red text-white px-6 py-2 rounded-full"
-              onClick={handleOpenLeaveReview}
-            >
-              LEAVE A REVIEW
-            </button>
-          </div>
-        </Modal>
         {/* LeaveReviewComponent Modal */}
         <LeaveReviewComponent
           isOpen={showLeaveReview}
