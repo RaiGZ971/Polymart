@@ -9,11 +9,17 @@ export default function MainDashboard({ children, onLogoClick, onHomeClick }) {
 
   // Ensure user data is available as fallback (only if not already set)
   useEffect(() => {
-    // Only fetch if we don't already have username or firstName in the store
-    if (userData && (!username || !firstName)) {
-      setUserProfile(userData);
+    // Update profile data if we have new data from the server
+    if (userData && (userData.username || userData.first_name)) {
+      const updatedProfile = {
+        username: userData.username,
+        first_name: userData.first_name
+      };
+      
+      // Update the auth store with the fresh data from the database
+      setUserProfile(updatedProfile);
     }
-  }, [userData, setUserProfile, username, firstName]);
+  }, [userData, setUserProfile]);
 
   return (
     <>

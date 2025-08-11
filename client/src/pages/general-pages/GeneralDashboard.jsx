@@ -23,7 +23,7 @@ export default function GeneralDashboard() {
   const [pendingSearch, setPendingSearch] = useState('');
   const navigate = useNavigate();
 
-  const { userID, token, isAuthenticated } = useAuthStore();
+  const { userID, token, isAuthenticated, username, firstName, getDisplayName } = useAuthStore();
 
   // Check authentication first and redirect if needed
   useEffect(() => {
@@ -119,7 +119,7 @@ export default function GeneralDashboard() {
     <MainDashboard onLogoClick={refreshHome} onHomeClick={refreshHome}>
       <div className="w-[80%] mt-0 space-y-6">
         <h1 className="text-4xl font-bold text-primary-red mt-10">
-          Welcome Back, {userData?.username || 'User'}!
+          Welcome Back, {username || userData?.username || 'User'}!
         </h1>
         <CategoryFilter
           onCategoryChange={handleCategoryChange}
