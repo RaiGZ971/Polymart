@@ -235,6 +235,33 @@ export default function CalendarPicker({
             </div>
           ) : (
             <>
+              {/* Select All/Deselect All Button */}
+              <div className="flex justify-between items-center mb-3 px-2">
+                <button
+                  type="button"
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition ${
+                    pendingTimes.length === customTimeSlots.length
+                      ? "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                      : "bg-primary-red text-white hover:bg-red-700"
+                  }`}
+                  onClick={() => {
+                    if (pendingTimes.length === customTimeSlots.length) {
+                      // Deselect all
+                      setPendingTimes([]);
+                    } else {
+                      // Select all
+                      setPendingTimes(customTimeSlots.map(slot => slot.value));
+                    }
+                  }}
+                  disabled={disabled}
+                >
+                  {pendingTimes.length === customTimeSlots.length ? "Deselect All" : "Select All"}
+                </button>
+                <span className="text-xs text-gray-500">
+                  {pendingTimes.length} of {customTimeSlots.length} selected
+                </span>
+              </div>
+              
               <div className="grid grid-cols-2 gap-2 overflow-y-auto mb-2">
                 {customTimeSlots.map((slot) => (
                   <button
