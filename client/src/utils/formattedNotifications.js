@@ -10,6 +10,16 @@ export const formattedNotifications = (notifications) => {
       title = 'Meetup Reminder';
     } else if (notification.notification_type === 'listing-approved') {
       title = 'Listing Approved';
+    } else if (notification.notification_type === 'warning') {
+      title = 'Warning User';
+    } else if (notification.notification_type === 'suspendede') {
+      title = 'Suspended User';
+    } else if (notification.notification_type === 'listing-under-review') {
+      title = 'Listing Under Review';
+    } else if (notification.notification_type === 'order') {
+      title = 'Item Order';
+    } else if (notification.notification_type === 'meetup-reported') {
+      title = 'Reported Meetup';
     }
 
     responses.push({
