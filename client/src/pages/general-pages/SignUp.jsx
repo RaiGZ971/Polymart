@@ -187,7 +187,6 @@ export default function SignUp() {
     handleSendVerification,
     handleResendVerification,
     handleChangeEmail,
-    handleTestVerification,
     getEmailVerificationTitle,
     loading,
     error,
@@ -341,7 +340,6 @@ export default function SignUp() {
       handleSendVerificationWithEmail,
       handleResendVerificationWithEmail,
       handleChangeEmailWithReset,
-      handleTestVerification,
       loading,
       error,
     }

@@ -29,8 +29,8 @@ export const usePublicListings = (params = {}, enabled = true) => {
 
 // Get user's own listings with caching
 export const useMyListings = (params = {}, token) => {
-  // Get user ID from token for query key scoping
-  const currentUser = token ? UserService.getCurrentUser(token) : null;
+  // Get user ID from auth store - no more JWT parsing!
+  const currentUser = UserService.getCurrentUser();
   const userID = currentUser?.user_id;
 
   return useQuery({

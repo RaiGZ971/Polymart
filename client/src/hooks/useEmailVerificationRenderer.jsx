@@ -12,7 +12,6 @@ export const useEmailVerificationRenderer = (emailVerificationStep, formData, ha
     handleSendVerificationWithEmail,
     handleResendVerificationWithEmail,
     handleChangeEmailWithReset,
-    handleTestVerification,
     loading,
     error
   } = handlers;
@@ -41,7 +40,6 @@ export const useEmailVerificationRenderer = (emailVerificationStep, formData, ha
             email={formData.email}
             onResend={handleResendVerificationWithEmail}
             onChangeEmail={handleChangeEmailWithReset}
-            onTestVerification={handleTestVerification}
           />
         );
 

@@ -4,7 +4,6 @@ export const EmailSentState = ({
   email,
   onResend,
   onChangeEmail,
-  onTestVerification,
 }) => {
   return (
     <div className="text-center space-y-6 font-montserrat">
@@ -38,31 +37,6 @@ export const EmailSentState = ({
             className="text-gray-500 hover:text-gray-700 hover:underline text-sm"
           >
             Use a different email address
-          </button>
-        </div>
-      </div>
-
-      {/* Testing buttons */}
-      <div className="border-t pt-4 mt-6">
-        <p className="text-xs text-gray-400 mb-2">Testing Controls:</p>
-        <div className="flex justify-center space-x-2">
-          <button
-            onClick={() => onTestVerification("verified")}
-            className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded"
-          >
-            Simulate Verified
-          </button>
-          <button
-            onClick={() => onTestVerification("expired")}
-            className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded"
-          >
-            Simulate Expired
-          </button>
-          <button
-            onClick={() => onTestVerification("failed")}
-            className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded"
-          >
-            Simulate Failed
           </button>
         </div>
       </div>

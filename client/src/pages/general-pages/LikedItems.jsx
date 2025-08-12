@@ -57,41 +57,12 @@ export default function LikedItems() {
     };
   };
 
-  if (loading) {
-    return (
-      <MainDashboard>
-        <div className="w-[80%] mt-10 flex flex-col items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-red"></div>
-          <p className="mt-4 text-gray-600">Loading your liked items...</p>
-        </div>
-      </MainDashboard>
-    );
-  }
-
-  if (error) {
-    return (
-      <MainDashboard>
-        <div className="w-[80%] mt-10 flex flex-col items-center justify-center min-h-[400px]">
-          <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Error Loading Liked Items</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={fetchFavorites}
-            className="px-6 py-2 bg-primary-red text-white rounded-lg hover:bg-hover-red transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </MainDashboard>
-    );
-  }
-
   return (
     <MainDashboard>
       <DashboardBackButton />
       
       <div className="w-[80%] mt-5">
-        {/* Header */}
+        {/* Header - Always visible */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <Heart className="h-8 w-8 text-primary-red fill-current" />
@@ -99,8 +70,25 @@ export default function LikedItems() {
           </div>
         </div>
 
-        {/* Content */}
-        {favorites.length === 0 ? (
+        {/* Content - Shows different states */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-red"></div>
+            <p className="mt-4 text-gray-600">Loading your liked items...</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center min-h-[400px]">
+            <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Error Loading Liked Items</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={fetchFavorites}
+              className="px-6 py-2 bg-primary-red text-white rounded-lg hover:bg-hover-red transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : favorites.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
             <Heart className="h-20 w-20 text-gray-300 mb-4" />
             <h2 className="text-2xl font-bold text-gray-800 mb-2">No Liked Items Yet</h2>
