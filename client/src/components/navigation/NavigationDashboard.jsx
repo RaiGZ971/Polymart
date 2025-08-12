@@ -216,7 +216,12 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
     }
   }, [isAuthenticated, navigate]);
 
-  console.log('MOUNTING: ', showChat);
+  useEffect(() => {
+    if (!showNotifications) {
+      queryClient.invalidateQueries({ queryKey: ['notification', userID] });
+    }
+  }, [showNotifications]);
+
   return (
     <div>
       {/* Red Navigation Bar */}
@@ -357,28 +362,33 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
       )}
 
       {/* Notifications Slide-in Overlay */}
-      <div
-        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
-          showNotifications
-            ? 'opacity-100 pointer-events-auto'
-            : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        {/* Background overlay */}
-        <div className="absolute inset-0 " onClick={handleCloseNotifications} />
-
-        {/* Notifications panel sliding from right */}
+      {showNotifications && (
         <div
-          className={`absolute right-0 top-0 h-full w-[30%] bg-white shadow-2xl transition-transform duration-500 ease-in-out rounded-tl-2xl rounded-bl-2xl flex items-center justify-center ${
-            showNotifications ? 'translate-x-0' : 'translate-x-full'
+          className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+            showNotifications
+              ? 'opacity-100 pointer-events-auto'
+              : 'opacity-0 pointer-events-none'
           }`}
         >
-          <NotificationOverlay
-            notifications={notifications}
-            onClose={handleCloseNotifications}
+          {/* Background overlay */}
+          <div
+            className="absolute inset-0 "
+            onClick={handleCloseNotifications}
           />
+
+          {/* Notifications panel sliding from right */}
+          <div
+            className={`absolute right-0 top-0 h-full w-[30%] bg-white shadow-2xl transition-transform duration-500 ease-in-out rounded-tl-2xl rounded-bl-2xl flex items-center justify-center ${
+              showNotifications ? 'translate-x-0' : 'translate-x-full'
+            }`}
+          >
+            <NotificationOverlay
+              notifications={notifications}
+              onClose={handleCloseNotifications}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
