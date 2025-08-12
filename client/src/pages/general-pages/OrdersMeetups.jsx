@@ -10,8 +10,10 @@ import DashboardBackButton from '../../components/ui/DashboardBackButton';
 import { meetUpLocationsFilter, orderStatus } from '@/data';
 import { useOrdersData } from '../../hooks';
 import { UserService, OrderService } from '../../services';
+import { formattedNotification } from '../../utils/formattedNotification.js';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore.js';
+import { postNotification } from '../../queries/postNotification.js';
 
 export default function OrdersMeetups() {
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -27,8 +29,6 @@ export default function OrdersMeetups() {
   const [message, setMessage] = useState('');
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
 
-  const { token } = useAuthStore();
-
   const navigate = useNavigate();
 
   // Use the orders data hook
@@ -37,6 +37,8 @@ export default function OrdersMeetups() {
 
   // Get counts for tabs - destructure directly from the memoized object
   const { yourOrdersCount, listingsCount } = getCounts;
+
+  const { mutateAsync: uploadNotification } = postNotification();
 
   // Get current user on component mount
   useEffect(() => {
@@ -79,28 +81,74 @@ export default function OrdersMeetups() {
     if (!selectedOrder) return;
 
     setIsUpdatingOrder(true);
-    
+
     try {
       // Determine the new status based on dialog type
       const newStatus = dialogType === 'accept' ? 'confirmed' : 'cancelled';
-      
+
       // Call the API to update order status
       await OrderService.updateOrderStatus(selectedOrder.id, newStatus);
-      
+
+      if (newStatus === 'confirmed') {
+        const sellerNotification = await uploadNotification(
+          formattedNotification({
+            userID: useAuthStore.getState().userID,
+            notificationType: 'order',
+            content: `You have confirmed the order of ${selectedOrder.listing.name} for ${selectedOrder.username}. Please prepare the item and ready for pick-up.`,
+            relatedID: String(selectedOrder.id),
+          })
+        );
+
+        console.log('NOTIFICATION UPLOADED: ', sellerNotification);
+
+        const buyerNotification = await uploadNotification(
+          formattedNotification({
+            userID: selectedOrder.buyer_id,
+            notificationType: 'order',
+            content: `Hi ${selectedOrder.username}, your order for ${selectedOrder.listing.name} has been confirmed. We’re preparing your item—please get ready for pick-up soon.`,
+            relatedID: String(selectedOrder.id),
+          })
+        );
+
+        console.log('NOTIFICATION UPLOADED: ', buyerNotification);
+
+        const sellerMeetupNotification = await uploadNotification(
+          formattedNotification({
+            userID: useAuthStore.getState().userID,
+            notificationType: 'meetup',
+            content: `Your meetup with ${selectedOrder.username} is scheduled on ${selectedOrder.schedule}. Location: ${selectedOrder.meetup.location}.`,
+            relatedID: String(selectedOrder.id),
+          })
+        );
+
+        console.log('NOTIFICATION UPLOADED: ', sellerMeetupNotification);
+
+        const buyerMeetupNotification = await uploadNotification(
+          formattedNotification({
+            userID: selectedOrder.buyer_id,
+            notificationType: 'meetup',
+            content: `Reminder. You have a scheduled meetup with ${selectedOrder.sellerUsername} on ${selectedOrder.schedule}. Location: ${selectedOrder.meetup.location}.`,
+            relatedID: String(selectedOrder.id),
+          })
+        );
+
+        console.log('NOTIFICATION UPLOADED: ', buyerMeetupNotification);
+      }
       // Refresh the orders data to reflect the changes
       await refreshData();
-      
+
       // Close dialog and reset state
       setShowMessageDialog(false);
       setMessage('');
       setDialogType('');
-      
+
       // Go back to orders list to see updated status
       setSelectedOrder(null);
-      
     } catch (error) {
       console.error(`Failed to ${dialogType} order:`, error);
-      alert(`Failed to ${dialogType} order: ${error.message || 'Unknown error'}`);
+      alert(
+        `Failed to ${dialogType} order: ${error.message || 'Unknown error'}`
+      );
     } finally {
       setIsUpdatingOrder(false);
     }
