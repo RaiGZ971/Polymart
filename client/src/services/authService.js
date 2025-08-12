@@ -50,10 +50,20 @@ export class AuthService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.detail || `HTTP error status: ${response.status}`
-        );
+        // Try to get the detailed error message from the response
+        let errorMessage = `HTTP error status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch (parseError) {
+          console.warn('Could not parse error response:', parseError);
+        }
+        
+        throw new Error(errorMessage);
       }
 
       return await response.json();

@@ -38,7 +38,12 @@ export const useEmailVerification = () => {
       }
     } catch (error) {
       console.error('Error sending verification:', error);
-      setError(error.message || 'Failed to send verification email. Please try again.');
+      console.log('Error message:', error.message);
+      console.log('Full error object:', error);
+      
+      // Use the specific error message from the server
+      const errorMessage = error.message || 'Failed to send verification email. Please try again.';
+      setError(errorMessage);
       setEmailVerificationStep('failed');
     } finally {
       setLoading(false);
@@ -52,10 +57,6 @@ export const useEmailVerification = () => {
   const handleChangeEmail = (setFormData) => {
     setEmailVerificationStep('input');
     setFormData(prev => ({ ...prev, email: '' }));
-  };
-
-  const handleTestVerification = (status) => {
-    setEmailVerificationStep(status);
   };
 
   const getEmailVerificationTitle = () => {
@@ -79,7 +80,6 @@ export const useEmailVerification = () => {
     handleSendVerification,
     handleResendVerification,
     handleChangeEmail,
-    handleTestVerification,
     getEmailVerificationTitle,
     loading,
     error,
