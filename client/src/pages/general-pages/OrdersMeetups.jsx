@@ -122,31 +122,23 @@ export default function OrdersMeetups() {
     activeTab
   );
 
-  // Show loading state
-  if (loading) {
-    return (
-      <MainDashboard>
-        <div className="flex flex-col w-[80%] min-h-screen mt-10">
-          <h1 className="text-left mb-6 font-bold text-4xl text-primary-red">
-            Orders & Meet Ups
-          </h1>
+  return (
+    <MainDashboard>
+      <DashboardBackButton />
+
+      <div className="flex flex-col w-[80%] min-h-screen mt-5">
+        {/* Header - Always visible */}
+        <h1 className="text-left mb-6 font-bold text-4xl text-primary-red">
+          Orders & Meet Ups
+        </h1>
+
+        {/* Content - Shows different states */}
+        {loading ? (
           <div className="flex flex-col items-center justify-center min-h-[400px]">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-red"></div>
             <p className="mt-4 text-gray-600">Loading...</p>
           </div>
-        </div>
-      </MainDashboard>
-    );
-  }
-
-  // Show error state
-  if (error) {
-    return (
-      <MainDashboard>
-        <div className="flex flex-col w-[80%] min-h-screen mt-10">
-          <h1 className="text-left mb-6 font-bold text-4xl text-primary-red">
-            Orders & Meet Ups
-          </h1>
+        ) : error ? (
           <div className="flex flex-col justify-center items-center min-h-[400px]">
             <div className="text-lg text-red-500 mb-4">Error: {error}</div>
             <button
@@ -156,88 +148,77 @@ export default function OrdersMeetups() {
               Retry
             </button>
           </div>
-        </div>
-      </MainDashboard>
-    );
-  }
-
-  return (
-    <MainDashboard>
-      <DashboardBackButton />
-
-      <div className="flex flex-col w-[80%] min-h-screen mt-5">
-        <h1 className="text-left mb-6 font-bold text-4xl text-primary-red">
-          Orders & Meet Ups
-        </h1>
-        <div className="w-full items-center space-y-6">
-          <nav className="flex flex-row border-b-2 border-gray-300 pb-4 justify-between">
-            <div className="flex flex-row gap-4">
-              <button
-                className={`font-semibold ${
-                  activeTab === 'orders'
-                    ? 'text-primary-red underline'
-                    : 'text-gray-400 hover:text-primary-red'
-                }`}
-                onClick={() => setActiveTab('orders')}
-              >
-                Your Orders ({yourOrdersCount})
-              </button>
-              <span className="font-semibold text-gray-400">|</span>
-              <button
-                className={`font-semibold ${
-                  activeTab === 'listings'
-                    ? 'text-primary-red underline'
-                    : 'text-gray-400 hover:text-primary-red'
-                }`}
-                onClick={() => setActiveTab('listings')}
-              >
-                From My Listings ({listingsCount})
-              </button>
-            </div>
-            <div className="flex flex-row gap-4">
-              <DropdownFilter
-                options={meetUpLocationsFilter}
-                value={selectedLocation}
-                onChange={handleLocationChange}
-                selectedOption={selectedLocation}
-                labelPrefix="Location"
-                placeholder="All"
-              />
-
-              <DropdownFilter
-                options={orderStatus}
-                value={selectedStatus}
-                onChange={handleStatusChange}
-                selectedOption={selectedStatus}
-                labelPrefix="Status"
-                placeholder="All"
-              />
-            </div>
-          </nav>
-          {selectedOrder ? (
-            <ProductDetail
-              order={selectedOrder}
-              onBack={handleBack}
-              role={selectedOrder.role}
-              onAcceptOrder={handleAcceptOrder}
-              onRejectOrder={handleRejectOrder}
-              onStatusUpdate={async () => {
-                await refreshData();
-                setSelectedOrder(null);
-              }}
-            />
-          ) : filteredData.length > 0 ? (
-            filteredData.map((order, idx) => (
-              <div key={idx} onClick={() => setSelectedOrder(order)}>
-                <OrdersListingsComponent {...order} />
+        ) : (
+          <div className="w-full items-center space-y-6">
+            <nav className="flex flex-row border-b-2 border-gray-300 pb-4 justify-between">
+              <div className="flex flex-row gap-4">
+                <button
+                  className={`font-semibold ${
+                    activeTab === 'orders'
+                      ? 'text-primary-red underline'
+                      : 'text-gray-400 hover:text-primary-red'
+                  }`}
+                  onClick={() => setActiveTab('orders')}
+                >
+                  Your Orders ({yourOrdersCount})
+                </button>
+                <span className="font-semibold text-gray-400">|</span>
+                <button
+                  className={`font-semibold ${
+                    activeTab === 'listings'
+                      ? 'text-primary-red underline'
+                      : 'text-gray-400 hover:text-primary-red'
+                  }`}
+                  onClick={() => setActiveTab('listings')}
+                >
+                  From My Listings ({listingsCount})
+                </button>
               </div>
-            ))
-          ) : (
-            <div className="text-center text-gray-400 py-10 text-lg font-semibold">
-              No matches for your filters.
-            </div>
-          )}
-        </div>
+              <div className="flex flex-row gap-4">
+                <DropdownFilter
+                  options={meetUpLocationsFilter}
+                  value={selectedLocation}
+                  onChange={handleLocationChange}
+                  selectedOption={selectedLocation}
+                  labelPrefix="Location"
+                  placeholder="All"
+                />
+
+                <DropdownFilter
+                  options={orderStatus}
+                  value={selectedStatus}
+                  onChange={handleStatusChange}
+                  selectedOption={selectedStatus}
+                  labelPrefix="Status"
+                  placeholder="All"
+                />
+              </div>
+            </nav>
+            {selectedOrder ? (
+              <ProductDetail
+                order={selectedOrder}
+                onBack={handleBack}
+                role={selectedOrder.role}
+                onAcceptOrder={handleAcceptOrder}
+                onRejectOrder={handleRejectOrder}
+                onStatusUpdate={async () => {
+                  await refreshData();
+                  setSelectedOrder(null);
+                }}
+              />
+            ) : filteredData.length > 0 ? (
+              filteredData.map((order, idx) => (
+                <div key={idx} onClick={() => setSelectedOrder(order)}>
+                  <OrdersListingsComponent {...order} />
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-gray-400 py-10 text-lg font-semibold">
+                No matches for your filters.
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Message Dialog Modal */}
