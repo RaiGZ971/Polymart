@@ -103,7 +103,7 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
   ];
 
   const displayName = getDisplayName();
-  
+
   const bottomNavItems = useMemo(() => [
     {
       name: displayName,
@@ -162,7 +162,7 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
     authLogout(); // Reset auth store
     resetDashboard(); // Reset dashboard store (in-memory only now)
 
-        // Clear TanStack Query cache to prevent showing previous user's data
+    // Clear TanStack Query cache to prevent showing previous user's data
     queryClient.clear(); // This clears all cached queries
 
     // Small delay to ensure store resets are processed
@@ -212,6 +212,12 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
       navigate('/sign-in');
     }
   }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (!showNotifications) {
+      queryClient.invalidateQueries({ queryKey: ['notification', userID] });
+    }
+  }, [showNotifications]);
 
   return (
     <div>
@@ -332,49 +338,54 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
       )}
 
       {/* Chat Slide-in Overlay */}
-      <div
-        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
-          showChat
-            ? 'opacity-100 pointer-events-auto'
-            : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        {/* Background overlay */}
-        <div className="absolute inset-0" onClick={handleCloseChat} />
-
-        {/* Chat panel sliding from right */}
+      {showChat && (
         <div
-          className={`absolute right-0 top-0 h-full w-[30%] bg-white shadow-2xl transition-transform duration-500 ease-in-out rounded-tl-2xl rounded-bl-2xl ${
-            showChat ? 'translate-x-0' : 'translate-x-full'
+          className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+            showChat
+              ? 'opacity-100 pointer-events-auto'
+              : 'opacity-0 pointer-events-none'
           }`}
         >
-          <ChatApp onClose={handleCloseChat} />
+          {/* Background overlay */}
+          <div className="absolute inset-0" onClick={handleCloseChat} />
+
+          {/* Chat panel sliding from right */}
+          <div
+            className={`absolute right-0 top-0 h-full w-[30%] bg-white shadow-2xl transition-transform duration-500 ease-in-out rounded-tl-2xl rounded-bl-2xl`}
+          >
+            <ChatApp onClose={handleCloseChat} />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Notifications Slide-in Overlay */}
-      <div
-        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
-          showNotifications
-            ? 'opacity-100 pointer-events-auto'
-            : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        {/* Background overlay */}
-        <div className="absolute inset-0 " onClick={handleCloseNotifications} />
-
-        {/* Notifications panel sliding from right */}
+      {showNotifications && (
         <div
-          className={`absolute right-0 top-0 h-full w-[30%] bg-white shadow-2xl transition-transform duration-500 ease-in-out rounded-tl-2xl rounded-bl-2xl flex items-center justify-center ${
-            showNotifications ? 'translate-x-0' : 'translate-x-full'
+          className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+            showNotifications
+              ? 'opacity-100 pointer-events-auto'
+              : 'opacity-0 pointer-events-none'
           }`}
         >
-          <NotificationOverlay
-            notifications={notifications}
-            onClose={handleCloseNotifications}
+          {/* Background overlay */}
+          <div
+            className="absolute inset-0 "
+            onClick={handleCloseNotifications}
           />
+
+          {/* Notifications panel sliding from right */}
+          <div
+            className={`absolute right-0 top-0 h-full w-[30%] bg-white shadow-2xl transition-transform duration-500 ease-in-out rounded-tl-2xl rounded-bl-2xl flex items-center justify-center ${
+              showNotifications ? 'translate-x-0' : 'translate-x-full'
+            }`}
+          >
+            <NotificationOverlay
+              notifications={notifications}
+              onClose={handleCloseNotifications}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

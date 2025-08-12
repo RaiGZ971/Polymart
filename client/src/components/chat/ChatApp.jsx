@@ -23,6 +23,7 @@ export default function ChatApp({
   }, [initialChatId, initialView, initialChatData]);
 
   const handleChatSelect = (chat) => {
+    console.log('CHAT APP', chat);
     setSelectedChat(chat); // Store the entire chat object
     setCurrentView('chat'); // Switch to chat view
   };

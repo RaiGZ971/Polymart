@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ChevronLeft } from "lucide-react";
+import { useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import {
   Items,
   CalendarPicker,
@@ -7,17 +7,29 @@ import {
   ToggleButton,
   OrderCalendarPicker,
   Modal,
-} from "../../components";
-import placeOrderData from "../../data/placeOrderData";
-import timeSlots from "@/data/timeSlots";
-import paymentMethods from "../../data/paymentMethods";
-import { OrderService } from "../../services";
+} from '../../components';
+import placeOrderData from '../../data/placeOrderData';
+import timeSlots from '@/data/timeSlots';
+import paymentMethods from '../../data/paymentMethods';
+import { OrderService } from '../../services';
+import { postNotification } from '../../queries/postNotification.js';
+import { formattedNotification } from '../../utils/formattedNotification.js';
+import { useAuthStore } from '../../store/authStore.js';
 
-export default function PlaceOrder({ order, quantity, onClose,  currentUser, onOrderCreated }) {
+export default function PlaceOrder({
+  order,
+  quantity,
+  onClose,
+  currentUser,
+  onOrderCreated,
+}) {
   // Debug: Log the order object to see what data we have
   console.log('PlaceOrder order data:', order);
-  console.log('Available schedules:', order.available_schedules || order.availableSchedules);
-  
+  console.log(
+    'Available schedules:',
+    order.available_schedules || order.availableSchedules
+  );
+
   const [form, setForm] = useState({
     ...placeOrderData,
     ...order,
@@ -31,23 +43,24 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
         quantity,
       },
     ],
-    meetUpLocation: order?.meetupLocations?.[0] || "",
-    meetUpDate: "",
-    meetUpTime: "",
+    meetUpLocation: order?.meetupLocations?.[0] || '',
+    meetUpDate: '',
+    meetUpTime: '',
     // Use offer note/message if present, else remarks
-    remarks: order?.offerMessage || order?.remarks || "",
+    remarks: order?.offerMessage || order?.remarks || '',
   });
 
   const [showModal, setShowModal] = useState(false);
-  const [modalStep, setModalStep] = useState("confirm");
+  const [modalStep, setModalStep] = useState('confirm');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
+  const { mutateAsync: uploadNotification } = postNotification();
   const handleDateChange = (date) => {
     setForm((prev) => ({
       ...prev,
       meetUpDate: date,
-      meetUpTime: "",
+      meetUpTime: '',
     }));
   };
 
@@ -61,7 +74,7 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
   // Helper function to get the actual time string for API calls
   const getActualTimeForAPI = (timeValue) => {
     // If it's a standard time slot, convert it to a timestamp-compatible format
-    const timeSlot = timeSlots.find(slot => slot.value === timeValue);
+    const timeSlot = timeSlots.find((slot) => slot.value === timeValue);
     if (timeSlot) {
       // Convert "6am-7am" to "06:00"
       const startTime = timeSlot.value.split('-')[0];
@@ -72,9 +85,10 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
       if (!isPM && hourNum === 12) hourNum = 0;
       return String(hourNum).padStart(2, '0') + ':00';
     }
-    
+
     // For custom time slots, try to parse the time from the available schedules
-    const availableSchedules = order.available_schedules || order.availableSchedules || [];
+    const availableSchedules =
+      order.available_schedules || order.availableSchedules || [];
     for (const schedule of availableSchedules) {
       if (schedule.date === form.meetUpDate) {
         // Find the time that matches this custom slot
@@ -93,7 +107,7 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
         }
       }
     }
-    
+
     // Fallback: assume it's already in the right format
     return timeValue;
   };
@@ -112,7 +126,8 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
     }));
   };
 
-  const availablePaymentMethods = order?.paymentMethods || paymentMethods.map(pm => pm.value);
+  const availablePaymentMethods =
+    order?.paymentMethods || paymentMethods.map((pm) => pm.value);
 
   const handlePaymentMethodChange = (method) => {
     setForm((prev) => ({
@@ -122,9 +137,11 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
   };
 
   // Check if transaction includes meet-up
-  const transactionMethods = order.transaction_methods || order.transactionMethods || [];
+  const transactionMethods =
+    order.transaction_methods || order.transactionMethods || [];
   const hasMeetup = transactionMethods.includes('Meet-up');
-  const isOnlineOnly = transactionMethods.length === 1 && transactionMethods.includes('Online');
+  const isOnlineOnly =
+    transactionMethods.length === 1 && transactionMethods.includes('Online');
 
   // Validation: All required fields must be filled
   // For meetup orders, require meetup details; for online-only orders, only require payment method
@@ -144,8 +161,9 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
 
       // Determine transaction method - default to Meet-up since this component is designed for meetups
       // In the future, this could be made dynamic based on listing.transaction_methods
-      const transactionMethod = order.transaction_methods?.includes('Meet-up') ? 'Meet-up' : 
-                               order.transaction_methods?.[0] || 'Meet-up';
+      const transactionMethod = order.transaction_methods?.includes('Meet-up')
+        ? 'Meet-up'
+        : order.transaction_methods?.[0] || 'Meet-up';
 
       // Prepare order data for API
       const orderData = {
@@ -160,44 +178,62 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
 
       // Create the order
       const response = await OrderService.createOrder(orderData);
-      
+
       if (response.success) {
         const orderId = response.data.order_id;
-        
+
         // If order was created successfully and has meetup transaction method,
         // create the meetup with the selected details
-        if (orderData.transaction_method === "Meet-up") {
+        if (orderData.transaction_method === 'Meet-up') {
           const actualTime = getActualTimeForAPI(form.meetUpTime);
           const meetupData = {
             location: form.meetUpLocation,
             scheduled_at: `${form.meetUpDate}T${actualTime}:00.000Z`,
             remarks: form.remarks || null,
-            proposed_by: "buyer"  // Always buyer when placing order
+            proposed_by: 'buyer', // Always buyer when placing order
           };
 
           try {
             await OrderService.createMeetup(orderId, meetupData);
           } catch (meetupError) {
-            console.warn("Order created but meetup creation failed:", meetupError);
+            console.warn(
+              'Order created but meetup creation failed:',
+              meetupError
+            );
             // Don't fail the entire process if meetup creation fails
           }
         }
 
-        setModalStep("success");
-        
+        const notification = await uploadNotification(
+          formattedNotification({
+            userID: useAuthStore.getState().userID,
+            notificationType: 'order',
+            content: `Congratulations! You have successfully placed your order for ${response.data.listing.name}. Please wait for the seller to approve your order.`,
+            relatedID: String(response.data.order_id),
+          })
+        );
+
+        console.log('NOTIFICATION UPLOADED: ', notification);
+
+        setModalStep('success');
+
         // Call the callback to refresh orders if provided
         if (onOrderCreated) {
           onOrderCreated();
         }
       }
     } catch (error) {
-      console.error("Failed to create order:", error);
-      
+      console.error('Failed to create order:', error);
+
       // Handle specific error cases
       if (error.response?.status === 409) {
-        setSubmitError("You already have a pending order for this product. Please check your orders page.");
+        setSubmitError(
+          'You already have a pending order for this product. Please check your orders page.'
+        );
       } else {
-        setSubmitError(error.message || "Failed to create order. Please try again.");
+        setSubmitError(
+          error.message || 'Failed to create order. Please try again.'
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -233,10 +269,10 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
               </h2>
               <p className="text-sm text-gray-800">
                 {hasMeetup && !isOnlineOnly
-                  ? "All payment transactions are made during meet ups"
+                  ? 'All payment transactions are made during meet ups'
                   : isOnlineOnly
-                  ? "Payment arrangements are made through chat"
-                  : "Payment method depends on transaction type"}
+                  ? 'Payment arrangements are made through chat'
+                  : 'Payment method depends on transaction type'}
               </p>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
@@ -257,36 +293,43 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
                 <h2 className="text-primary-red text-sm font-semibold">
                   Choose a Meet Up Schedule
                 </h2>
-              <p className="text-sm text-gray-800">
-                Seller’s available time and dates for meet-ups are listed below
-              </p>
-            </div>
-            <OrderCalendarPicker
-              availableSchedules={order.available_schedules || order.availableSchedules || []}
-              selectedDate={form.meetUpDate}
-              selectedTime={form.meetUpTime}
-              onDateChange={handleDateChange}
-              onTimeChange={handleTimeChange}
-            />
-            <div className="flex flex-col gap-1">
-              <h2 className="text-primary-red text-sm font-semibold">
-                Choose a Meet Up Location
-              </h2>
-              <p className="text-sm text-gray-800">
-                Seller’s available meet-up locations are listed below{" "}
-              </p>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {(order?.seller_meetup_locations || order?.meetupLocations || []).map((location) => (
-                  <ToggleButton
-                    key={location}
-                    label={location}
-                    isActive={form.meetUpLocation === location}
-                    onClick={() => handleLocationChange(location)}
-                  />
-                ))}
+                <p className="text-sm text-gray-800">
+                  Seller’s available time and dates for meet-ups are listed
+                  below
+                </p>
               </div>
-            </div>
-          </Container>
+              <OrderCalendarPicker
+                availableSchedules={
+                  order.available_schedules || order.availableSchedules || []
+                }
+                selectedDate={form.meetUpDate}
+                selectedTime={form.meetUpTime}
+                onDateChange={handleDateChange}
+                onTimeChange={handleTimeChange}
+              />
+              <div className="flex flex-col gap-1">
+                <h2 className="text-primary-red text-sm font-semibold">
+                  Choose a Meet Up Location
+                </h2>
+                <p className="text-sm text-gray-800">
+                  Seller’s available meet-up locations are listed below{' '}
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {(
+                    order?.seller_meetup_locations ||
+                    order?.meetupLocations ||
+                    []
+                  ).map((location) => (
+                    <ToggleButton
+                      key={location}
+                      label={location}
+                      isActive={form.meetUpLocation === location}
+                      onClick={() => handleLocationChange(location)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </Container>
           )}
           <Container>
             <div>
@@ -311,51 +354,69 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
                 Date Placed: <strong>{form.datePlaced}</strong>
               </p>
               <p className="text-sm text-gray-800">
-                Payment Method: <strong>{form.paymentMethod || "N/A"}</strong>
+                Payment Method: <strong>{form.paymentMethod || 'N/A'}</strong>
               </p>
               {hasMeetup && (
                 <>
                   <p className="text-sm text-gray-800">
-                    Meet Up Schedule:{" "}
+                    Meet Up Schedule:{' '}
                     <strong>
                       {form.meetUpDate && form.meetUpTime
-                        ? `${new Date(form.meetUpDate).toLocaleDateString()} at ${
-                            (() => {
-                              // First check standard time slots
-                              const standardSlot = timeSlots.find((slot) => slot.value === form.meetUpTime);
-                              if (standardSlot) {
-                                return standardSlot.label;
-                              }
-                              
-                              // If not found and it's a custom slot (custom-X), find the original time from availableSchedules
-                              if (form.meetUpTime && form.meetUpTime.startsWith('custom-')) {
-                                const schedules = order.available_schedules || order.availableSchedules || [];
-                                const availableTimes = schedules.find((sched) => sched.date === form.meetUpDate)?.times || [];
-                                const customIndex = parseInt(form.meetUpTime.split('-')[1]);
-                                const customTimes = availableTimes.filter(time => 
-                                  !timeSlots.some(slot => 
-                                    slot.value === time || 
-                                    slot.label === time ||
-                                    slot.label.replace(/\s+/g, ' ').trim() === time.replace(/\s+/g, ' ').trim()
+                        ? `${new Date(
+                            form.meetUpDate
+                          ).toLocaleDateString()} at ${(() => {
+                            // First check standard time slots
+                            const standardSlot = timeSlots.find(
+                              (slot) => slot.value === form.meetUpTime
+                            );
+                            if (standardSlot) {
+                              return standardSlot.label;
+                            }
+
+                            // If not found and it's a custom slot (custom-X), find the original time from availableSchedules
+                            if (
+                              form.meetUpTime &&
+                              form.meetUpTime.startsWith('custom-')
+                            ) {
+                              const schedules =
+                                order.available_schedules ||
+                                order.availableSchedules ||
+                                [];
+                              const availableTimes =
+                                schedules.find(
+                                  (sched) => sched.date === form.meetUpDate
+                                )?.times || [];
+                              const customIndex = parseInt(
+                                form.meetUpTime.split('-')[1]
+                              );
+                              const customTimes = availableTimes.filter(
+                                (time) =>
+                                  !timeSlots.some(
+                                    (slot) =>
+                                      slot.value === time ||
+                                      slot.label === time ||
+                                      slot.label.replace(/\s+/g, ' ').trim() ===
+                                        time.replace(/\s+/g, ' ').trim()
                                   )
-                                );
-                                return customTimes[customIndex] || form.meetUpTime;
-                              }
-                              
-                              return form.meetUpTime;
-                            })()
-                          }`
-                        : "N/A"}
+                              );
+                              return (
+                                customTimes[customIndex] || form.meetUpTime
+                              );
+                            }
+
+                            return form.meetUpTime;
+                          })()}`
+                        : 'N/A'}
                     </strong>
                   </p>
                   <p className="text-sm text-gray-800">
-                    Meet Up Location:{" "}
-                    <strong>{form.meetUpLocation || "N/A"}</strong>
+                    Meet Up Location:{' '}
+                    <strong>{form.meetUpLocation || 'N/A'}</strong>
                   </p>
                 </>
               )}
               <p className="text-sm text-gray-800">
-                Remark: <strong>{form.remarks || "None"}</strong>
+                Remark: <strong>{form.remarks || 'None'}</strong>
               </p>
               <p className="text-sm text-gray-800">
                 Number of Items: <strong>{form.quantity || 1}</strong>
@@ -379,7 +440,7 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
           }}
           disabled={!isFormValid || isSubmitting}
         >
-          {isSubmitting ? "Placing Order..." : "Place Order"}
+          {isSubmitting ? 'Placing Order...' : 'Place Order'}
         </button>
       </div>
       <Modal
@@ -387,25 +448,27 @@ export default function PlaceOrder({ order, quantity, onClose,  currentUser, onO
         onClose={() => {
           if (!isSubmitting) {
             setShowModal(false);
-            setModalStep("confirm");
+            setModalStep('confirm');
             setSubmitError(null);
           }
         }}
-        title={modalStep === "confirm" ? "Confirm Order" : "Order Confirmed"}
+        title={modalStep === 'confirm' ? 'Confirm Order' : 'Order Confirmed'}
         description={
-          modalStep === "confirm"
-            ? "Are you sure you want to place this order? Please review your details before confirming."
+          modalStep === 'confirm'
+            ? 'Are you sure you want to place this order? Please review your details before confirming.'
             : submitError
             ? `Error: ${submitError}`
-            : "Your order has been placed successfully!"
+            : 'Your order has been placed successfully!'
         }
-        type={modalStep === "confirm" ? "confirm" : submitError ? "error" : "alert"}
+        type={
+          modalStep === 'confirm' ? 'confirm' : submitError ? 'error' : 'alert'
+        }
         onConfirm={() => {
-          if (modalStep === "confirm") {
+          if (modalStep === 'confirm') {
             handleCreateOrder();
           } else {
             setShowModal(false);
-            setModalStep("confirm");
+            setModalStep('confirm');
             setSubmitError(null);
             onClose();
           }

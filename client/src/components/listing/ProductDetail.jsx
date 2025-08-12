@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 import { ChevronLeft } from 'lucide-react';
@@ -14,8 +14,13 @@ import {
 
 import { useOrderModals } from '@/hooks';
 import { getUserDetails } from '../../queries/index.js';
-import { formattedUserContact } from '../../utils/formattedUserContact.js';
-import { OrderService } from '../../services';
+import { postReview } from './queries/useProductDetailQueries.js';
+import {
+  formattedUserContact,
+  formattedReview,
+  getDate,
+  getTime,
+} from '../../utils/index.js';
 
 const statusColor = {
   pending: '#FBBC04',
@@ -61,6 +66,7 @@ export default function ProductDetail({
 
   // Add state for LeaveReview modal
   const [showLeaveReview, setShowLeaveReview] = useState(false);
+  const [reviewData, setReviewData] = useState();
   const [confirmType, setConfirmType] = useState('');
 
   // Chat modal state
@@ -68,19 +74,22 @@ export default function ProductDetail({
   const [chatData, setChatData] = useState(null);
   const [chatInitialView, setChatInitialView] = useState('preview');
 
+  const sendReview = postReview();
+
   const {
-    data: buyerProfile = {},
+    data: sellerProfile = {},
     isLoading: buyerContactLoading,
     error: buyerContactError,
-  } = getUserDetails(order.buyer_id);
+  } = getUserDetails(role === 'user' ? order.seller_id : order.buyer_id);
+  console.log(order);
 
   const handleOpenChat = () => {
-    console.log(order);
     const response = {
-      ...formattedUserContact(buyerProfile),
-      productImage: order.productImage || 'https://picsum.photos/200',
+      ...formattedUserContact(sellerProfile),
+      productID: order.listing_id,
     };
 
+    console.log('PRODUCT DETAILS: ', response);
     setChatData(response);
     setChatInitialView('chat');
     setShowChatModal(true);
@@ -95,21 +104,28 @@ export default function ProductDetail({
       order.status?.toLowerCase() === 'order placed');
 
   const handleOpenLeaveReview = () => {
-    handleLeaveReview();
     setShowLeaveReview(true);
   };
 
   // Handler for closing the LeaveReviewComponent
   const handleCloseLeaveReview = () => setShowLeaveReview(false);
 
-  // Optionally, pass user profile info for review
-  const userProfile = {
-    username: order.username,
-    campus: 'PUP Sta Mesa',
-    department: 'CCIS',
-    profileImage: order.userAvatar || 'https://picsum.photos/247/245',
-    id: order.userId, // adjust as needed
-  };
+  useEffect(() => {
+    if (reviewData?.remarks) {
+      const orderForm = {
+        productID: String(order.listing_id),
+        orderID: String(order.id),
+      };
+
+      const form = formattedReview(reviewData, orderForm, 'Product');
+      console.log('FORM ', form);
+      sendReview.mutate(form, {
+        onSuccess: (data) => {
+          console.log('Uploaded Review in dynamodb: ', data);
+        },
+      });
+    }
+  }, [reviewData]);
 
   return (
     <>
@@ -194,9 +210,9 @@ export default function ProductDetail({
         <LeaveReviewComponent
           isOpen={showLeaveReview}
           onClose={handleCloseLeaveReview}
-          userProfile={userProfile}
+          userProfile={formattedUserContact(sellerProfile)}
           onSubmitReview={(reviewData) => {
-            // TODO: handle review submission (API call)
+            setReviewData(reviewData);
             setShowLeaveReview(false);
           }}
         />
