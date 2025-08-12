@@ -103,41 +103,44 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
   ];
 
   const displayName = getDisplayName();
-  
-  const bottomNavItems = useMemo(() => [
-    {
-      name: displayName,
-      path: '/profile',
-      icon: 'user',
-      hasText: true,
-    },
-    {
-      name: 'Orders & Meet Ups',
-      path: '/orders-meetups',
-      icon: 'map',
-      hasText: true,
-    },
-    {
-      name: 'Liked Items',
-      path: '/liked-items',
-      icon: 'heart',
-      hasText: false,
-    },
-    {
-      name: 'Notifications',
-      path: '/',
-      icon: 'bell',
-      hasText: false,
-      action: 'notifications',
-    },
-    {
-      name: 'Messages',
-      path: '/',
-      icon: 'message',
-      hasText: false,
-      action: 'chat',
-    },
-  ], [displayName]); // Only recalculate when displayName changes
+
+  const bottomNavItems = useMemo(
+    () => [
+      {
+        name: displayName,
+        path: '/profile',
+        icon: 'user',
+        hasText: true,
+      },
+      {
+        name: 'Orders & Meet Ups',
+        path: '/orders-meetups',
+        icon: 'map',
+        hasText: true,
+      },
+      {
+        name: 'Liked Items',
+        path: '/liked-items',
+        icon: 'heart',
+        hasText: false,
+      },
+      {
+        name: 'Notifications',
+        path: '/',
+        icon: 'bell',
+        hasText: false,
+        action: 'notifications',
+      },
+      {
+        name: 'Messages',
+        path: '/',
+        icon: 'message',
+        hasText: false,
+        action: 'chat',
+      },
+    ],
+    [displayName]
+  ); // Only recalculate when displayName changes
 
   const handleItemClick = (item) => {
     if (item.action === 'chat') {
@@ -162,7 +165,7 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
     authLogout(); // Reset auth store
     resetDashboard(); // Reset dashboard store (in-memory only now)
 
-        // Clear TanStack Query cache to prevent showing previous user's data
+    // Clear TanStack Query cache to prevent showing previous user's data
     queryClient.clear(); // This clears all cached queries
 
     // Small delay to ensure store resets are processed
@@ -213,6 +216,7 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
     }
   }, [isAuthenticated, navigate]);
 
+  console.log('MOUNTING: ', showChat);
   return (
     <div>
       {/* Red Navigation Bar */}
@@ -332,25 +336,25 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
       )}
 
       {/* Chat Slide-in Overlay */}
-      <div
-        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
-          showChat
-            ? 'opacity-100 pointer-events-auto'
-            : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        {/* Background overlay */}
-        <div className="absolute inset-0" onClick={handleCloseChat} />
-
-        {/* Chat panel sliding from right */}
+      {showChat && (
         <div
-          className={`absolute right-0 top-0 h-full w-[30%] bg-white shadow-2xl transition-transform duration-500 ease-in-out rounded-tl-2xl rounded-bl-2xl ${
-            showChat ? 'translate-x-0' : 'translate-x-full'
+          className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+            showChat
+              ? 'opacity-100 pointer-events-auto'
+              : 'opacity-0 pointer-events-none'
           }`}
         >
-          <ChatApp onClose={handleCloseChat} />
+          {/* Background overlay */}
+          <div className="absolute inset-0" onClick={handleCloseChat} />
+
+          {/* Chat panel sliding from right */}
+          <div
+            className={`absolute right-0 top-0 h-full w-[30%] bg-white shadow-2xl transition-transform duration-500 ease-in-out rounded-tl-2xl rounded-bl-2xl`}
+          >
+            <ChatApp onClose={handleCloseChat} />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Notifications Slide-in Overlay */}
       <div

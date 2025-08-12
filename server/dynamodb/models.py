@@ -7,6 +7,7 @@ class message(BaseModel):
     message_id: str          
     sender_id: str
     receiver_id: str
+    product_id: str
     content: str | None = None
     image: str | None = None
     created_at: str                     #sort-key
@@ -16,6 +17,7 @@ class message(BaseModel):
 class raw_message(BaseModel):
     sender_id: str
     receiver_id: str
+    product_id: str
     content: str | None = None
     image: str | None = None
 

@@ -4,6 +4,7 @@ export const formattedMessage = (form, sellerID) => {
   let response = {
     sender_id: useAuthStore.getState().userID,
     receiver_id: sellerID,
+    product_id: form.productID,
   };
 
   if (form.type === 'text') {

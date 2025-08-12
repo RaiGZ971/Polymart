@@ -1,8 +1,8 @@
-import { ChevronLeft } from "lucide-react";
-import { useChat } from "../../hooks/useChat";
+import { ChevronLeft } from 'lucide-react';
+import { useChat } from '../../hooks/useChat';
 
 export default function ChatPreview({ onChatSelect, onBack }) {
-  const { unread, chats } = useChat();
+  const { readStatus, chats } = useChat();
 
   return (
     <>
@@ -23,7 +23,7 @@ export default function ChatPreview({ onChatSelect, onBack }) {
           </div>
         </div>
         <div className="text-center text-xs font-semibold italic text-gray-400">
-          You have {unread} unread messages
+          You have {readStatus} unread messages
         </div>
         <div className="w-[90%] items-center justify-center mx-auto mt-4 space-y-2 overflow-y-auto flex-1 p-2">
           {chats.map((chat) => (
@@ -40,19 +40,29 @@ export default function ChatPreview({ onChatSelect, onBack }) {
 }
 
 function ChatPreviewComponent({ chatData, onSelect }) {
-  const { username, message, sent, productImage, avatarUrl, isUnread } =
-    chatData;
+  const {
+    id,
+    username,
+    message,
+    sent,
+    productImage,
+    avatarUrl,
+    senderID,
+    readStatus,
+  } = chatData;
 
   const truncateMessage = (text, maxLength = 20) => {
     return text.length > maxLength
-      ? text.substring(0, maxLength) + "..."
+      ? text.substring(0, maxLength) + '...'
       : text;
   };
 
   return (
     <div
       className={`text-left flex flex-row items-center gap-4 rounded-xl p-4 w-full hover:shadow-glow transition-shadow duration-300 justify-between cursor-pointer ${
-        isUnread ? "bg-red-50 border-l-4 border-primary-red" : ""
+        !readStatus && senderID === id
+          ? 'bg-red-50 border-l-4 border-primary-red'
+          : ''
       }`}
       onClick={onSelect}
     >
@@ -63,21 +73,23 @@ function ChatPreviewComponent({ chatData, onSelect }) {
             alt="User Avatar"
             className="w-12 h-12 rounded-full object-cover"
           />
-          {isUnread && (
+          {!readStatus && senderID === id && (
             <div className="absolute top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
           )}
         </div>
         <div className="flex flex-col py-2 text-left items-start">
           <h1
             className={`text-base leading-tight ${
-              isUnread ? "font-bold" : "font-semibold"
+              !readStatus && senderID === id ? 'font-bold' : 'font-semibold'
             }`}
           >
             {username}
           </h1>
           <p
             className={`text-xs ${
-              isUnread ? "text-gray-700 font-medium" : "text-gray-500"
+              !readStatus && senderID === id
+                ? 'text-gray-700 font-medium'
+                : 'text-gray-500'
             }`}
           >
             {truncateMessage(message)}
