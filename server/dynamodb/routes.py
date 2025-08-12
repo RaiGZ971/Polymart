@@ -194,10 +194,12 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, sender_id: str,
 
                 content = msg.get("content")
                 image = msg.get("image")
+                productID = msg.get("productID")
 
                 form = models.raw_message(
                     sender_id=sender_id,
                     receiver_id=receiver_id,
+                    product_id=productID,
                     content=content if content else None,
                     image=image if image else None
                 )
@@ -208,6 +210,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, sender_id: str,
                 
                 broadcast_data = {
                     "sender_id": sender_id,
+                    "product_id": productID,
                     "content": content,
                     "image": image_url,
                     "message_id": processedForm.message_id
@@ -313,6 +316,7 @@ async def get_contacts(user_id: str, current_user: dict = Depends(get_current_us
 
         roomIDs = []
         latestMessages = []
+        latestProductIDs = []
 
         for item in sortedItems:
             room_id = item.get("room_id")
@@ -320,14 +324,16 @@ async def get_contacts(user_id: str, current_user: dict = Depends(get_current_us
                 seen.add(room_id)
                 roomIDs.append(room_id)
                 latestMessages.append({
+                    "senderID": item.get("sender_id"),
                     "message": item.get("content") or "sent a message",
                     "sent": item.get("updated_at"),
-                    "isUnread": item.get("read_status") 
+                    "readStatus": item.get("read_status") 
                     })
+                latestProductIDs.append(item.get("product_id"))
 
         contacts = [roomID.replace(user_id, "") for roomID in roomIDs]
 
-        return {"contacts": contacts, "latest_messages": latestMessages}
+        return {"contacts": contacts, "latest_messages": latestMessages, "products": latestProductIDs}
     
     except ClientError as e:
         raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch rooms in hackybara-message: {e.response["Error"]["Message"]}")
