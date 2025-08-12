@@ -48,7 +48,7 @@ export class ListingService {
    */
   static async getMyListings(params = {}, token) {
     try {
-      const currentUser = UserService.getCurrentUser(token);
+      const currentUser = UserService.getCurrentUser();
       if (!currentUser || !currentUser.user_id) {
         throw new Error('No authenticated user found');
       }

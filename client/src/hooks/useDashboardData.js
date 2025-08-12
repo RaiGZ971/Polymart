@@ -17,7 +17,7 @@ export const useDashboardData = () => {
   } = useDashboardStore();
 
   // Check if user is actually authenticated
-  const isUserAuthenticated = isAuthenticated && token && UserService.isAuthenticated(token);
+  const isUserAuthenticated = isAuthenticated && token && UserService.isAuthenticated();
 
   // Build query parameters based on current state (exclude sort_by for client-side sorting)
   const publicParams = useMemo(
@@ -70,7 +70,10 @@ export const useDashboardData = () => {
 
   // Client-side sorting function
   const sortListings = useCallback((listingsToSort, sortOption) => {
-    console.log(`🔄 Client-side sorting applied: ${sortOption} (${listingsToSort.length} items)`);
+    // Reduced logging frequency - only log when there are items and not during rapid re-renders
+    if (listingsToSort.length > 0 && import.meta.env.DEV) {
+      console.log(`🔄 Sorted ${listingsToSort.length} items by: ${sortOption}`);
+    }
     const sorted = [...listingsToSort];
 
     switch (sortOption) {
