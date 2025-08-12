@@ -35,9 +35,12 @@ export default function OrdersMeetups() {
   const { orders, loading, error, getFilteredOrders, getCounts, refreshData } =
     useOrdersData();
 
+  // Get counts for tabs - destructure directly from the memoized object
+  const { yourOrdersCount, listingsCount } = getCounts;
+
   // Get current user on component mount
   useEffect(() => {
-    const user = UserService.getCurrentUser(token);
+    const user = UserService.getCurrentUser();
     setCurrentUser(user);
 
     // If user is not authenticated, redirect to login
@@ -97,7 +100,6 @@ export default function OrdersMeetups() {
       
     } catch (error) {
       console.error(`Failed to ${dialogType} order:`, error);
-      console.error(`Failed to ${dialogType} order:`, error);
       alert(`Failed to ${dialogType} order: ${error.message || 'Unknown error'}`);
     } finally {
       setIsUpdatingOrder(false);
@@ -111,9 +113,6 @@ export default function OrdersMeetups() {
     setMessage('');
     setDialogType('');
   };
-
-  // Count for tabs
-  const { yourOrdersCount, listingsCount } = getCounts();
 
   // Filter data based on activeTab, selectedStatus, and selectedLocation
   const filteredData = getFilteredOrders(
