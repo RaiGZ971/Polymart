@@ -1,16 +1,22 @@
-import { useState } from "react";
+import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useListingForm } from "../hooks/useListingForm";
-import { useListingFieldRenderer } from "../hooks/useListingFieldRenderer";
-import { ImageUploader } from "../components";
-import { listingFieldConfig } from "../data/listingSchema";
-import { transformListingDataForAPI, validateListingData } from "../utils/listingTransform";
-import { ListingService } from "../services/listingService";
-import { listingKeys } from "../hooks/queries/useListingQueries";
-import PUPMap from "../assets/pupmap.png";
-import meetUpLocations from "../data/meetUpLocations";
-import { ChevronLeft } from "lucide-react";
-import Modal from "./shared/Modal";
+import { useListingForm } from '../hooks/useListingForm';
+import { useListingFieldRenderer } from '../hooks/useListingFieldRenderer';
+import { ImageUploader } from '../components';
+import { listingFieldConfig } from '../data/listingSchema';
+import {
+  transformListingDataForAPI,
+  validateListingData,
+} from '../utils/listingTransform';
+import { ListingService } from '../services/listingService';
+import { listingKeys } from '../hooks/queries/useListingQueries';
+import PUPMap from '../assets/pupmap.png';
+import meetUpLocations from '../data/meetUpLocations';
+import { ChevronLeft } from 'lucide-react';
+import Modal from './shared/Modal';
+import { postNotification } from '../queries/postNotification.js';
+import { formattedNotification } from '../utils/formattedNotification.js';
+import { useAuthStore } from '../store/authStore.js';
 
 export default function CreateListingComponent({ onClose }) {
   const queryClient = useQueryClient();
@@ -43,10 +49,12 @@ export default function CreateListingComponent({ onClose }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
+  const { mutateAsync: uploadNotification } = postNotification();
+
   const handleSubmit = () => {
     // Use the enhanced validation
     const validation = validateListingData(listingData);
-    
+
     if (validation.isValid) {
       setSubmitError(null);
       setShowConfirm(true);
@@ -57,44 +65,62 @@ export default function CreateListingComponent({ onClose }) {
   };
 
   const handleConfirm = async () => {
+    console.log(listingData);
+
     setIsSubmitting(true);
     setSubmitError(null);
-    
+
     try {
       // Transform the frontend data to backend format
       const transformedData = transformListingDataForAPI(listingData);
-      
+
       // Create listing with images
       const result = await ListingService.createListingWithImages(
         transformedData,
         listingData.productImages
       );
-      
+
       if (result.success) {
         // Close confirmation modal and show success modal
         setShowConfirm(false);
         setShowSuccess(true);
 
-  // Immediately refresh any listings queries so UI shows latest data
-  // This invalidates all queries starting with ['listings'] which includes
-  // public listings and the authenticated user's listings.
-  await queryClient.invalidateQueries({ queryKey: listingKeys.all });
-        
+        // Immediately refresh any listings queries so UI shows latest data
+        // This invalidates all queries starting with ['listings'] which includes
+        // public listings and the authenticated user's listings.
+        await queryClient.invalidateQueries({ queryKey: listingKeys.all });
+
         // Check if image upload had issues
         if (result.data.images && !result.data.images.success) {
-          console.warn('Listing created but image upload failed:', result.data.images.error);
+          console.warn(
+            'Listing created but image upload failed:',
+            result.data.images.error
+          );
         }
       } else {
         throw new Error(result.message || 'Failed to create listing');
       }
-      
     } catch (error) {
       console.error('Failed to submit listing:', error);
-      setSubmitError(error.message || 'Failed to create listing. Please try again.');
+      setSubmitError(
+        error.message || 'Failed to create listing. Please try again.'
+      );
       setShowConfirm(false);
     } finally {
       setIsSubmitting(false);
     }
+
+    //temporary related ID
+    const notification = await uploadNotification(
+      formattedNotification({
+        userID: useAuthStore.getState().userID,
+        notificationType: 'listing-approved',
+        content: `Your listing ${listingData.productTitle} has been approved and is now live!`,
+        relatedID: listingData.productTitle,
+      })
+    );
+
+    console.log('NOTIFICATION: ', notification);
   };
 
   const handleSuccessConfirm = () => {
@@ -110,7 +136,7 @@ export default function CreateListingComponent({ onClose }) {
   const isOnlineOnly =
     Array.isArray(listingData.transactionMethods) &&
     listingData.transactionMethods.length === 1 &&
-    listingData.transactionMethods[0] === "Online";
+    listingData.transactionMethods[0] === 'Online';
 
   return (
     <div className="w-full max-w-4xl bg-white rounded-xl shadow-glow p-8 relative">
@@ -128,7 +154,7 @@ export default function CreateListingComponent({ onClose }) {
             Create New Listing
           </h1>
           {/* Empty div for spacing to keep header centered */}
-          <div style={{ width: "80px" }} />
+          <div style={{ width: '80px' }} />
         </div>
         <Container>
           <div>
@@ -151,15 +177,15 @@ export default function CreateListingComponent({ onClose }) {
               Product Specification
             </h1>
           </div>
-          {renderListingField("productTitle")}
-          {renderListingField("productDescription")}
+          {renderListingField('productTitle')}
+          {renderListingField('productDescription')}
           <div className="w-full flex flex-row gap-4">
-            <div className="w-1/2">{renderListingField("productCategory")}</div>
-            <div className="w-1/2">{renderListingField("productTags")}</div>
+            <div className="w-1/2">{renderListingField('productCategory')}</div>
+            <div className="w-1/2">{renderListingField('productTags')}</div>
           </div>
           <div className="w-full flex flex-row gap-4">
-            {renderListingField("price")}
-            {renderListingField("stock")}
+            {renderListingField('price')}
+            {renderListingField('stock')}
           </div>
         </Container>
         <Container>
@@ -172,7 +198,7 @@ export default function CreateListingComponent({ onClose }) {
               with an online transaction.
             </h1>
           </div>
-          {renderListingField("transactionMethods")}
+          {renderListingField('transactionMethods')}
         </Container>
         <Container>
           <div>
@@ -180,13 +206,14 @@ export default function CreateListingComponent({ onClose }) {
               Choose your preferred payment method
             </h1>
             <h1 className="text-sm text-gray-800 -mb-3">
-              All payments happen outside the app (either during meet-ups or through chat arrangements).
+              All payments happen outside the app (either during meet-ups or
+              through chat arrangements).
             </h1>
           </div>
-          {renderListingField("paymentMethods", {
-            filteredOptions: isOnlineOnly 
+          {renderListingField('paymentMethods', {
+            filteredOptions: isOnlineOnly
               ? ['GCash', 'Maya', 'Bank Transfer', 'Remittance']
-              : null
+              : null,
           })}
         </Container>
         {!isOnlineOnly && (
@@ -196,7 +223,8 @@ export default function CreateListingComponent({ onClose }) {
                 Choose your preferred meet-up location/s
               </h1>
               <h1 className="text-sm text-gray-800 ">
-                Here are the common campus locations where meet-ups usually happen.
+                Here are the common campus locations where meet-ups usually
+                happen.
                 <br /> <br /> Please select all the places you're comfortable
                 meeting at:
               </h1>
@@ -212,41 +240,46 @@ export default function CreateListingComponent({ onClose }) {
                   <h1 className="text-xl text-primary-red font-semibold mb-3">
                     Meet Up Locations
                   </h1>
-                  
+
                   {/* Select All Checkbox */}
                   <div className="flex items-center mb-4 p-3 bg-gray-50 rounded-lg border">
                     <input
                       type="checkbox"
                       id="selectAllLocations"
                       checked={(() => {
-                        const allLocations = meetUpLocations.map(loc => loc.value);
-                        const currentLocations = listingData.meetupLocations || [];
-                        return allLocations.every(location => 
+                        const allLocations = meetUpLocations.map(
+                          (loc) => loc.value
+                        );
+                        const currentLocations =
+                          listingData.meetupLocations || [];
+                        return allLocations.every((location) =>
                           currentLocations.includes(location)
                         );
                       })()}
                       onChange={(e) => {
-                        const allLocations = meetUpLocations.map(loc => loc.value);
-                        
+                        const allLocations = meetUpLocations.map(
+                          (loc) => loc.value
+                        );
+
                         if (e.target.checked) {
                           // Select all
-                          handleArraySelection("meetupLocations", allLocations);
+                          handleArraySelection('meetupLocations', allLocations);
                         } else {
                           // Deselect all
-                          handleArraySelection("meetupLocations", []);
+                          handleArraySelection('meetupLocations', []);
                         }
                       }}
                       className="w-4 h-4 text-primary-red bg-gray-100 border-gray-300 rounded focus:ring-primary-red focus:ring-2"
                     />
-                    <label 
-                      htmlFor="selectAllLocations" 
+                    <label
+                      htmlFor="selectAllLocations"
                       className="ml-2 text-sm font-medium text-gray-700 cursor-pointer"
                     >
                       Select All Locations
                     </label>
                   </div>
-                  
-                  {renderListingField("meetupLocations")}
+
+                  {renderListingField('meetupLocations')}
                 </div>
               </div>
             </Container>
@@ -258,7 +291,7 @@ export default function CreateListingComponent({ onClose }) {
                 Select the date and time that best fits your schedule for the
                 meet-ups.
               </h1>
-              {renderListingField("availableSchedules")}
+              {renderListingField('availableSchedules')}
             </Container>
           </>
         )}
@@ -269,7 +302,7 @@ export default function CreateListingComponent({ onClose }) {
           <h1 className="text-sm text-gray-800 ">
             Leave a remark regarding product or meet up.
           </h1>
-          {renderListingField("remark")}
+          {renderListingField('remark')}
         </Container>
         <div className="w-full flex flex-row gap-4 justify-end">
           <div className="w-[20%]">
@@ -291,14 +324,14 @@ export default function CreateListingComponent({ onClose }) {
             </button>
           </div>
         </div>
-        
+
         {/* Error Message */}
         {submitError && (
           <div className="w-full p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-600 text-sm">{submitError}</p>
           </div>
         )}
-        
+
         <Modal
           isOpen={showConfirm}
           onClose={() => !isSubmitting && setShowConfirm(false)}
@@ -306,10 +339,10 @@ export default function CreateListingComponent({ onClose }) {
           type="confirmation"
           title="Submit Listing?"
           description="You're almost done! Please make sure all your product details are correct before submitting. Once submitted, your listing will be sent for review and made visible to other users (if applicable)."
-          confirmText={isSubmitting ? "Submitting..." : "Submit"}
+          confirmText={isSubmitting ? 'Submitting...' : 'Submit'}
           disabled={isSubmitting}
         />
-        
+
         <Modal
           isOpen={showSuccess}
           onClose={handleSuccessConfirm}

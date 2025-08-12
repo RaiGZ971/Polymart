@@ -15,7 +15,11 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getListing, getProductReview } from './queries/productDetailsQueries';
 import { getUserDetails, getUsersDetails } from '../../queries/index.js';
 import { useAuthStore } from '../../store/authStore';
-import { usePendingOrderCheck, useProductDetailsModals, useProductDetailsLogic } from '../../hooks';
+import {
+  usePendingOrderCheck,
+  useProductDetailsModals,
+  useProductDetailsLogic,
+} from '../../hooks';
 import { formattedUserContact } from '../../utils/formattedUserContact';
 
 export default function ViewProductDetails() {
@@ -110,14 +114,26 @@ export default function ViewProductDetails() {
   }, [rawReviews, usersData]);
 
   // Extract business logic to custom hook
-  const { averageRating, handleQuantityChange, handlePlaceOrderClick, handleOfferConfirm } = 
-    useProductDetailsLogic(order, reviews, hasPendingOrder);
+  const {
+    averageRating,
+    handleQuantityChange,
+    handlePlaceOrderClick,
+    handleOfferConfirm,
+  } = useProductDetailsLogic(order, reviews, hasPendingOrder);
 
   const handleOpenChat = () => {
+    console.log('OPEN', order);
     const response = {
       ...formattedUserContact(sellerProfile),
-      productImage: order.productImage || 'https://picsum.photos/200',
+      productID: order.listingId,
+      productName: order.productName,
+      productImage: order.productImage,
+      productPrice:
+        order.price_min !== order.price_max
+          ? `PHP ${order.price_min} - PHP ${order.price_max}`
+          : `PHP ${order.price_max}`,
     };
+    console.log('VIEW PRODUCT DETAILS: ', response);
     openChat(response);
   };
 
@@ -218,10 +234,10 @@ export default function ViewProductDetails() {
       <MapModal isOpen={showMapModal} onClose={closeMapModal} />
 
       {/* Chat Modal */}
-      <ChatModal 
-        isOpen={showChat} 
-        onClose={closeChat} 
-        sellerContact={sellerContact} 
+      <ChatModal
+        isOpen={showChat}
+        onClose={closeChat}
+        sellerContact={sellerContact}
       />
 
       {/* Offer Modal */}

@@ -22,6 +22,12 @@ export class ChatService {
     );
   }
 
+  static async updateReadStatus(senderID, receiverID) {
+    return ApiClient.putStatus(
+      `/dynamodb/messages-status-updates/${senderID}/${receiverID}`
+    );
+  }
+
   static async deleteMessage(roomID, messageID) {
     return ApiClient.delete(`/dynamodb/message-delete/${roomID}/${messageID}`);
   }
