@@ -186,38 +186,49 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, sender_id: str,
     try:
         while True:
             data = await websocket.receive_text()
-            msg = json.loads(data)
-
-            content = msg.get("content")
-            image = msg.get("image")
-
-            form = models.raw_message(
-                sender_id=sender_id,
-                receiver_id=receiver_id,
-                content=content if content else None,
-                image=image if image else None
-            )
-
-            processedForm = utils.process_message_form(room_id, form)
-
-            # Post message in dynamodb hackybara-message
+            print(f"📨 Received WebSocket data: {data}")
+            
             try:
-                tableMessage.put_item(
-                    Item=processedForm.model_dump(exclude_none=True)
+                msg = json.loads(data)
+                print(f"📋 Parsed message: {msg}")
+
+                content = msg.get("content")
+                image = msg.get("image")
+
+                form = models.raw_message(
+                    sender_id=sender_id,
+                    receiver_id=receiver_id,
+                    content=content if content else None,
+                    image=image if image else None
                 )
-            except ClientError as e:
-                raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed Post in hackybara-message: {e.response["Error"]["Message"]}")
-            
-            image_url = config.generate_private_url(image) if image else None
-            
-            await manager.broadcast({
-                "sender_id": sender_id,
-                "content": content,
-                "image": image_url,
-                "message_id": processedForm.message_id
-            }, room_id)
+
+                processedForm = utils.process_message_form(room_id, form)
+
+                image_url = config.generate_private_url(image) if image else None
+                
+                broadcast_data = {
+                    "sender_id": sender_id,
+                    "content": content,
+                    "image": image_url,
+                    "message_id": processedForm.message_id
+                }
+                print(f"📡 Broadcasting: {broadcast_data}")
+                
+                await manager.broadcast(broadcast_data, room_id)
+                print(f"✅ Message broadcasted to room: {room_id}")
+                
+            except json.JSONDecodeError as e:
+                print(f"❌ JSON decode error: {e}")
+                await websocket.send_text(json.dumps({"error": "Invalid JSON format"}))
+            except Exception as e:
+                print(f"❌ Message processing error: {e}")
+                await websocket.send_text(json.dumps({"error": f"Message processing failed: {str(e)}"}))
 
     except WebSocketDisconnect:
+        print(f"🔌 WebSocket disconnected from room: {room_id}")
+        manager.disconnect(websocket, room_id)
+    except Exception as e:
+        print(f"❌ Unexpected WebSocket error: {e}")
         manager.disconnect(websocket, room_id)
 
 @router.get("/messages/{sender_id}/{receiver_id}")
