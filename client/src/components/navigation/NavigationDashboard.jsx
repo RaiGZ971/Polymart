@@ -113,7 +113,7 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
     },
     {
       name: 'Orders & Meet Ups',
-      path: '/orders-meetups',
+      path: '/orders',
       icon: 'map',
       hasText: true,
     },
