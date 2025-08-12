@@ -35,7 +35,6 @@ const ChatContainer = ({ chatData, onBack }) => {
   const handleSend = async (messageData) => {
     let form;
 
-    console.log(chatData.id);
     if (messageData.type === 'image') {
       const imageURL = await sendImage.mutateAsync({
         sellerID: chatID,
