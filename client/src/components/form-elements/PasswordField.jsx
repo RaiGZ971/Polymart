@@ -115,11 +115,15 @@ export default function PasswordField({
     }
 
     // Password masking behavior when hidden
-    if (typed.length < realValue.length) {
-      // User deleted a character
-      const newRealValue = realValue.substring(0, typed.length);
+    if (typed.length < maskedValue.length) {
+      // User deleted a character - calculate how many characters were deleted
+      const deletedCount = maskedValue.length - typed.length;
+      const newRealValue = realValue.substring(0, realValue.length - deletedCount);
       setRealValue(newRealValue);
       setMaskedValue("•".repeat(newRealValue.length));
+      
+      // Clear any pending timer since we're updating the display
+      clearTimeout(maskTimerRef.current);
       
       if (onChange) {
         const syntheticEvent = {
@@ -132,7 +136,7 @@ export default function PasswordField({
         };
         onChange(syntheticEvent);
       }
-    } else if (typed.length === realValue.length + 1) {
+    } else if (typed.length === maskedValue.length + 1) {
       // User added one character
       const lastChar = typed[typed.length - 1];
       const newRealValue = realValue + lastChar;
@@ -159,8 +163,8 @@ export default function PasswordField({
         };
         onChange(syntheticEvent);
       }
-    } else {
-      // User pasted or jumped cursor; ignore for security
+    } else if (typed.length !== maskedValue.length) {
+      // User pasted, selected and typed, or other complex operation; reset to current state
       e.target.value = maskedValue;
       return;
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { OrderService, UserService } from '../services';
 import { useAuthStore } from '../store/authStore.js';
 
@@ -6,43 +6,15 @@ export const useOrdersData = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { token } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
-  // Fetch user's orders
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      console.log('Fetching orders...');
-      const response = await OrderService.getUserOrders({
-        page: 1,
-        page_size: 100, // Get all orders
-      });
-
-      console.log('Orders API response:', response);
-      const ordersData = response.orders || [];
-      const currentUser = UserService.getCurrentUser(token);
-
-      console.log('Current user:', currentUser);
-      console.log('Raw orders data:', ordersData);
-
-      // Transform orders to match the expected format
-      const transformedOrders = ordersData.map(transformOrderToComponent);
-      console.log('Transformed orders:', transformedOrders);
-
-      setOrders(transformedOrders);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      setError(error.message || 'Failed to load orders');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Get current user once and memoize it - no more JWT parsing!
+  const currentUser = useMemo(() => {
+    return UserService.getCurrentUser();
+  }, [isAuthenticated]); // Only re-compute when auth state changes
 
   // Transform API order data to match the expected format for OrdersListingsComponent
-  const transformOrderToComponent = (order) => {
-    const currentUser = UserService.getCurrentUser(token);
+  const transformOrderToComponent = useCallback((order) => {
     const isUserBuyer = order.buyer_id === currentUser?.user_id;
 
     return {
@@ -117,10 +89,40 @@ export const useOrdersData = () => {
         'https://via.placeholder.com/201x101?text=No+Image',
       productImages: order.listing?.images || [],
     };
-  };
+  }, [currentUser]);
 
-  // Filter orders based on criteria
-  const getFilteredOrders = (
+  // Fetch user's orders - memoized to prevent unnecessary re-creation
+  const fetchOrders = useCallback(async () => {
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await OrderService.getUserOrders({
+        page: 1,
+        page_size: 100, // Get all orders
+      });
+
+      const ordersData = response.orders || [];
+
+      // Transform orders to match the expected format
+      const transformedOrders = ordersData.map(transformOrderToComponent);
+
+      setOrders(transformedOrders);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setError(error.message || 'Failed to load orders');
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUser, transformOrderToComponent]);
+
+  // Filter orders based on criteria - memoized to prevent unnecessary re-calculations
+  const getFilteredOrders = useCallback((
     status = 'all',
     location = 'all',
     activeTab = 'orders'
@@ -149,10 +151,10 @@ export const useOrdersData = () => {
     }
 
     return filtered;
-  };
+  }, [orders]);
 
-  // Get counts for tabs
-  const getCounts = () => {
+  // Get counts for tabs - memoized to prevent unnecessary re-calculations
+  const getCounts = useMemo(() => {
     const userOrders = orders.filter((order) => order.role === 'user').length;
     const sellerOrders = orders.filter(
       (order) => order.role === 'owner'
@@ -162,17 +164,19 @@ export const useOrdersData = () => {
       yourOrdersCount: userOrders,
       listingsCount: sellerOrders,
     };
-  };
+  }, [orders]);
 
   // Refresh data
-  const refreshData = () => {
+  const refreshData = useCallback(() => {
     fetchOrders();
-  };
+  }, [fetchOrders]);
 
-  // Load data on mount
+  // Load data when currentUser is available
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    if (currentUser) {
+      fetchOrders();
+    }
+  }, [currentUser, fetchOrders]);
 
   return {
     orders,

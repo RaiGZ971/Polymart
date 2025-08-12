@@ -104,43 +104,40 @@ export default function NavigationDashboard({ onLogoClick, onHomeClick }) {
 
   const displayName = getDisplayName();
 
-  const bottomNavItems = useMemo(
-    () => [
-      {
-        name: displayName,
-        path: '/profile',
-        icon: 'user',
-        hasText: true,
-      },
-      {
-        name: 'Orders & Meet Ups',
-        path: '/orders-meetups',
-        icon: 'map',
-        hasText: true,
-      },
-      {
-        name: 'Liked Items',
-        path: '/liked-items',
-        icon: 'heart',
-        hasText: false,
-      },
-      {
-        name: 'Notifications',
-        path: '/',
-        icon: 'bell',
-        hasText: false,
-        action: 'notifications',
-      },
-      {
-        name: 'Messages',
-        path: '/',
-        icon: 'message',
-        hasText: false,
-        action: 'chat',
-      },
-    ],
-    [displayName]
-  ); // Only recalculate when displayName changes
+  const bottomNavItems = useMemo(() => [
+    {
+      name: displayName,
+      path: '/profile',
+      icon: 'user',
+      hasText: true,
+    },
+    {
+      name: 'Orders & Meet Ups',
+      path: '/orders',
+      icon: 'map',
+      hasText: true,
+    },
+    {
+      name: 'Liked Items',
+      path: '/liked-items',
+      icon: 'heart',
+      hasText: false,
+    },
+    {
+      name: 'Notifications',
+      path: '/',
+      icon: 'bell',
+      hasText: false,
+      action: 'notifications',
+    },
+    {
+      name: 'Messages',
+      path: '/',
+      icon: 'message',
+      hasText: false,
+      action: 'chat',
+    },
+  ], [displayName]); // Only recalculate when displayName changes
 
   const handleItemClick = (item) => {
     if (item.action === 'chat') {
