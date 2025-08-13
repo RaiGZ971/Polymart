@@ -735,3 +735,21 @@ def build_listing_detail_query(supabase, listing_id: int):
         transaction_methods,
         payment_methods
     """).eq("listing_id", listing_id).eq("status", "active").not_.is_("seller_id", "null")
+
+
+async def get_seller_listing_count(user_id: UUID, seller_id: UUID) -> int:
+    """
+    Get the total count of active listings for a specific seller.
+    """
+    try:
+        supabase = get_authenticated_client(user_id)
+        
+        count_result = supabase.table("listings").select(
+            "listing_id", count="exact"
+        ).eq("seller_id", seller_id).eq("status", "active").execute()
+        
+        return getattr(count_result, 'count', 0) or 0
+        
+    except Exception as e:
+        handle_database_error("get seller listing count", e)
+        return 0

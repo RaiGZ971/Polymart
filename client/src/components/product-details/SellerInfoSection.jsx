@@ -51,7 +51,7 @@ export default function SellerInfoSection({
             </p>
             <p className="text-gray-500 text-sm">PUP Sta Mesa | CCIS</p>
             <p className="text-xs text-gray-800 mt-2">
-              {order.seller_listing_count || 0} Listings |{' '}
+              {order.seller_listing_count || 0} Active Listings |{' '}
               <span className="text-yellow-400">★</span> 4.5 stars
             </p>
           </div>
