@@ -196,12 +196,13 @@ async def get_public_listings(user_id: Optional[UUID] = None, page: int = 1, pag
                              sort_by: Optional[str] = "newest") -> Dict[str, Any]:
     """
     Get public listings (excluding user's own listings) with optimized batch queries.
+    Includes inactive listings if the user has pending orders on them.
     """
     try:
         supabase = get_authenticated_client(user_id)
         
-        # Build base query for listings
-        query = supabase.table("listings").select("""
+        # First, get listings with active status
+        active_query = supabase.table("listings").select("""
             listing_id,
             seller_id,
             name,
@@ -220,7 +221,44 @@ async def get_public_listings(user_id: Optional[UUID] = None, page: int = 1, pag
             payment_methods
         """).eq("status", "active").neq("seller_id", user_id)
         
-        # Apply filters
+        # Also get inactive listings where user has pending orders
+        inactive_listings_with_orders = []
+        if user_id:
+            # Get listing IDs where user has pending orders
+            orders_result = supabase.table("orders").select("listing_id").eq(
+                "buyer_id", user_id
+            ).in_("status", ["pending", "confirmed"]).execute()
+            
+            if orders_result.data:
+                listing_ids_with_orders = list(set([order["listing_id"] for order in orders_result.data]))
+                
+                # Get inactive listings where user has pending orders
+                inactive_query = supabase.table("listings").select("""
+                    listing_id,
+                    seller_id,
+                    name,
+                    description,
+                    category,
+                    tags,
+                    price_min,
+                    price_max,
+                    total_stock,
+                    sold_count,
+                    status,
+                    created_at,
+                    updated_at,
+                    seller_meetup_locations,
+                    transaction_methods,
+                    payment_methods
+                """).eq("status", "inactive").neq("seller_id", user_id).in_("listing_id", listing_ids_with_orders)
+                
+                inactive_result = inactive_query.execute()
+                inactive_listings_with_orders = inactive_result.data if inactive_result.data else []
+        
+        # Build the main query for active listings
+        query = active_query
+        
+        # Apply filters to active listings
         if category:
             query = query.eq("category", category)
         
@@ -234,10 +272,39 @@ async def get_public_listings(user_id: Optional[UUID] = None, page: int = 1, pag
         if max_price is not None:
             query = query.lte("price_max", max_price)
         
-        # Get total count with a separate optimized count query
+        # Execute active listings query
+        active_result = query.execute()
+        active_listings = active_result.data if active_result.data else []
+        
+        # Apply the same filters to inactive listings with orders
+        filtered_inactive_listings = []
+        if inactive_listings_with_orders:
+            for listing in inactive_listings_with_orders:
+                # Apply category filter
+                if category and listing.get("category") != category:
+                    continue
+                    
+                # Apply search filter
+                if search and search.lower() not in listing.get("name", "").lower():
+                    continue
+                    
+                # Apply price filters
+                if min_price is not None and listing.get("price_min", 0) < min_price:
+                    continue
+                    
+                if max_price is not None and listing.get("price_max", float('inf')) > max_price:
+                    continue
+                    
+                filtered_inactive_listings.append(listing)
+        
+        # Combine active and filtered inactive listings
+        all_listings = active_listings + filtered_inactive_listings
+        
+        # Get total count for pagination (active + inactive with orders)
+        # For count query, we need to do the same logic
         count_query = supabase.table("listings").select("listing_id", count="exact").eq("status", "active").neq("seller_id", user_id)
         
-        # Apply same filters to count query
+        # Apply same filters to count query for active listings
         if category:
             count_query = count_query.eq("category", category)
         if search:
@@ -248,30 +315,32 @@ async def get_public_listings(user_id: Optional[UUID] = None, page: int = 1, pag
             count_query = count_query.lte("price_max", max_price)
         
         count_result = count_query.execute()
-        total_count = getattr(count_result, 'count', None)
-        if total_count is None:
-            total_count = len(count_result.data) if count_result.data else 0
+        active_count = getattr(count_result, 'count', None)
+        if active_count is None:
+            active_count = len(count_result.data) if count_result.data else 0
         
-        # Apply sorting
+        # Add count of filtered inactive listings with orders
+        total_count = active_count + len(filtered_inactive_listings)
+        
+        # Apply sorting to combined listings
         if sort_by == "price_low_high":
-            query = query.order("price_min", desc=False)
+            all_listings.sort(key=lambda x: x.get("price_min", 0))
         elif sort_by == "price_high_low":
-            query = query.order("price_min", desc=True)
+            all_listings.sort(key=lambda x: x.get("price_min", 0), reverse=True)
         elif sort_by == "name_a_z":
-            query = query.order("name", desc=False)
+            all_listings.sort(key=lambda x: x.get("name", "").lower())
         elif sort_by == "name_z_a":
-            query = query.order("name", desc=True)
+            all_listings.sort(key=lambda x: x.get("name", "").lower(), reverse=True)
         elif sort_by == "date_oldest":
-            query = query.order("created_at", desc=False)
+            all_listings.sort(key=lambda x: x.get("created_at", ""))
         else:  # Default to newest
-            query = query.order("created_at", desc=True)
+            all_listings.sort(key=lambda x: x.get("created_at", ""), reverse=True)
         
-        # Apply pagination
+        # Apply pagination to combined and sorted listings
         offset = calculate_pagination_offset(page, page_size)
-        query = query.range(offset, offset + page_size - 1)
+        paginated_listings = all_listings[offset:offset + page_size]
         
-        result = query.execute()
-        listings = result.data if result.data else []
+        listings = paginated_listings
         
         # Batch fetch related data for all listings
         if listings:
