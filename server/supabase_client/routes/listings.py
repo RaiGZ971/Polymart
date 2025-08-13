@@ -62,7 +62,7 @@ async def get_product_listings(
         
         # Convert listings to products
         supabase = get_authenticated_client(current_user["user_id"])
-        products = await convert_listings_to_products(supabase, listings_data["listings"])
+        products = await convert_listings_to_products(supabase, listings_data["listings"], current_user["user_id"])
         
         return ProductListingsResponse(
             products=products,
@@ -131,7 +131,7 @@ async def get_user_listings(
 
         # Convert listings to products
         supabase = get_authenticated_client(current_user["user_id"])
-        products = await convert_listings_to_products(supabase, listings_data)
+        products = await convert_listings_to_products(supabase, listings_data, current_user["user_id"])
 
         return ProductListingsResponse(
             products=products,
@@ -166,7 +166,7 @@ async def get_product_by_id(
         
         # Convert to product object
         supabase = get_authenticated_client(current_user["user_id"])
-        product = await convert_listing_to_product(supabase, listing)
+        product = await convert_listing_to_product(supabase, listing, current_user["user_id"])
         
         return product
         
