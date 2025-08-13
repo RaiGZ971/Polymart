@@ -7,13 +7,8 @@ import { useAuthStore } from "../../store/authStore";
 
 export default function LikedItems() {
   const { userID, data: userData } = useAuthStore();
-  const { 
-    favorites, 
-    loading, 
-    error, 
-    fetchFavorites, 
-    removeFavorite 
-  } = useFavorites();
+  const { favorites, loading, error, fetchFavorites, removeFavorite } =
+    useFavorites();
 
   useEffect(() => {
     fetchFavorites();
@@ -23,7 +18,7 @@ export default function LikedItems() {
     try {
       await removeFavorite(listingId);
     } catch (err) {
-      console.error('Error removing favorite:', err);
+      console.error("Error removing favorite:", err);
       // Could show a toast notification here
     }
   };
@@ -38,14 +33,17 @@ export default function LikedItems() {
 
     return {
       listingId: listing.listing_id, // Changed from listing_id to listingId
-      productImage: listing.images && listing.images.length > 0 
-        ? listing.images.find(img => img.is_primary)?.image_url || listing.images[0]?.image_url
-        : null,
+      productImage:
+        listing.images && listing.images.length > 0
+          ? listing.images.find((img) => img.is_primary)?.image_url ||
+            listing.images[0]?.image_url
+          : null,
       productName: listing.name,
       productPrice: listing.price_min,
-      priceRange: listing.price_min !== listing.price_max 
-        ? { min: listing.price_min, max: listing.price_max }
-        : null,
+      priceRange:
+        listing.price_min !== listing.price_max
+          ? { min: listing.price_min, max: listing.price_max }
+          : null,
       hasPriceRange: listing.price_min !== listing.price_max,
       username: listing.seller_username,
       userAvatar: listing.seller_profile_photo_url,
@@ -53,14 +51,14 @@ export default function LikedItems() {
       // Add a flag to identify this as a favorite item
       isFavorite: true,
       isOwner: isOwner,
-      onRemoveFavorite: () => handleRemoveFavorite(favorite.listing_id)
+      onRemoveFavorite: () => handleRemoveFavorite(favorite.listing_id),
     };
   };
 
   return (
     <MainDashboard>
       <DashboardBackButton />
-      
+
       <div className="w-[80%] mt-5">
         {/* Header - Always visible */}
         <div className="flex items-center justify-between mb-8">
@@ -79,7 +77,9 @@ export default function LikedItems() {
         ) : error ? (
           <div className="flex flex-col items-center justify-center min-h-[400px]">
             <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Error Loading Liked Items</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Error Loading Liked Items
+            </h2>
             <p className="text-gray-600 mb-4">{error}</p>
             <button
               onClick={fetchFavorites}
@@ -91,10 +91,12 @@ export default function LikedItems() {
         ) : favorites.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
             <Heart className="h-20 w-20 text-gray-300 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">No Liked Items Yet</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              No Liked Items Yet
+            </h2>
             <p className="text-gray-600 mb-6 max-w-md">
-              Start exploring products and click the heart icon to save items you love. 
-              They'll appear here for easy access later.
+              Start exploring products and click the heart icon to save items
+              you love. They'll appear here for easy access later.
             </p>
             <a
               href="/dashboard"
@@ -107,7 +109,7 @@ export default function LikedItems() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {favorites.map((favorite) => {
               const productData = transformFavoriteToProductCard(favorite);
-              
+
               if (!productData) {
                 return null;
               }
@@ -115,14 +117,7 @@ export default function LikedItems() {
               return (
                 <div key={favorite.listing_id} className="relative">
                   <ProductCard order={productData} />
-                  {/* Optional: Add a remove favorite button overlay */}
-                  <button
-                    onClick={() => handleRemoveFavorite(favorite.listing_id)}
-                    className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition-colors group"
-                    title="Remove from liked items"
-                  >
-                    <Heart className="h-4 w-4 text-primary-red fill-current group-hover:text-red-600" />
-                  </button>
+                  {/* Removed overlay heart button */}
                 </div>
               );
             })}

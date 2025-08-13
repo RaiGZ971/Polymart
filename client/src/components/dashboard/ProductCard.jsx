@@ -31,10 +31,13 @@ export default function ProductCard({ order }) {
   }, []);
 
   // Handle missing data gracefully
-  const displayImage = productImage || 'https://via.placeholder.com/268x245?text=No+Image';
-  const displayName = productName || 'Untitled Product';
-  const displayUsername = username || 'Unknown User';
-  const displayAvatar = userAvatar || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyNUMxNy43OTA5IDI1IDE2IDIzLjIwOTEgMTYgMjFDMTYgMTguNzkwOSAxNy43OTA5IDE3IDIwIDE3QzIyLjIwOTEgMTcgMjQgMTguNzkwOSAyNCAyMUMyNCAyMy4yMDkxIDIyLjIwOTEgMjUgMjAgMjVaIiBmaWxsPSIjOUI5QkE5Ii8+CjxwYXRoIGQ9Ik0yOCAzMEMyOCAyNi42ODYzIDI0LjQxODMgMjQgMjAgMjRDMTUuNTgxNyAyNCAxMiAyNi42ODYzIDEyIDMwSDI4WiIgZmlsbD0iIzlCOUJBOSIvPgo8L3N2Zz4K';
+  const displayImage =
+    productImage || "https://via.placeholder.com/268x245?text=No+Image";
+  const displayName = productName || "Untitled Product";
+  const displayUsername = username || "Unknown User";
+  const displayAvatar =
+    userAvatar ||
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyNUMxNy43OTA5IDI1IDE2IDIzLjIwOTEgMTYgMjFDMTYgMTguNzkwOSAxNy43OTA5IDE3IDIwIDE3QzIyLjIwOTEgMTcgMjQgMTguNzkwOSAyNCAyMUMyNCAyMy4yMDkxIDIyLjIwOTEgMjUgMjAgMjVaIiBmaWxsPSIjOUI5QkE5Ii8+CjxwYXRoIGQ9Ik0yOCAzMEMyOCAyNi42ODYzIDI0LjQxODMgMjQgMjAgMjRDMTUuNTgxNyAyNCAxMiAyNi42ODYzIDEyIDMwSDI4WiIgZmlsbD0iIzlCOUJBOSIvPgo8L3N2Zz4K";
 
   return (
     <div
@@ -52,7 +55,7 @@ export default function ProductCard({ order }) {
         <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
           {/* Only show favorite button if user doesn't own this listing */}
           {!isOwner && (
-            <FavoriteButton 
+            <FavoriteButton
               listingId={listingId}
               className="bg-white rounded-full p-1 shadow hover:text-[#950000] transition-colors"
               size={20}
@@ -61,14 +64,20 @@ export default function ProductCard({ order }) {
           )}
           {/* Show status badge for owner, 3-dot menu for others */}
           {isOwner ? (
-            <div className={`px-2 py-1 rounded text-xs font-medium ${
-              order.status === 'active' ? 'bg-green-100 text-green-700' :
-              order.status === 'inactive' ? 'bg-yellow-100 text-yellow-700' :
-              order.status === 'archived' ? 'bg-gray-100 text-gray-700' :
-              order.status === 'sold_out' ? 'bg-red-100 text-red-700' :
-              'bg-gray-100 text-gray-700'
-            }`}>
-              {order.status || 'active'}
+            <div
+              className={`px-2 py-1 rounded text-xs font-medium ${
+                order.status === "active"
+                  ? "bg-green-100 text-green-700"
+                  : order.status === "inactive"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : order.status === "archived"
+                  ? "bg-gray-100 text-gray-700"
+                  : order.status === "sold_out"
+                  ? "bg-red-100 text-red-700"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {order.status || "active"}
             </div>
           ) : (
             <div className="relative" ref={dropdownRef}>
@@ -120,7 +129,9 @@ export default function ProductCard({ order }) {
               alt={displayUsername}
               className="rounded-full object-cover flex-shrink-0 w-[18px] h-[18px]"
             />
-            <span className="text-xs text-gray-400 truncate">{displayUsername}</span>
+            <span className="text-xs text-gray-400 truncate">
+              {displayUsername}
+            </span>
             <span className="text-xs text-gray-400">·</span>
             <span className="text-xs text-gray-400 whitespace-nowrap">
               {itemsOrdered} items ordered
