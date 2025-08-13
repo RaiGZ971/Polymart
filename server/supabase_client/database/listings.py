@@ -33,14 +33,97 @@ async def create_listing(user_id: UUID, listing_data: Dict[str, Any]) -> Dict[st
         handle_database_error("create listing", e)
 
 
-async def get_listing_by_id(user_id: UUID, listing_id: int, include_seller_info: bool = True) -> Optional[Dict[str, Any]]:
+async def get_listings_by_ids(user_id: UUID, listing_ids: List[int], include_seller_info: bool = True) -> Dict[int, Dict[str, Any]]:
     """
-    Get a specific listing by ID.
+    Get multiple listings by IDs with optimized batch queries.
+    Returns a dictionary mapping listing_id to listing data.
     """
     try:
         supabase = get_authenticated_client(user_id)
         
-        # Simplified select without JOIN - let converter handle user profile fetching
+        if not listing_ids:
+            return {}
+        
+        # Build base query for listings
+        select_fields = """
+            listing_id,
+            seller_id,
+            name,
+            description,
+            category,
+            tags,
+            price_min,
+            price_max,
+            total_stock,
+            sold_count,
+            status,
+            created_at,
+            updated_at,
+            seller_meetup_locations,
+            transaction_methods,
+            payment_methods
+        """
+        
+        result = supabase.table("listings").select(select_fields).in_("listing_id", listing_ids).execute()
+        
+        if not result.data:
+            return {}
+        
+        listings = result.data
+        listings_by_id = {listing["listing_id"]: listing for listing in listings}
+        
+        # Batch fetch images for all listings
+        images_result = supabase.table("listing_images").select("listing_id, image_id, image_url, is_primary").in_("listing_id", listing_ids).order("is_primary", desc=True).execute()
+        images_by_listing = {}
+        if images_result.data:
+            for img in images_result.data:
+                listing_id = img["listing_id"]
+                if listing_id not in images_by_listing:
+                    images_by_listing[listing_id] = []
+                images_by_listing[listing_id].append(img)
+        
+        # Batch fetch meetup schedules for all listings
+        meetup_result = supabase.table("listing_meetup_time_details").select("listing_id, start_time, end_time").in_("listing_id", listing_ids).execute()
+        meetups_by_listing = {}
+        if meetup_result.data:
+            for meetup in meetup_result.data:
+                listing_id = meetup["listing_id"]
+                if listing_id not in meetups_by_listing:
+                    meetups_by_listing[listing_id] = []
+                meetups_by_listing[listing_id].append(meetup)
+        
+        # Batch fetch user profiles if requested
+        seller_ids = list(set([listing["seller_id"] for listing in listings]))
+        user_profiles = {}
+        if include_seller_info and seller_ids:
+            user_result = supabase.table("user_profile").select("user_id, username, profile_photo_url").in_("user_id", seller_ids).execute()
+            if user_result.data:
+                user_profiles = {str(profile["user_id"]): profile for profile in user_result.data}
+        
+        # Attach batch data to each listing
+        for listing in listings:
+            listing_id = listing["listing_id"]
+            seller_id = str(listing["seller_id"])
+            
+            listing["listing_images"] = images_by_listing.get(listing_id, [])
+            listing["meetup_data"] = meetups_by_listing.get(listing_id, [])
+            listing["user_profile"] = user_profiles.get(seller_id, {})
+        
+        return listings_by_id
+        
+    except Exception as e:
+        handle_database_error("get listings by IDs", e)
+        return {}
+
+
+async def get_listing_by_id(user_id: UUID, listing_id: int, include_seller_info: bool = True) -> Optional[Dict[str, Any]]:
+    """
+    Get a specific listing by ID with optimized batch queries.
+    """
+    try:
+        supabase = get_authenticated_client(user_id)
+        
+        # Build base query for listing
         select_fields = """
             listing_id,
             seller_id,
@@ -63,7 +146,45 @@ async def get_listing_by_id(user_id: UUID, listing_id: int, include_seller_info:
         result = supabase.table("listings").select(select_fields).eq("listing_id", listing_id).execute()
         
         if result.data and len(result.data) > 0:
-            return result.data[0]
+            listing = result.data[0]
+            
+            # Use batch processing approach for consistency
+            listing_ids = [listing_id]
+            seller_ids = [listing["seller_id"]]
+            
+            # Batch fetch images for this listing
+            images_result = supabase.table("listing_images").select("listing_id, image_id, image_url, is_primary").in_("listing_id", listing_ids).order("is_primary", desc=True).execute()
+            images_by_listing = {}
+            if images_result.data:
+                for img in images_result.data:
+                    listing_id_val = img["listing_id"]
+                    if listing_id_val not in images_by_listing:
+                        images_by_listing[listing_id_val] = []
+                    images_by_listing[listing_id_val].append(img)
+            
+            # Batch fetch meetup schedules for this listing
+            meetup_result = supabase.table("listing_meetup_time_details").select("listing_id, start_time, end_time").in_("listing_id", listing_ids).execute()
+            meetups_by_listing = {}
+            if meetup_result.data:
+                for meetup in meetup_result.data:
+                    listing_id_val = meetup["listing_id"]
+                    if listing_id_val not in meetups_by_listing:
+                        meetups_by_listing[listing_id_val] = []
+                    meetups_by_listing[listing_id_val].append(meetup)
+            
+            # Batch fetch user profiles if requested
+            user_profiles = {}
+            if include_seller_info and seller_ids:
+                user_result = supabase.table("user_profile").select("user_id, username, profile_photo_url").in_("user_id", seller_ids).execute()
+                if user_result.data:
+                    user_profiles = {str(profile["user_id"]): profile for profile in user_result.data}
+            
+            # Attach batch data to listing
+            listing["listing_images"] = images_by_listing.get(listing_id, [])
+            listing["meetup_data"] = meetups_by_listing.get(listing_id, [])
+            listing["user_profile"] = user_profiles.get(str(listing["seller_id"]), {})
+            
+            return listing
         return None
     except Exception as e:
         handle_database_error("get listing by ID", e)
@@ -74,12 +195,12 @@ async def get_public_listings(user_id: Optional[UUID] = None, page: int = 1, pag
                              min_price: Optional[float] = None, max_price: Optional[float] = None,
                              sort_by: Optional[str] = "newest") -> Dict[str, Any]:
     """
-    Get public listings (excluding user's own listings).
+    Get public listings (excluding user's own listings) with optimized batch queries.
     """
     try:
         supabase = get_authenticated_client(user_id)
         
-        # Build base query excluding user's own listings - simplified without JOIN
+        # Build base query for listings
         query = supabase.table("listings").select("""
             listing_id,
             seller_id,
@@ -104,7 +225,6 @@ async def get_public_listings(user_id: Optional[UUID] = None, page: int = 1, pag
             query = query.eq("category", category)
         
         if search:
-            # Search in name field only to avoid or_ method complications
             search_pattern = f"%{search}%"
             query = query.ilike("name", search_pattern)
         
@@ -114,9 +234,23 @@ async def get_public_listings(user_id: Optional[UUID] = None, page: int = 1, pag
         if max_price is not None:
             query = query.lte("price_max", max_price)
         
-        # Get total count
-        count_result = query.execute()
-        total_count = len(count_result.data) if count_result.data else 0
+        # Get total count with a separate optimized count query
+        count_query = supabase.table("listings").select("listing_id", count="exact").eq("status", "active").neq("seller_id", user_id)
+        
+        # Apply same filters to count query
+        if category:
+            count_query = count_query.eq("category", category)
+        if search:
+            count_query = count_query.ilike("name", f"%{search}%")
+        if min_price is not None:
+            count_query = count_query.gte("price_min", min_price)
+        if max_price is not None:
+            count_query = count_query.lte("price_max", max_price)
+        
+        count_result = count_query.execute()
+        total_count = getattr(count_result, 'count', None)
+        if total_count is None:
+            total_count = len(count_result.data) if count_result.data else 0
         
         # Apply sorting
         if sort_by == "price_low_high":
@@ -129,7 +263,7 @@ async def get_public_listings(user_id: Optional[UUID] = None, page: int = 1, pag
             query = query.order("name", desc=True)
         elif sort_by == "date_oldest":
             query = query.order("created_at", desc=False)
-        else:  # Default to newest (date_newest)
+        else:  # Default to newest
             query = query.order("created_at", desc=True)
         
         # Apply pagination
@@ -137,9 +271,57 @@ async def get_public_listings(user_id: Optional[UUID] = None, page: int = 1, pag
         query = query.range(offset, offset + page_size - 1)
         
         result = query.execute()
+        listings = result.data if result.data else []
+        
+        # Batch fetch related data for all listings
+        if listings:
+            # Get all unique seller IDs
+            seller_ids = list(set([listing["seller_id"] for listing in listings]))
+            listing_ids = [listing["listing_id"] for listing in listings]
+            
+            # Batch fetch user profiles
+            user_profiles = {}
+            if seller_ids:
+                user_result = supabase.table("user_profile").select("user_id, username, profile_photo_url").in_("user_id", seller_ids).execute()
+                if user_result.data:
+                    user_profiles = {str(profile["user_id"]): profile for profile in user_result.data}
+            
+            # Batch fetch images for all listings
+            images_result = supabase.table("listing_images").select("listing_id, image_id, image_url, is_primary").in_("listing_id", listing_ids).order("is_primary", desc=True).execute()
+            images_by_listing = {}
+            if images_result.data:
+                for img in images_result.data:
+                    listing_id = img["listing_id"]
+                    if listing_id not in images_by_listing:
+                        images_by_listing[listing_id] = []
+                    images_by_listing[listing_id].append(img)
+            
+            # Batch fetch meetup schedules for all listings
+            meetup_result = supabase.table("listing_meetup_time_details").select("listing_id, start_time, end_time").in_("listing_id", listing_ids).execute()
+            meetups_by_listing = {}
+            if meetup_result.data:
+                for meetup in meetup_result.data:
+                    listing_id = meetup["listing_id"]
+                    if listing_id not in meetups_by_listing:
+                        meetups_by_listing[listing_id] = []
+                    meetups_by_listing[listing_id].append(meetup)
+            
+            # Attach related data to each listing
+            for listing in listings:
+                seller_id = str(listing["seller_id"])
+                listing_id = listing["listing_id"]
+                
+                # Add user profile data
+                listing["user_profile"] = user_profiles.get(seller_id, {})
+                
+                # Add images data
+                listing["listing_images"] = images_by_listing.get(listing_id, [])
+                
+                # Add meetup data
+                listing["meetup_data"] = meetups_by_listing.get(listing_id, [])
         
         return {
-            "listings": result.data if result.data else [],
+            "listings": listings,
             "total_count": total_count
         }
     except Exception as e:
@@ -150,12 +332,12 @@ async def get_user_listings(user_id: UUID, category: Optional[str] = None,
                            search: Optional[str] = None, status: Optional[str] = None,
                            sort_by: Optional[str] = "newest") -> List[Dict[str, Any]]:
     """
-    Get user's own listings.
+    Get user's own listings with optimized batch queries.
     """
     try:
         supabase = get_authenticated_client(user_id)
         
-        # Simplified query without JOIN - let converter handle user profile fetching
+        # Build base query for listings
         query = supabase.table("listings").select("""
             listing_id,
             seller_id,
@@ -180,7 +362,6 @@ async def get_user_listings(user_id: UUID, category: Optional[str] = None,
             query = query.eq("category", category)
         
         if search:
-            # Search in name field only (avoiding or_ method issues)
             search_pattern = f"%{search}%"
             query = query.ilike("name", search_pattern)
         
@@ -198,12 +379,60 @@ async def get_user_listings(user_id: UUID, category: Optional[str] = None,
             query = query.order("name", desc=True)
         elif sort_by == "date_oldest":
             query = query.order("created_at", desc=False)
-        else:  # Default to newest (date_newest)
+        else:  # Default to newest
             query = query.order("created_at", desc=True)
         
         result = query.execute()
+        listings = result.data if result.data else []
         
-        return result.data if result.data else []
+        # Batch fetch related data for all listings
+        if listings:
+            # Get all unique seller IDs (should be just one for user listings)
+            seller_ids = list(set([listing["seller_id"] for listing in listings]))
+            listing_ids = [listing["listing_id"] for listing in listings]
+            
+            # Batch fetch user profiles
+            user_profiles = {}
+            if seller_ids:
+                user_result = supabase.table("user_profile").select("user_id, username, profile_photo_url").in_("user_id", seller_ids).execute()
+                if user_result.data:
+                    user_profiles = {str(profile["user_id"]): profile for profile in user_result.data}
+            
+            # Batch fetch images for all listings
+            images_result = supabase.table("listing_images").select("listing_id, image_id, image_url, is_primary").in_("listing_id", listing_ids).order("is_primary", desc=True).execute()
+            images_by_listing = {}
+            if images_result.data:
+                for img in images_result.data:
+                    listing_id = img["listing_id"]
+                    if listing_id not in images_by_listing:
+                        images_by_listing[listing_id] = []
+                    images_by_listing[listing_id].append(img)
+            
+            # Batch fetch meetup schedules for all listings
+            meetup_result = supabase.table("listing_meetup_time_details").select("listing_id, start_time, end_time").in_("listing_id", listing_ids).execute()
+            meetups_by_listing = {}
+            if meetup_result.data:
+                for meetup in meetup_result.data:
+                    listing_id = meetup["listing_id"]
+                    if listing_id not in meetups_by_listing:
+                        meetups_by_listing[listing_id] = []
+                    meetups_by_listing[listing_id].append(meetup)
+            
+            # Attach related data to each listing
+            for listing in listings:
+                seller_id = str(listing["seller_id"])
+                listing_id = listing["listing_id"]
+                
+                # Add user profile data
+                listing["user_profile"] = user_profiles.get(seller_id, {})
+                
+                # Add images data
+                listing["listing_images"] = images_by_listing.get(listing_id, [])
+                
+                # Add meetup data
+                listing["meetup_data"] = meetups_by_listing.get(listing_id, [])
+        
+        return listings
     except Exception as e:
         handle_database_error("get user listings", e)
 
