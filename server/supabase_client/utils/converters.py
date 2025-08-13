@@ -4,6 +4,7 @@ Handles image fetching, URL processing, and converting database records to respo
 """
 
 from typing import List, Dict, Any, Optional
+from uuid import UUID
 from supabase_client.schemas import ListingImage, ProductListing, Order, Meetup, MeetupSchedule
 from core.config import ensure_proper_image_urls
 from datetime import datetime
@@ -95,7 +96,7 @@ async def get_images_for_listing(supabase, listing_id: int) -> List[ListingImage
     return images
 
 
-async def convert_listing_to_product(supabase, listing: Dict[str, Any]) -> ProductListing:
+async def convert_listing_to_product(supabase, listing: Dict[str, Any], current_user_id: Optional[UUID] = None) -> ProductListing:
     """
     Convert a database listing record to a ProductListing object.
     Now optimized to use batch data instead of separate queries.
@@ -136,8 +137,17 @@ async def convert_listing_to_product(supabase, listing: Dict[str, Any]) -> Produ
     
     # Get seller listing count from batch data if available, otherwise skip
     seller_listing_count = 0
-    # Note: We're not making separate queries anymore - this will be 0 for now
-    # In a future optimization, we could include this in the batch query
+    # Fetch seller's listing count if current_user_id is provided
+    if current_user_id:
+        try:
+            from supabase_client.database.listings import get_seller_listing_count
+            seller_listing_count = await get_seller_listing_count(
+                user_id=current_user_id, 
+                seller_id=listing["seller_id"]
+            )
+        except Exception as e:
+            print(f"Warning: Could not fetch seller listing count: {e}")
+            seller_listing_count = 0
     
     # Get meetup schedules from batch data - no more separate queries
     available_schedules = []
@@ -193,25 +203,25 @@ async def convert_listing_to_product(supabase, listing: Dict[str, Any]) -> Produ
     )
 
 
-async def convert_listings_to_products(supabase, listings: List[Dict[str, Any]]) -> List[ProductListing]:
+async def convert_listings_to_products(supabase, listings: List[Dict[str, Any]], current_user_id: Optional[UUID] = None) -> List[ProductListing]:
     """
     Convert multiple database listing records to ProductListing objects.
     """
     products = []
     for listing in listings:
-        product = await convert_listing_to_product(supabase, listing)
+        product = await convert_listing_to_product(supabase, listing, current_user_id)
         products.append(product)
     return products
 
 
-async def convert_order_to_response_with_batch_data(supabase, order_data: Dict[str, Any], listing_data: Optional[Dict[str, Any]], meetups_data: List[Dict[str, Any]], buyer_data: Dict[str, Any]) -> Order:
+async def convert_order_to_response_with_batch_data(supabase, order_data: Dict[str, Any], listing_data: Optional[Dict[str, Any]], meetups_data: List[Dict[str, Any]], buyer_data: Dict[str, Any], current_user_id: Optional[UUID] = None) -> Order:
     """
     Convert a database order record to an Order object using pre-fetched batch data.
     """
     listing = None
     if listing_data:
         # Use pre-fetched listing data
-        listing = await convert_listing_to_product(supabase, listing_data)
+        listing = await convert_listing_to_product(supabase, listing_data, current_user_id)
         
         # Use pre-fetched buyer information
         if buyer_data:
@@ -276,7 +286,7 @@ async def convert_order_to_response(supabase, order_data: Dict[str, Any]) -> Ord
         )
         
         if listing_result:
-            listing = await convert_listing_to_product(supabase, listing_result)
+            listing = await convert_listing_to_product(supabase, listing_result, UUID(order_data["buyer_id"]))
             
             # Get buyer information and add it to the listing for easy access
             buyer_result = supabase.table("user_profile").select(
@@ -329,7 +339,7 @@ async def convert_order_to_response(supabase, order_data: Dict[str, Any]) -> Ord
     )
 
 
-async def convert_orders_to_response(supabase, orders_data: List[Dict[str, Any]]) -> List[Order]:
+async def convert_orders_to_response(supabase, orders_data: List[Dict[str, Any]], current_user_id: Optional[UUID] = None) -> List[Order]:
     """
     Convert multiple database order records to Order objects.
     Now optimized with true batch processing for listings, meetups, and buyer info.
@@ -384,7 +394,8 @@ async def convert_orders_to_response(supabase, orders_data: List[Dict[str, Any]]
             order_data, 
             listings_by_id.get(order_data["listing_id"]),
             meetups_by_order.get(order_data["order_id"], []),
-            buyers_by_id.get(str(order_data["buyer_id"]), {})
+            buyers_by_id.get(str(order_data["buyer_id"]), {}),
+            current_user_id
         )
         orders.append(order)
     

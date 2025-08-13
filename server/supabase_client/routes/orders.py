@@ -163,7 +163,7 @@ async def get_user_orders(
         
         # Convert to response format
         supabase = get_authenticated_client(current_user["user_id"])
-        orders_response = await convert_orders_to_response(supabase, orders_data["orders"])
+        orders_response = await convert_orders_to_response(supabase, orders_data["orders"], current_user["user_id"])
         
         return OrdersResponse(
             orders=orders_response,
