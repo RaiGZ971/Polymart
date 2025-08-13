@@ -5,6 +5,7 @@ export const formattedReviews = (reviews) => {
 
   reviews.forEach((review) => {
     responses.push({
+      reviewID: review.review_id,
       user: {
         userID: review.reviewer_id,
       },
@@ -12,7 +13,7 @@ export const formattedReviews = (reviews) => {
       content: review.description,
       rating: review.rating,
       images: review.images,
-      helpfulCount: review.helpfulCount || 0,
+      helpfulCount: review.voted_as_helpful,
     });
   });
 

@@ -1,6 +1,7 @@
 export { formattedListing } from './formattedListing.js';
 export { formattedMessage } from './formattedMessage.js';
 export { formattedMessages } from './formattedMessages.js';
+export { formattedNotification } from './formattedNotification.js';
 export { formattedNotifications } from './formattedNotifications.js';
 export { formattedReviews } from './formattedReviews.js';
 export { formattedReview } from './formattedReview.js';

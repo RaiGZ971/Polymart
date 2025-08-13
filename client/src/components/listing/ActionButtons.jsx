@@ -1,6 +1,7 @@
-import React from "react";
+import React from 'react';
 
-import { Button } from "@/components";
+import { Button } from '@/components';
+import { getReviewerProduct } from './queries/useProductDetailQueries.js';
 
 export default function ActionButtons({
   order,
@@ -13,11 +14,31 @@ export default function ActionButtons({
   onRejectOrder,
 }) {
   const status = order.status?.toLowerCase();
-  const isBuyer = role === "user";
-  const isSeller = role === "owner" || role === "seller";
+  const isBuyer = role === 'user';
+  const isSeller = role === 'owner' || role === 'seller';
+
+  const {
+    data: orderSellerReview = {},
+    isLoading: ordeSellerReviewLoading,
+    error: ordeSellerReviewError,
+  } = getReviewerProduct(
+    order.seller_id,
+    order.buyer_id,
+    order.listing.listing_id
+  );
+
+  const {
+    data: orderBuyerReview = {},
+    isLoading: orderBuyerReviewLoading,
+    error: orderBuyerReviewError,
+  } = getReviewerProduct(
+    order.buyer_id,
+    order.seller_id,
+    order.listing.listing_id
+  );
 
   // Cancelled orders - both buyer and seller see disabled buttons
-  if (status === "cancelled") {
+  if (status === 'cancelled') {
     return (
       <>
         <Button variant="graytext" disabled>
@@ -34,18 +55,29 @@ export default function ActionButtons({
   }
 
   // Completed orders - both buyer and seller can leave reviews
-  if (status === "completed") {
-    return (
+  if (status === 'completed') {
+    return (isBuyer && !orderSellerReview?.review_id) ||
+      (isSeller && !orderBuyerReview?.review_id) ? (
       <div className="flex justify-end w-full">
         <Button variant="primary" onClick={onLeaveReviewClick}>
           Leave a Review
+        </Button>
+      </div>
+    ) : (
+      <div className="flex justify-end w-full">
+        <Button
+          variant="primary"
+          disabled
+          className="bg-gray-400 text-white cursor-not-allowed"
+        >
+          Already Reviewed
         </Button>
       </div>
     );
   }
 
   // Pending orders - seller can confirm/reject, buyer can cancel
-  if (status === "pending") {
+  if (status === 'pending') {
     if (isSeller) {
       return (
         <>
@@ -63,7 +95,11 @@ export default function ActionButtons({
           <Button variant="graytext" onClick={onCancelClick}>
             Cancel Order
           </Button>
-          <Button variant="primary" disabled className="bg-gray-400 text-white cursor-not-allowed">
+          <Button
+            variant="primary"
+            disabled
+            className="bg-gray-400 text-white cursor-not-allowed"
+          >
             Waiting for Confirmation
           </Button>
         </>
@@ -72,7 +108,7 @@ export default function ActionButtons({
   }
 
   // Confirmed orders - seller can mark complete, buyer can only cancel or wait
-  if (status === "confirmed") {
+  if (status === 'confirmed') {
     if (isSeller) {
       return (
         <>
@@ -90,7 +126,11 @@ export default function ActionButtons({
           <Button variant="graytext" onClick={onCancelClick}>
             Cancel Order
           </Button>
-          <Button variant="primary" disabled className="bg-gray-400 text-white cursor-not-allowed">
+          <Button
+            variant="primary"
+            disabled
+            className="bg-gray-400 text-white cursor-not-allowed"
+          >
             Waiting for Completion
           </Button>
         </>
@@ -104,7 +144,11 @@ export default function ActionButtons({
       <Button variant="graytext" onClick={onCancelClick}>
         Cancel Order
       </Button>
-      <Button variant="primary" disabled className="bg-gray-400 text-white cursor-not-allowed">
+      <Button
+        variant="primary"
+        disabled
+        className="bg-gray-400 text-white cursor-not-allowed"
+      >
         Unknown Status
       </Button>
     </>

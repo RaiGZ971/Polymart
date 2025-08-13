@@ -17,6 +17,8 @@ export default function LeaveReviewComponent({
   // PLACEHOLDER: Mock data - replace with actual user profile from props/backend
   const sellerProfile = userProfile;
 
+  console.log(sellerProfile);
+
   const handleSubmit = async () => {
     if (rating === 0) return;
     setIsSubmitting(true);
@@ -24,7 +26,7 @@ export default function LeaveReviewComponent({
     const reviewData = {
       rating: rating,
       remarks: remarks.trim(),
-      revieweeId: sellerProfile.id,
+      revieweeId: sellerProfile.user_id,
       reviewerId: useAuthStore.getState().userID,
     };
 
@@ -80,7 +82,7 @@ export default function LeaveReviewComponent({
               style={{ width: '135px', height: '135px' }}
             >
               <img
-                src={sellerProfile.profileImage}
+                src={sellerProfile.profile_photo_url}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
@@ -89,7 +91,7 @@ export default function LeaveReviewComponent({
               {sellerProfile.username}
             </h2>
             <p className="text-gray-600 text-sm">
-              {sellerProfile.campus} | {sellerProfile.department}
+              {sellerProfile.university_branch} | {sellerProfile.college}
             </p>
           </div>
 

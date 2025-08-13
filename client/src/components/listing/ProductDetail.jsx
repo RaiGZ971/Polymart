@@ -13,11 +13,12 @@ import {
 } from '@/components';
 
 import { useOrderModals } from '@/hooks';
-import { getUserDetails } from '../../queries/index.js';
+import { getUserDetails, postNotification } from '../../queries/index.js';
 import { postReview } from './queries/useProductDetailQueries.js';
 import {
   formattedUserContact,
   formattedReview,
+  formattedNotification,
   getDate,
   getTime,
 } from '../../utils/index.js';
@@ -75,13 +76,13 @@ export default function ProductDetail({
   const [chatInitialView, setChatInitialView] = useState('preview');
 
   const sendReview = postReview();
+  const sendNotification = postNotification();
 
   const {
     data: sellerProfile = {},
     isLoading: buyerContactLoading,
     error: buyerContactError,
   } = getUserDetails(role === 'user' ? order.seller_id : order.buyer_id);
-  console.log(order);
 
   const handleOpenChat = () => {
     const response = {
@@ -124,6 +125,22 @@ export default function ProductDetail({
           console.log('Uploaded Review in dynamodb: ', data);
         },
       });
+
+      sendNotification.mutate(
+        formattedNotification(
+          {
+            userID: form.reviewee_id,
+            notificationType: 'review',
+            content: `You’ve received a new review for ${order.listing.name}. Check it out now!`,
+            relatedID: String(form.order_id),
+          },
+          {
+            onSuccess: (data) => {
+              console.log('NOTIFICATION UPLOADED: ', data);
+            },
+          }
+        )
+      );
     }
   }, [reviewData]);
 
@@ -210,7 +227,7 @@ export default function ProductDetail({
         <LeaveReviewComponent
           isOpen={showLeaveReview}
           onClose={handleCloseLeaveReview}
-          userProfile={formattedUserContact(sellerProfile)}
+          userProfile={sellerProfile}
           onSubmitReview={(reviewData) => {
             setReviewData(reviewData);
             setShowLeaveReview(false);

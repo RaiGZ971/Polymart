@@ -204,7 +204,7 @@ export default function PlaceOrder({
           }
         }
 
-        const notification = await uploadNotification(
+        const buyerNotification = await uploadNotification(
           formattedNotification({
             userID: useAuthStore.getState().userID,
             notificationType: 'order',
@@ -213,7 +213,18 @@ export default function PlaceOrder({
           })
         );
 
-        console.log('NOTIFICATION UPLOADED: ', notification);
+        console.log('NOTIFICATION UPLOADED: ', buyerNotification);
+
+        const sellerNotification = await uploadNotification(
+          formattedNotification({
+            userID: response.data.seller_id,
+            notificationType: 'order',
+            content: `${response.data.listing.buyer_username}, placed an order of ${response.data.listing.name}! They're waiting for your confirmation.`,
+            relatedID: String(response.data.order_id),
+          })
+        );
+
+        console.log('NOTIFICATION UPLOADED: ', sellerNotification);
 
         setModalStep('success');
 
