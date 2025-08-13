@@ -20,9 +20,13 @@ export default function ReviewsSection({ reviews = [], order }) {
       <div className="mt-4 space-y-4">
         {reviews && reviews.length > 0 ? (
           <>
-            {(showAllReviews ? reviews : reviews.slice(0, 5)).map(
+            {(showAllReviews ? reviews : reviews.slice(0, 6)).map(
               (review, idx) => (
-                <ReviewComponent key={idx} review={review} />
+                <ReviewComponent
+                  key={idx}
+                  review={review}
+                  revieweeID={order.seller_id}
+                />
               )
             )}
             {!showAllReviews && reviews.length > 5 && (

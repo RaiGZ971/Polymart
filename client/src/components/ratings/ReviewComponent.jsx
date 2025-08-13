@@ -1,18 +1,56 @@
 import { useState } from 'react';
 import { StaticRatingStars } from '@/components';
 import { ThumbsUp } from 'lucide-react';
-import { reviewData } from '../../data/reviewData';
+import {
+  updateHelpfulCount,
+  deleteHelpfulVoter,
+} from './queries/useReviewComponentQueries.js';
+import { useAuthStore } from '../../store/authStore.js';
 
-export default function ReviewComponent({ review = reviewData }) {
+export default function ReviewComponent({ review, revieweeID }) {
+  const userID = useAuthStore.getState().userID;
+  const isVoted = review.helpfulCount?.includes(userID);
+
   const [rating, setRating] = useState(review.rating);
-  const [helpful, setHelpful] = useState(false);
-  const [helpfulCount, setHelpfulCount] = useState(review.helpfulCount);
+  const [helpful, setHelpful] = useState(isVoted);
+  const [helpfulCount, setHelpfulCount] = useState(
+    review.helpfulCount?.length || 0
+  );
+
+  const { mutate: appendHelpfulCount } = updateHelpfulCount();
+  const { mutate: removeHelpfulVoter } = deleteHelpfulVoter();
 
   const handleHelpfulClick = () => {
     if (!helpful) {
+      appendHelpfulCount(
+        {
+          revieweeID,
+          reviewID: review.reviewID,
+          form: { voted_as_helpful: userID },
+        },
+        {
+          onSuccess: (data) => {
+            console.log('Added to helpful voters: ', data);
+          },
+        }
+      );
+
       setHelpful(true);
       setHelpfulCount((count) => count + 1);
     } else {
+      removeHelpfulVoter(
+        {
+          revieweeID,
+          reviewID: review.reviewID,
+          userID: userID,
+        },
+        {
+          onSuccess: (data) => {
+            console.log('Removed to helpful voters: ', data);
+          },
+        }
+      );
+
       setHelpful(false);
       setHelpfulCount((count) => count - 1);
     }
