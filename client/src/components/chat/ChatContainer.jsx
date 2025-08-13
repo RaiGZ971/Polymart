@@ -3,27 +3,58 @@ import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import { Flag, ChevronLeft, Send } from 'lucide-react';
 import { useChat } from '../../hooks/useChat';
-import { useProductInfo } from '../../hooks/useProductInfo';
-import { formattedMessage } from '../../utils/index.js';
+import { formattedMessage, getDate, getTime } from '../../utils/index.js';
 import {
   postMessage,
   postMessageImage,
+  getOrder,
 } from './queries/useChatContainerQueries.js';
 
 const ChatContainer = ({ chatData, onBack }) => {
-  const username = chatData?.username || 'nintendocicc';
-  const avatarUrl = chatData?.avatarUrl || '/path/to/avatar.jpg';
-  const productImageUrl =
-    chatData?.productImage || '/path/to/product-image.jpg';
-  const chatID = chatData?.id;
+  const [productName, setProductName] = useState(chatData?.productName);
+  const [productPrice, setProductPrice] = useState(chatData?.productPrice);
+  const [productImage, setProductImage] = useState(chatData?.productImage);
+  const [meetUpPlace, setMeetUpPlace] = useState('TBA');
+  const [meetUpDay, setMeetUpDay] = useState('TBA');
+  const [meetUpTime, setMeetUpTime] = useState('TBA');
 
-  const { messages, addMessage, selectChat } = useChat();
-  const productInfo = useProductInfo(chatID);
-  const { productName, productPrice, meetUpPlace, meetUpDay, meetUpTime } =
-    productInfo;
-  const productImage = productImageUrl;
+  const username = chatData?.username;
+  const avatarUrl = chatData?.avatarUrl;
+  const chatID = chatData?.id;
+  const productID = chatData?.productID || chatData?.product_id;
+
+  console.log('CHAT CONTAINER: ', chatData);
+
   const sendMessage = postMessage();
   const sendImage = postMessageImage();
+
+  const { messages, addMessage, selectChat } = useChat();
+
+  const {
+    data: order = {},
+    isLoading: orderLoading,
+    error,
+  } = getOrder(productID);
+
+  useEffect(() => {
+    if (order?.listing_id !== productID) {
+      return;
+    }
+    if (order?.meetup) {
+      setProductName(order.listing.name);
+      setProductPrice(
+        order.buyer_requested_price
+          ? `PHP ${order.buyer_requested_price}`
+          : order.listing.price_min !== order.listing.price_max
+          ? `PHP ${order.listing.price_min} - PHP ${order.listing.price_max}`
+          : `PHP ${order.listing.price_max}`
+      );
+      setProductImage(order.listing.images[0].image_url);
+      setMeetUpPlace(order.meetup.location);
+      setMeetUpDay(getDate(order.meetup.scheduled_at));
+      setMeetUpTime(getTime(order.meetup.scheduled_at));
+    }
+  }, [order, productID]);
 
   // Select this chat when component mounts
   useEffect(() => {
@@ -34,6 +65,8 @@ const ChatContainer = ({ chatData, onBack }) => {
 
   const handleSend = async (messageData) => {
     let form;
+
+    messageData.productID = String(productID);
 
     if (messageData.type === 'image') {
       const imageURL = await sendImage.mutateAsync({
