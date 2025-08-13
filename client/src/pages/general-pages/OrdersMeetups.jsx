@@ -116,7 +116,8 @@ export default function OrdersMeetups() {
           formattedNotification({
             userID: useAuthStore.getState().userID,
             notificationType: 'meetup',
-            content: `Your meetup with ${selectedOrder.username} is scheduled on ${selectedOrder.schedule}. Location: ${selectedOrder.meetup.location}.`,
+            content: `Your meetup with ${selectedOrder.username} is scheduled on ${selectedOrder.schedule}.`,
+            detils: `Location: ${selectedOrder.meetup.location}.`,
             relatedID: String(selectedOrder.id),
           })
         );
@@ -127,7 +128,8 @@ export default function OrdersMeetups() {
           formattedNotification({
             userID: selectedOrder.buyer_id,
             notificationType: 'meetup',
-            content: `Reminder. You have a scheduled meetup with ${selectedOrder.sellerUsername} on ${selectedOrder.schedule}. Location: ${selectedOrder.meetup.location}.`,
+            content: `Reminder. You have a scheduled meetup with ${selectedOrder.sellerUsername} on ${selectedOrder.schedule}.`,
+            details: `Location: ${selectedOrder.meetup.location}.`,
             relatedID: String(selectedOrder.id),
           })
         );
