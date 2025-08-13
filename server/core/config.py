@@ -6,6 +6,22 @@ from fastapi import HTTPException
 
 load_dotenv()
 
+# Database connection pooling configuration
+DATABASE_CONFIG = {
+    "pool_size": int(os.getenv("DB_POOL_SIZE", "20")),
+    "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "30")),
+    "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
+    "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "3600")),  # 1 hour
+    "echo": os.getenv("DB_ECHO", "false").lower() == "true"
+}
+
+# Supabase connection configuration
+SUPABASE_CONFIG = {
+    "max_retries": int(os.getenv("SUPABASE_MAX_RETRIES", "3")),
+    "timeout": int(os.getenv("SUPABASE_TIMEOUT", "30")),  # 30 seconds
+    "connection_timeout": int(os.getenv("SUPABASE_CONNECTION_TIMEOUT", "10"))  # 10 seconds
+}
+
 s3Client = boto3.client("s3")
 
 def generate_private_urls(images: list[str]) -> list[str]:

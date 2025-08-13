@@ -76,7 +76,7 @@ class SupabaseClientCache:
             return len(self._cache)
 
 # Global cache instance
-_client_cache = SupabaseClientCache(max_size=50, cache_ttl_minutes=3)
+_client_cache = SupabaseClientCache(max_size=50, cache_ttl_minutes=15)
 
 
 def create_supabase_compatible_jwt(user_id: UUID) -> str:
