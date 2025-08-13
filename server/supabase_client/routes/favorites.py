@@ -105,7 +105,7 @@ async def get_user_favorite_listings(
                         include_seller_info=True
                     )
                     if listing_result:
-                        listing_details = await convert_listing_to_product(supabase, listing_result)
+                        listing_details = await convert_listing_to_product(supabase, listing_result, current_user["user_id"])
                 except Exception as e:
                     print(f"Error fetching listing details for {favorite['listing_id']}: {e}")
                     # Continue without listing details for this item
