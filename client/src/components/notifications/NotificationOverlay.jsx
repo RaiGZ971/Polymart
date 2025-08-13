@@ -1,16 +1,16 @@
-import React from "react";
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import React from 'react';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 
 // Emoji mapping for each notification type
 const EMOJI_MAP = {
-  meetup: "📍",
-  "listing-under-review": "⏳",
-  warning: "⚠️",
-  suspended: "⛔",
-  "listing-approved": "✅",
-  message: "✉️",
-  order: "📦",
-  "meetup-reported": "📍",
+  meetup: '📍',
+  'listing-under-review': '⏳',
+  warning: '⚠️',
+  suspended: '⛔',
+  'listing-approved': '✅',
+  message: '✉️',
+  order: '📦',
+  'meetup-reported': '📍',
 };
 
 // Individual notification item component
@@ -23,7 +23,7 @@ const NotificationItem = ({ notif, index }) => (
       {/* Header with emoji, title and chevron */}
       <div className="flex items-center justify-between w-full text-left">
         <span className="font-semibold">
-          {(EMOJI_MAP[notif.type] || "🔔") + " "}
+          {(EMOJI_MAP[notif.type] || '🔔') + ' '}
           {notif.title}
         </span>
         <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#950000] transition-colors duration-200" />

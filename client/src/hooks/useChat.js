@@ -1,7 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { WebSocketService } from '../services/websocketService';
-import { getContacts, getMessages } from './queries/useChatQueries';
+import {
+  getContacts,
+  getMessages,
+  updateReadStatus,
+} from './queries/useChatQueries';
 import { getUsersDetails } from '../queries/getUsersDetails.js';
+import { getProductsDetails } from '../queries/getProductsDetails.js';
 import {
   formattedContacts,
   formattedMessages,
@@ -15,28 +20,74 @@ export function useChat() {
   const connectedRoomID = useRef(null);
 
   const queryClient = useQueryClient();
+  const {
+    mutate: updateStatus,
+    isLoading: updateStatusLoading,
+    error: updateStatusError,
+  } = updateReadStatus();
 
-  const { userID, data: userData } = useAuthStore();
+  const { userID } = useAuthStore();
   const [currentChatID, setCurrentChatID] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [contactIDs, setContactIDs] = useState([]);
+  const [latestMessages, setlatestMessages] = useState([]);
+  const [productIDs, setProductIDs] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [currentRoomID, setCurrentRoomID] = useState('');
+  const [readStatus, setReadStatus] = useState(0);
+
+  const contactsProfileQueries = getUsersDetails(contactIDs);
+  const productsProfileQueries = getProductsDetails(productIDs);
 
   const {
-    data: rawContacts = [],
+    data: rawContacts = {},
     isLoading: contactsLoading,
     error: contactsError,
   } = getContacts(userID);
 
-  const contactIDs = rawContacts.contacts || [];
-  const latestMessages = rawContacts.latest_messages || [];
+  useEffect(() => {
+    if (rawContacts?.contacts) {
+      setContactIDs(rawContacts.contacts);
+      setlatestMessages(rawContacts.latest_messages);
+      setProductIDs(rawContacts.products);
+    }
+  }, [rawContacts]);
 
-  const userResults = getUsersDetails(contactIDs);
-  const usersData = userResults.map((userResult) => userResult.data);
+  const contactsProfile = useMemo(() => {
+    const profiles = contactsProfileQueries.every(
+      (userResult) => !userResult.isLoading && !userResult.isError
+    );
+
+    if (!profiles) {
+      return [];
+    }
+
+    return contactsProfileQueries.map((userResult) => userResult.data);
+  }, [contactsProfileQueries]);
+
+  const productsProfile = useMemo(() => {
+    const products = productsProfileQueries.every(
+      (product) => !product.isLoading && !product.isError
+    );
+
+    if (!products) {
+      return [];
+    }
+
+    return productsProfileQueries.map((product) => product.data);
+  }, [productsProfileQueries]);
 
   useEffect(() => {
-    if (usersData.length && usersData[0]?.user_id) {
-      const newContacts = formattedContacts(usersData, latestMessages);
+    if (
+      contactsProfile.length &&
+      contactsProfile[0]?.user_id &&
+      productsProfile[0]?.listing_id
+    ) {
+      const newContacts = formattedContacts(
+        contactsProfile,
+        productsProfile,
+        latestMessages
+      );
 
       setContacts((prev) => {
         if (JSON.stringify(prev) !== JSON.stringify(newContacts)) {
@@ -45,7 +96,7 @@ export function useChat() {
         return prev;
       });
     }
-  }, [usersData, latestMessages]);
+  }, [contactsProfile, productsProfile, latestMessages]);
 
   const {
     data: fetchedMessages = [],
@@ -56,28 +107,14 @@ export function useChat() {
   useEffect(() => {
     if (fetchedMessages.length !== 0) {
       setMessages(fetchedMessages);
+
+      updateStatus(currentChatID, {
+        onSuccess: (data) => {
+          console.log('Successful Read Status Update: ', data);
+        },
+      });
     }
   }, [fetchedMessages]);
-
-  const unread = useMemo(() => {
-    return contacts.filter((chat) => chat.isUnread).length;
-  }, [contacts]);
-
-  // Message operations
-
-  const addBotResponse = () => {
-    if (!currentChatID) return;
-
-    const responses = [
-      'Thanks for your message!',
-      'Got it, will get back to you soon!',
-      'Sounds good to me!',
-      'Let me check on that.',
-    ];
-    const randomResponse =
-      responses[Math.floor(Math.random() * responses.length)];
-    setMessages((prev) => [...prev, { text: randomResponse, sender: 'other' }]);
-  };
 
   const addMessage = (message, receiverID) => {
     const response = formattedMessages(message, userID);
@@ -102,7 +139,7 @@ export function useChat() {
 
       // Format message for WebSocket - server expects simple object
       const wsMessage = {
-        sender_id: userID,
+        productID: message[0]?.product_id,
         content: message[0]?.content || null,
         image: message[0]?.image || null,
       };
@@ -111,10 +148,6 @@ export function useChat() {
       wsService.current.sendMessage(wsMessage);
       console.log('MESSAGE SENT');
     }
-  };
-
-  const markAsRead = (chatId) => {
-    // Implementation for marking specific chat as read
   };
 
   const selectChat = (chatId) => {
@@ -149,14 +182,24 @@ export function useChat() {
       currentChatID,
       (data) => {
         console.log('📨 RECEIVED MESSAGE:', data);
+
+        updateStatus(currentChatID, {
+          onSuccess: (data) => {
+            console.log('Successful Read Status Update: ', data);
+          },
+        });
         // Handle incoming message - add to messages state
-        if (data && data.content) {
-          const incomingMessage = {
+        if (data && (data.content || data.image)) {
+          let incomingMessage = {
             id: data.message_id || Date.now(),
-            text: data.content,
             sender: data.sender_id === userID ? 'user' : 'other',
             timestamp: data.timestamp || new Date().toISOString(),
           };
+
+          data.content
+            ? (incomingMessage.text = data.content)
+            : (incomingMessage.imagePreview = data.image);
+
           setMessages((prev) => [...prev, incomingMessage]);
         }
       },
@@ -170,7 +213,6 @@ export function useChat() {
       },
       (error) => console.error('WebSocket error:', error)
     );
-
     // No cleanup - let the connection persist
     return () => {
       // Only disconnect when switching chats or unmounting
@@ -188,11 +230,31 @@ export function useChat() {
     };
   }, []);
 
+  useEffect(() => {
+    setReadStatus(
+      contacts.filter((chat) => chat.senderID !== userID && !chat.readStatus)
+        .length
+    );
+  }, [contacts]);
+
+  const addBotResponse = () => {
+    if (!currentChatID) return;
+
+    const responses = [
+      'Thanks for your message!',
+      'Got it, will get back to you soon!',
+      'Sounds good to me!',
+      'Let me check on that.',
+    ];
+    const randomResponse =
+      responses[Math.floor(Math.random() * responses.length)];
+    setMessages((prev) => [...prev, { text: randomResponse, sender: 'other' }]);
+  };
+
   return {
     // Chat list functionality
-    unread,
+    readStatus,
     chats: contacts,
-    markAsRead,
 
     // Individual chat functionality
     currentChatID,

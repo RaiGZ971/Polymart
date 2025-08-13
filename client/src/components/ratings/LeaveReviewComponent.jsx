@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { createPortal } from "react-dom";
-import { RatingStars, Textarea, Modal, Button, BackButton } from "@/components";
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useAuthStore } from '../../store/authStore.js';
+import { RatingStars, Textarea, Modal, Button, BackButton } from '@/components';
 
 export default function LeaveReviewComponent({
   isOpen,
@@ -9,17 +10,12 @@ export default function LeaveReviewComponent({
   onSubmitReview,
 }) {
   const [rating, setRating] = useState(0);
-  const [remarks, setRemarks] = useState("");
+  const [remarks, setRemarks] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
 
   // PLACEHOLDER: Mock data - replace with actual user profile from props/backend
-  const mockUser = userProfile || {
-    username: "nintendocicc",
-    campus: "PUP Sta Mesa",
-    department: "CCIS",
-    profileImage: "https://picsum.photos/201/150",
-  };
+  const sellerProfile = userProfile;
 
   const handleSubmit = async () => {
     if (rating === 0) return;
@@ -28,22 +24,21 @@ export default function LeaveReviewComponent({
     const reviewData = {
       rating: rating,
       remarks: remarks.trim(),
-      revieweeId: mockUser.id,
-      reviewerId: "CURRENT_USER_ID",
-      timestamp: new Date().toISOString(),
+      revieweeId: sellerProfile.id,
+      reviewerId: useAuthStore.getState().userID,
     };
 
     try {
       if (onSubmitReview) {
         await onSubmitReview(reviewData);
       } else {
-        console.log("BACKEND TODO: Submit review data:", reviewData);
+        console.log('BACKEND TODO: Submit review data:', reviewData);
       }
       setRating(0);
-      setRemarks("");
+      setRemarks('');
       setShowAlert(true); // Show alert modal
     } catch (error) {
-      console.error("Failed to submit review:", error);
+      console.error('Failed to submit review:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -51,7 +46,7 @@ export default function LeaveReviewComponent({
 
   const handleSkip = () => {
     setRating(0);
-    setRemarks("");
+    setRemarks('');
     onClose && onClose();
   };
 
@@ -68,7 +63,7 @@ export default function LeaveReviewComponent({
       <div className="bg-white rounded-xl shadow-2xl max-h-[90vh] p-8 max-w-[650px] w-full relative flex flex-col">
         {/* Back button */}
         <div className="absolute top-8 left-8 flex items-center text-gray-400 hover:text-gray-700 transition-colors z-10">
-          {" "}
+          {' '}
           <BackButton onClick={() => onClose()} />
         </div>
 
@@ -82,19 +77,19 @@ export default function LeaveReviewComponent({
           <div className="flex flex-col items-center mb-6">
             <div
               className="rounded-full overflow-hidden mb-4 border border-gray-200 flex items-center justify-center bg-gray-100"
-              style={{ width: "135px", height: "135px" }}
+              style={{ width: '135px', height: '135px' }}
             >
               <img
-                src={mockUser.profileImage}
+                src={sellerProfile.profileImage}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
             </div>
             <h2 className="text-xl font-semibold text-gray-800">
-              {mockUser.username}
+              {sellerProfile.username}
             </h2>
             <p className="text-gray-600 text-sm">
-              {mockUser.campus} | {mockUser.department}
+              {sellerProfile.campus} | {sellerProfile.department}
             </p>
           </div>
 
@@ -123,7 +118,7 @@ export default function LeaveReviewComponent({
               disabled={rating === 0 || isSubmitting}
               variant="primary"
             >
-              {isSubmitting ? "Submitting..." : "Submit"}
+              {isSubmitting ? 'Submitting...' : 'Submit'}
             </Button>
           </div>
         </div>
