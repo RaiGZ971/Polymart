@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File, Depends
 from fastapi.responses import HTMLResponse
 from dotenv import load_dotenv
@@ -500,6 +501,28 @@ async def get_review(reviewee_id: str, review_id: str, current_user: dict = Depe
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to review: {str(e)}")
+    
+@router.get("/product-reviewee-reviewer/{reviewee_id}/{reviewer_id}/{product_id}", response_model=Optional[models.review])
+async def get_product_reviewee_reviewer(reviewee_id: str,reviewer_id: str, product_id: str, current_user: dict = Depends(get_current_user)):
+    try:
+        query = tableReview.query(
+            KeyConditionExpression=Key('reviewee_id').eq(reviewee_id),
+            FilterExpression=Attr("reviewer_id").eq(reviewer_id) & Attr("product_id").eq(product_id)
+        )
+
+        review = query.get("Items", [])
+
+        if not review:
+            return None
+        
+        return review[0]
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to fetch review of reviewer to specific product in hackybara-review: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch reviewer to specific product: {str(e)}")
 
 @router.get("/product-review/{reviewee_id}/{product_id}")
 async def get_product_review(reviewee_id: str, product_id: str, current_user: dict = Depends(get_current_user)):
@@ -589,6 +612,7 @@ async def post_review(form: models.raw_review, current_user: dict = Depends(get_
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to post review: {str(e)}")
     
+    
 @router.put("/review/{reviewee_id}/{review_id}", response_model=models.review)
 async def update_review(reviewee_id: str, review_id: str, form: models.update_review, current_user: dict = Depends(get_current_user)):
     try:
@@ -601,10 +625,8 @@ async def update_review(reviewee_id: str, review_id: str, form: models.update_re
 
         # Review the submited form
         expressionValues = {}
+        expressionName = {}
         updateParts = []
-
-        updateParts.append("review_id=:review_id")
-        expressionValues[":review_id"] = review_id
 
         if form.rating is not None:
             updateParts.append("rating=:rating")
@@ -618,6 +640,11 @@ async def update_review(reviewee_id: str, review_id: str, form: models.update_re
         if form.reported is not None:
             updateParts.append("reported=:reported")            
             expressionValues[":reported"] = form.reported
+        if form.voted_as_helpful is not None:
+            updateParts.append("#n = list_append(if_not_exists(#n, :empty_list), :val)")
+            expressionName["#n"] = "voted_as_helpful"
+            expressionValues[":empty_list"] = []
+            expressionValues[":val"] = [form.voted_as_helpful]
 
         updateExpression = "SET " + ", ".join(updateParts) if updateParts else None
 
@@ -625,6 +652,7 @@ async def update_review(reviewee_id: str, review_id: str, form: models.update_re
         response = tableReview.update_item(
             Key={"reviewee_id": reviewee_id, "created_at": review["created_at"]},
             UpdateExpression=updateExpression,
+            ExpressionAttributeNames=expressionName,
             ExpressionAttributeValues=expressionValues,
             ReturnValues="ALL_NEW"
         )
@@ -636,6 +664,36 @@ async def update_review(reviewee_id: str, review_id: str, form: models.update_re
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update review: {str(e)}")
+
+@router.delete("/review-helpful/{reviewee_id}/{review_id}/{user_id}", response_model=models.review)
+async def delete_user_helpful_vote(reviewee_id: str, review_id: str, user_id: str):
+    try:
+        query = tableReview.query(
+            KeyConditionExpression=Key("reviewee_id").eq(reviewee_id),
+            FilterExpression=Attr("review_id").eq(review_id),
+        )
+        
+        review = query.get("Items", [])[0]
+        voters = review.get("voted_as_helpful", [])
+
+        updatedVoters = [voter for voter in voters if voter != user_id]
+
+        response = tableReview.update_item(
+            Key={"reviewee_id": reviewee_id, "created_at": review["created_at"]},
+            UpdateExpression="SET voted_as_helpful=:voted_as_helpful",
+            ExpressionAttributeValues={":voted_as_helpful": updatedVoters},
+            ReturnValues="ALL_NEW"
+        )
+
+        return response["Attributes"]
+    
+    except ClientError as e:
+        raise HTTPException(status_code=e.response["ResponseMetadata"]["HTTPStatusCode"], detail=f"Failed to delete helpful vote review in hackybara-review: {e.response["Error"]["Message"]}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete helpful vote review: {str(e)}")
+
 
 @router.delete("/review/{reviewee_id}/{review_id}", response_model=models.review)
 async def delete_review(reviewee_id: str, review_id: str, current_user: dict = Depends(get_current_user)):

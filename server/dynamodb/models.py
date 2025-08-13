@@ -26,6 +26,7 @@ class notification(BaseModel):
     notification_id: str
     notification_type: str
     content: str
+    details: str | None = None
     related_id: str
     seen: bool = False
     timestamp: str                      #sort-key
@@ -34,6 +35,7 @@ class raw_notification(BaseModel):
     user_id: str
     notification_type: str
     content: str
+    details: str | None = None
     related_id: str
 
 class review(BaseModel):
@@ -44,6 +46,7 @@ class review(BaseModel):
     product_id: str | None = None
     order_id: str | None = None
     rating: Decimal
+    voted_as_helpful: list[str] | None = None
     description: str
     images: list[str] | None = None
     created_at: str                     #sort-key
@@ -57,6 +60,7 @@ class raw_review(BaseModel):
     product_id: str | None = None
     order_id: str | None = None
     rating: Decimal
+    voted_as_helpful: str | None = None
     description: str
     images: list[str] | None = None
     reported: bool = False
@@ -64,6 +68,7 @@ class raw_review(BaseModel):
 class update_review(BaseModel):
     rating: Decimal | None = None
     description: str | None = None
+    voted_as_helpful: str | None = None
     images: list[str] | None = None
     reported: bool | None = None
 
