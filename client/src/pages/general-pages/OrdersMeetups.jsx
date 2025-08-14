@@ -135,6 +135,17 @@ export default function OrdersMeetups() {
         );
 
         console.log('NOTIFICATION UPLOADED: ', buyerMeetupNotification);
+      } else if (newStatus === 'cancelled') {
+        const sellerNotification = await uploadNotification(
+          formattedNotification({
+            userID: selectedOrder.buyer_id,
+            notificationType: 'cancel',
+            content: `Your request order of ${selectedOrder.productName} is rejected by ${selectedOrder.sellerUsername}`,
+            relatedID: String(selectedOrder.id),
+          })
+        );
+
+        console.log('NOTIFICATION UPLOADED: ', sellerNotification);
       }
       // Refresh the orders data to reflect the changes
       await refreshData();

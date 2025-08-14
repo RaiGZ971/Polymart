@@ -12,6 +12,7 @@ const EMOJI_MAP = {
   order: '📦',
   'meetup-reported': '📍',
   review: '📋',
+  cancel: '❌',
 };
 
 // Individual notification item component
