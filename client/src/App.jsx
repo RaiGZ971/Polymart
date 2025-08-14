@@ -1,38 +1,52 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
+import "./App.css";
+import LandingPage from "./pages/LandingPage";
+import SignUp from "./pages/general-pages/SignUp";
+import SignIn from "./pages/general-pages/SignIn";
+import GeneralDashboard from "./pages/general-pages/GeneralDashboard";
+import Profile from "./pages/general-pages/Profile";
+import LikedItems from "./pages/general-pages/LikedItems";
+import CustomerService from "./pages/general-pages/CustomerService";
+import Help from "./pages/general-pages/Help";
+import ManageListing from "./pages/general-pages/ManageListing";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import OrdersMeetups from "./pages/general-pages/OrdersMeetups";
+import ViewProductDetails from "./pages/buyer-pages/ViewProductDetails";
+import SellerProductDetails from "./pages/seller-pages/SellerProductDetails";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
-      <div className="flex gap-8 mb-8">
-        <a href="https://vite.dev" target="_blank" className="hover:opacity-80 transition-opacity">
-          <img src={viteLogo} className="w-16 h-16" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" className="hover:opacity-80 transition-opacity">
-          <img src={reactLogo} className="w-16 h-16 animate-spin" alt="React logo" />
-        </a>
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/sign-in" element={<SignIn />} />
+          <Route path="/dashboard" element={<GeneralDashboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/liked-items" element={<LikedItems />} />
+          <Route path="/customer-service" element={<CustomerService />} />
+          <Route path="/help" element={<Help />} />
+          <Route path="/manage-listing" element={<ManageListing />} />
+          <Route path="/orders" element={<OrdersMeetups />} />
+          {/* Redirect old URL to new URL for backward compatibility */}
+          <Route path="/orders-meetups" element={<Navigate to="/orders" replace />} />
+          <Route
+            path="/buyer/view-product-details/:id?"
+            element={<ViewProductDetails />}
+          />
+          <Route
+            path="/seller/view-product-details/:id?"
+            element={<SellerProductDetails />}
+          />
+          {/* Add more routes as needed */}
+        </Routes>
       </div>
-      <h1 className="text-4xl font-bold text-gray-800 mb-8">Vite + React</h1>
-      <div className="bg-white p-8 rounded-lg shadow-lg">
-        <button 
-          onClick={() => setCount((count) => count + 1)}
-          className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
-        >
-          count is {count}
-        </button>
-        <p className="mt-4 text-gray-600">
-          Edit <code className="bg-gray-100 px-2 py-1 rounded">src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="mt-8 text-gray-500 text-sm">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
-  )
+    </Router>
+  );
 }
 
-export default App
+export default App;
