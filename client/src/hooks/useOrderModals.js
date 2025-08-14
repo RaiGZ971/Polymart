@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { OrderService } from '../services';
 import { postNotification } from '../queries/postNotification.js';
 import { formattedNotification } from '../utils/formattedNotification.js';
+import { useAuthStore } from '../store/authStore.js';
 
 export default function useOrderModals(orderId, onStatusUpdate) {
   const [showConfirm, setShowConfirm] = useState(false);
@@ -23,7 +24,26 @@ export default function useOrderModals(orderId, onStatusUpdate) {
 
     setIsUpdating(true);
     try {
-      await OrderService.updateOrderStatus(orderId, 'cancelled');
+      const order = await OrderService.updateOrderStatus(orderId, 'cancelled');
+
+      let content = `We’re sorry, but your order for ${order.data.listing.name} has been cancelled by the seller ${order.data.listing.seller_username}.`;
+      let userID = order.data.buyer_id;
+
+      if (useAuthStore.getState().userID === order.data.buyer_id) {
+        userID = order.data.seller_id;
+        content = `The order from ${order.data.listing.buyer_username} for ${order.data.listing.name} has been cancelled.`;
+      }
+      const buyerNotification = await uploadNotification(
+        formattedNotification({
+          userID: userID,
+          notificationType: 'cancel',
+          content: content,
+          relatedID: String(order.data.order_id),
+        })
+      );
+
+      console.log('NOTIFICATION UPLOADED: ', buyerNotification);
+
       setShowConfirm(false);
       setShowAlert(true);
       if (onStatusUpdate) onStatusUpdate();

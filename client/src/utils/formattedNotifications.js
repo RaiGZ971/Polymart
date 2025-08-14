@@ -24,6 +24,8 @@ export const formattedNotifications = (notifications) => {
       title = 'Reported Meetup';
     } else if (notification.notification_type === 'review') {
       title = 'Order Review';
+    } else if (notification.notification_type === 'cancel') {
+      title = 'Cancelled Order';
     }
 
     result.type = notification.notification_type;
