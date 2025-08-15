@@ -225,6 +225,7 @@ dist-ssr
 
 .github
 .venv
+.env
 
 # developer specific
 SupabaseSchema.sql
